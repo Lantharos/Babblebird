@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import { session } from "#lib/api/session.svelte.ts"
-  import Logo from "#lib/Logo.svelte"
+  import Wordmark from "#lib/Wordmark.svelte"
   import { page } from "$app/state"
 
   let { wide = false }: { wide?: boolean } = $props()
@@ -11,9 +11,7 @@
 
 <header class="sticky top-0 z-30 bg-glass backdrop-blur-xl">
   <div class="{wide ? 'px-4 sm:px-6' : 'page'} flex h-16 items-center gap-6">
-    <a href="/" class="flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.01em]">
-      <Logo class="size-8" /><span class="text-[19px] font-semibold tracking-[-0.02em]">Babblebird</span>
-    </a>
+    <a href="/" class="py-2"><Wordmark class="text-[23px]" /></a>
     <nav class="ml-auto flex items-center gap-1 text-[15px]">
       <a href="/projects" class="rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink">Projects</a>
       <a href="/docs" class="hidden rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink sm:block">Docs</a>

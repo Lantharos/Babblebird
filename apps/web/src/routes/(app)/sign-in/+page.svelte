@@ -4,7 +4,7 @@
   import CodeField from "#lib/account/CodeField.svelte"
   import { sendCode, signInWithCode, signInWithGitHub, signInWithPasskey } from "#lib/api/auth.ts"
   import { session } from "#lib/api/session.svelte.ts"
-  import Logo from "#lib/Logo.svelte"
+  import Bird from "#lib/Bird.svelte"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { goto, invalidateAll } from "$app/navigation"
   import { page } from "$app/state"
@@ -58,7 +58,7 @@
 
 <main class="grid min-h-svh place-items-center px-4 py-12">
   <div class="enter w-full max-w-[22rem] text-center">
-    <a href="/" aria-label="Babblebird" class="inline-flex"><Logo class="size-10" /></a>
+    <a href="/" aria-label="Babblebird" class="inline-flex"><Bird class="h-10 w-12" /></a>
     {#if sent}
       <h1 class="mt-6 text-[26px] font-semibold tracking-[-0.02em]">Check your email</h1>
       <p class="mt-1.5 text-[15px] leading-relaxed text-ink-soft">Enter the code we sent to <span class="text-ink">{email}</span>.</p>

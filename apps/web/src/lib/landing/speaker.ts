@@ -110,8 +110,8 @@ export class Speaker {
     await bubble.animate(
       [
         { opacity: 1, transform: "translate(0, 0) scale(1) rotate(0deg)" },
-        { opacity: 1, transform: "translate(4px, -10px) scale(1.02, 0.98) rotate(-2deg)", offset: 0.25 },
-        { opacity: 0, transform: "translate(46px, -86px) scale(0.86) rotate(7deg)" },
+        { opacity: 1, transform: "translate(-4px, -6px) scale(1.02, 0.98) rotate(-2deg)", offset: 0.25 },
+        { opacity: 0, transform: "translate(110px, -40px) scale(0.86) rotate(5deg)" },
       ],
       { duration: 760, easing: LIFT, fill: "forwards" },
     ).finished
