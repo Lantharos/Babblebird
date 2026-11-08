@@ -36,7 +36,7 @@
     if (!status) return "Starting"
     if (status.state === "failed") return status.problem ?? "Something went wrong"
     if (finished) return "Everything is read in"
-    if (!importing || !importing.done) return "Reading the repository and finding its areas"
+    if (!importing?.done) return "Reading the repository and finding its areas"
     return `Reading translation files, ${Math.min(importing.done, importing.total).toLocaleString()} of ${importing.total.toLocaleString()}`
   }
 

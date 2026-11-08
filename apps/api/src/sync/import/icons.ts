@@ -13,9 +13,7 @@ export async function storeIcons(db: D1Database, repo: Repo, icons: { areaId: nu
     if (!type) continue
     const name = `${entry.sha}.${extension}`
     if (!stored.has(name) && !(await env.FILES.head(`icons/${name}`)))
-      await env.FILES.put(`icons/${name}`, await readRawBlob(repo, entry.sha), {
-        httpMetadata: { contentType: type },
-      })
+      await putOnce(`icons/${name}`, await readRawBlob(repo, entry.sha), type)
     stored.add(name)
     updates.push(
       db.prepare("UPDATE area SET icon = ?, icon_sha = ? WHERE id = ?").bind(name, entry.sha, areaId),
