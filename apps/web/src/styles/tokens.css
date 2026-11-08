@@ -31,13 +31,13 @@
   --well: light-dark(#edf0f2, #22272c);
   --ink: light-dark(#12161b, #e9ecef);
   --ink-soft: light-dark(#3c4550, #b9c0c7);
-  --ink-muted: light-dark(#69737e, #87909a);
-  --accent: light-dark(#cf4f0e, #ff8b52);
+  --ink-muted: light-dark(#5c6570, #9aa3ad);
+  --accent: light-dark(#b8430a, #ff8b52);
   --accent-ink: light-dark(#ffffff, #1a0d05);
   --beak: light-dark(#f0a315, #ffbe3d);
-  --done: light-dark(#2f8a57, #67cf95);
-  --caution: light-dark(#a86d0a, #f0b44c);
-  --danger: light-dark(#c23a2b, #ff8f80);
+  --done: light-dark(#23794a, #67cf95);
+  --caution: light-dark(#8f5c06, #f0b44c);
+  --danger: light-dark(#b8352a, #ff8f80);
   --hairline: color-mix(in oklab, var(--ink) 9%, transparent);
   --glass: color-mix(in oklab, var(--canvas) 72%, transparent);
   --scrim: light-dark(rgb(18 22 27 / 0.28), rgb(0 0 0 / 0.6));
