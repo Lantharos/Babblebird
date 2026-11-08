@@ -2,22 +2,8 @@ export const palette = {
   coral: "#ff5f45",
   cream: "#fff7f2",
   peach: "#ffbf9f",
-  light: {
-    ink: "#12161b",
-    soft: "#3c4550",
-    canvas: "#f7f8f9",
-    raised: "#ffffff",
-    bird: "#e8611c",
-    beak: "#f0a315",
-  },
-  dark: {
-    ink: "#e9ecef",
-    soft: "#b9c0c7",
-    canvas: "#101316",
-    raised: "#171b1f",
-    bird: "#ff8b52",
-    beak: "#ffbe3d",
-  },
+  light: { ink: "#12161b", bird: "#ff5f45", beak: "#bf3a22" },
+  dark: { ink: "#e9ecef", bird: "#ff5f45", beak: "#ffbf9f" },
 }
 
 export type Scheme = "light" | "dark"

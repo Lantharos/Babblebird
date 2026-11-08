@@ -4,7 +4,7 @@ const light = {
   ink: "#12161b",
   inkSoft: "#3c4550",
   inkMuted: "#5c6570",
-  accent: "#b8430a",
+  accent: "#bc3f17",
   accentInk: "#ffffff",
 }
 
@@ -14,7 +14,7 @@ const dark: typeof light = {
   ink: "#e9ecef",
   inkSoft: "#b9c0c7",
   inkMuted: "#9aa3ad",
-  accent: "#ff8b52",
+  accent: "#ff865a",
   accentInk: "#1a0d05",
 }
 

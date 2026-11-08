@@ -7,8 +7,10 @@ const drawing = source.match(/<svg viewBox="0 0 200 200"[^>]*>([\s\S]*?)<\/svg>/
 function colors(scheme: Scheme) {
   const pick = (light: string, dark: string) => (scheme === "light" ? light : dark)
   const tokens: Record<string, string> = { beak: palette[scheme].beak }
-  for (const [, name, light, dark] of source.matchAll(/--(puff[\w-]*): light-dark\((#\w+), (#\w+)\)/g)) {
-    tokens[name!] = pick(light!, dark!)
+  for (const [, name, light, dark, both] of source.matchAll(
+    /--(puff[\w-]*): (?:light-dark\((#\w+), (#\w+)\)|(#\w+))/g,
+  )) {
+    tokens[name!] = both ?? pick(light!, dark!)
   }
   return tokens
 }

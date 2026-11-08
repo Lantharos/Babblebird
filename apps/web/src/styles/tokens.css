@@ -32,10 +32,10 @@
   --ink: light-dark(#12161b, #e9ecef);
   --ink-soft: light-dark(#3c4550, #b9c0c7);
   --ink-muted: light-dark(#5c6570, #9aa3ad);
-  --accent: light-dark(#b8430a, #ff8b52);
+  --accent: light-dark(#bc3f17, #ff865a);
   --accent-ink: light-dark(#ffffff, #1a0d05);
-  --beak: light-dark(#f0a315, #ffbe3d);
-  --accent-bird: light-dark(#e8611c, #ff8b52);
+  --beak: light-dark(#bf3a22, #ffbf9f);
+  --accent-bird: #ff5f45;
   --done: light-dark(#23794a, #67cf95);
   --caution: light-dark(#8f5c06, #f0b44c);
   --danger: light-dark(#b8352a, #ff8f80);

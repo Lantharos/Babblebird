@@ -12,11 +12,10 @@ export const file = (name: string) => `/brand/babblebird-${name}`
 export type Colour = { name: string; use: string; hex: string; dark?: string }
 
 export const COLOURS: Colour[] = [
-  { name: "Coral", use: "The app icon’s tile", hex: "#ff5f45" },
-  { name: "Cream", use: "The bird on the app icon", hex: "#fff7f2" },
-  { name: "Peach", use: "The beak on the app icon", hex: "#ffbf9f" },
-  { name: "Bird", use: "The bird on its own", hex: "#e8611c", dark: "#ff8b52" },
-  { name: "Beak", use: "Its beak and feet", hex: "#f0a315", dark: "#ffbe3d" },
+  { name: "Coral", use: "The icon’s tile and the bird", hex: "#ff5f45" },
+  { name: "Cream", use: "The bird on the icon", hex: "#fff7f2" },
+  { name: "Peach", use: "The beak on the icon and on dark backgrounds", hex: "#ffbf9f" },
+  { name: "Deep coral", use: "The beak on light backgrounds", hex: "#bf3a22" },
   { name: "Ink", use: "Text and the wordmark", hex: "#12161b", dark: "#e9ecef" },
   { name: "Paper", use: "Backgrounds", hex: "#f7f8f9", dark: "#101316" },
 ]
@@ -29,5 +28,5 @@ export const BADGES: { kind: BadgeKind; label: string; alt: string }[] = [
   { kind: "compact", label: "Compact", alt: "Babblebird" },
 ]
 
-export const badgeUrl = (kind: BadgeKind, scheme: Scheme, origin = "") =>
-  `${origin}/api/badge/${kind}.svg${scheme === "dark" ? "?theme=dark" : ""}`
+export const badgeUrl = (kind: BadgeKind, scheme: Scheme) =>
+  `${SITE}/api/badge/${kind}.svg${scheme === "dark" ? "?theme=dark" : ""}`

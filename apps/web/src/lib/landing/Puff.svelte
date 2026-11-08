@@ -48,11 +48,11 @@
 
 <style>
   .puff {
-    --puff: light-dark(#e8611c, #ff8b52);
-    --puff-belly: light-dark(#ffe2cf, #ffd9c2);
-    --puff-wing: light-dark(#c9500f, #e86f33);
-    --puff-jaw: light-dark(#c98208, #e0a234);
-    --puff-cheek: light-dark(#f6a58c, #ff9a86);
+    --puff: #ff5f45;
+    --puff-belly: light-dark(#ffe6da, #ffdccc);
+    --puff-wing: light-dark(#e8432b, #f04f36);
+    --puff-jaw: light-dark(#962b17, #f29b7a);
+    --puff-cheek: light-dark(#ff9a8a, #ffa494);
   }
 
   .tail {

@@ -25,8 +25,8 @@
       .replace(/\/+$/, ""),
   )
   const link = $derived(slug ? `${SITE}/p/${slug}` : SITE)
-  const light = $derived(badgeUrl(kind, "light", SITE))
-  const dark = $derived(badgeUrl(kind, "dark", SITE))
+  const light = $derived(badgeUrl(kind, "light"))
+  const dark = $derived(badgeUrl(kind, "dark"))
 
   const snippet = $derived.by(() => {
     const image = look === "dark" ? dark : light
