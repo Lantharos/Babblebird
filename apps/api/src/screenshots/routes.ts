@@ -4,6 +4,7 @@ import { Hono } from "hono"
 import { z } from "zod"
 import { db, schema } from "../db/core.ts"
 import { all, eachRow, first, runAll, shard } from "../db/strings.ts"
+import { putOnce } from "../lib/files.ts"
 import { fail } from "../lib/http.ts"
 import { imageSize } from "./images.ts"
 import { verifyWorkflow } from "./oidc.ts"
@@ -80,7 +81,7 @@ screenshotRoutes.post("/:owner/:name/screenshots", async (c) => {
     if (!size) fail(422, `${shot.file} isn't a PNG or WebP image`)
     const image = `${await sha256(bytes)}.${size.extension}`
     if (!(await env.FILES.head(`screenshots/${image}`)))
-      await env.FILES.put(`screenshots/${image}`, bytes, { httpMetadata: { contentType: size.type } })
+      await putOnce(`screenshots/${image}`, bytes, size.type)
     const row = await first<{ id: number }>(
       strings
         .prepare(

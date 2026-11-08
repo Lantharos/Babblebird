@@ -16,6 +16,7 @@ import { projectRoutes } from "./projects/routes.ts"
 import { screenshotRoutes } from "./screenshots/routes.ts"
 import { consumeSync } from "./sync/consumer.ts"
 import type { SyncJob } from "./sync/jobs.ts"
+import { retryFailed } from "./sync/retry.ts"
 
 const app = new Hono().basePath("/api")
 
@@ -51,5 +52,7 @@ export default {
     if (batch.queue === "babblebird-sync") await consumeSync(batch as MessageBatch<SyncJob>)
     else for (const message of (batch as MessageBatch<DeliverJob>).messages) await deliver(message.body)
   },
-  scheduled: () => queueDeliveries(),
+  async scheduled() {
+    await Promise.all([queueDeliveries(), retryFailed()])
+  },
 } satisfies ExportedHandler<Env, SyncJob | DeliverJob>
