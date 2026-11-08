@@ -6,6 +6,9 @@ import { type DeliverJob, deliver, queueDeliveries } from "./deliver/deliver.ts"
 import { editorRoutes } from "./editor/routes.ts"
 import { fileRoutes } from "./files/routes.ts"
 import { githubRoutes } from "./github/routes.ts"
+import { deliverPending } from "./inbox/deliver.ts"
+import { backOffice, publishDefinitions } from "./inbox/pult.ts"
+import { receiveMail } from "./inbox/receive.ts"
 import { errorResponse, fail } from "./lib/http.ts"
 import { meRoutes } from "./me/routes.ts"
 import { glossaryRoutes } from "./projects/glossary.ts"
@@ -33,6 +36,11 @@ app.use(async (_, next) => {
   await next()
 })
 
+app.post("/ops", (c) => {
+  const office = backOffice()
+  if (!office) fail(404, "Not found")
+  return office.handle(c.req.raw, c.executionCtx)
+})
 app.route("/auth", authRoutes)
 app.route("/badge", badgeRoutes)
 app.route("/github", githubRoutes)
@@ -55,6 +63,13 @@ export default {
     else for (const message of (batch as MessageBatch<DeliverJob>).messages) await deliver(message.body)
   },
   async scheduled() {
-    await Promise.all([queueDeliveries(), rescanStale()])
+    const office = backOffice()
+    await Promise.all([
+      queueDeliveries(),
+      rescanStale(),
+      publishDefinitions(),
+      office && deliverPending(office.pult),
+    ])
   },
+  email: receiveMail,
 } satisfies ExportedHandler<Env, SyncJob | DeliverJob>

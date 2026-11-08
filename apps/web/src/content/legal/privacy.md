@@ -32,6 +32,10 @@ Babblebird sets two cookies when you sign in: one that keeps you signed in and o
 
 Your browser also remembers your colour scheme and the last language you browsed, on your device only.
 
+## Writing to Babblebird
+
+Email you send to one of Babblebird's addresses is kept with its attachments so it can be read and answered, in Lantharos' own support tool. It's checked for spam, and kept for as long as the conversation needs, or until you ask for it to be deleted.
+
 ## Logs
 
 Like any website, Babblebird's servers log requests and errors so they can be kept running. These logs can include your IP address and browser, are kept for up to a week and are only read to fix problems. Your IP address is also used, without being stored, to limit how often someone can try to sign in.

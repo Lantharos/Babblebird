@@ -36,7 +36,18 @@ The API Worker needs these secrets, set with `bunx wrangler secret put <name>` i
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | The GitHub App's client ID and secret, used for signing in with GitHub and for the app's own tokens |
 | `GITHUB_APP_PRIVATE_KEY`                   | The GitHub App's private key, as downloaded                                                         |
 | `GITHUB_WEBHOOK_SECRET`                    | The GitHub App's webhook secret                                                                     |
+| `PULT_KEY`                                 | The key of the Pult environment that receives Babblebird's mail; without it mail is only stored     |
 
 `bun scripts/github-app.ts` in `apps/api` creates the GitHub App from `scripts/github-app.json` and stores its four secrets in the Worker: open the page it prints, confirm on GitHub, and it does the rest.
 
 Sign-in codes are sent with Cloudflare's Email Service from `no-reply@babblebird.dev`, which needs the domain set up for sending in the dashboard.
+
+Adding the app asks GitHub to authorize the person installing it too, so they arrive signed in. The app's first callback URL must be `/api/auth/github/installed`, with "Request user authorization (OAuth) during installation" ticked; `/api/auth/callback/github` stays as the second for ordinary sign-ins.
+
+## Email
+
+Mail to `hello@`, `privacy@` and `security@babblebird.dev` reaches the API Worker through Cloudflare Email Routing, with a rule per address plus one for `no-reply@`, and the catch-all sent to the Worker too. Plus-addressing (subaddressing) is on in Email Routing's settings so replies to `hello+<item>@` find their conversation. Mail to `no-reply@` and to anyone else is refused with a note saying where to write instead.
+
+Each new conversation becomes an item in the `mail` inbox of the Pult project `babblebird`, tagged with its address, with the original message and attachments as files; the raw message is kept in R2 under `mail/`. Replies written in Pult go out from the address the mail came to, and answers thread back onto the same item. Mail failing its sender's DMARC policy is refused, mail failing SPF without DKIM is only kept in `mail/quarantine/`, and one sender can send ten messages a minute. If Pult can't be reached, the message waits and goes on the next scheduled run.
+
+`pult build` in `apps/api` turns the inbox definitions in `src/inbox/define` into `.pult/`, which is committed; the Worker publishes them to Pult when they change.
