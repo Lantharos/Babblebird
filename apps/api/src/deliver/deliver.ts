@@ -1,9 +1,10 @@
 import { env } from "cloudflare:workers"
-import { and, eq, ne } from "drizzle-orm"
+import { and, eq, isNull, ne } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { all, shard } from "../db/strings.ts"
 import { GitHubError } from "../github/api.ts"
 import { type Repo, readPaths } from "../github/repo.ts"
+import { deliveriesOn, reportFailure } from "../ops/events.ts"
 import { repoOf } from "../sync/area.ts"
 import { buildFile, pathOf, pendingFiles, translators } from "./files.ts"
 import { BRANCH, closePull, commitFiles, headOf, mergeWhenReady, moveBranch, openPull } from "./git.ts"
@@ -52,7 +53,8 @@ async function sameAsSent(repo: Repo, branchSha: string | null, built: { path: s
 
 export async function deliver({ projectId }: DeliverJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, projectId) })
-  if (!project || project.delivery === "off" || project.state === "removed") return
+  if (!project || project.delivery === "off" || project.state === "removed" || project.pausedAt) return
+  if (!(await deliveriesOn())) return
   const strings = shard(project)
   const files = await pendingFiles(strings, project.id)
   const previous = await db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) })
@@ -63,9 +65,9 @@ export async function deliver({ projectId }: DeliverJob) {
   }
   const newest = Math.max(...files.map((file) => file.changed))
   if (previous?.closedAt && newest <= previous.closedAt.getTime()) return
-  const repo = await repoOf(project)
   const sentAt = previous?.sentAt?.getTime() ?? 0
   try {
+    const repo = await repoOf(project)
     const head = await headOf(repo, project.defaultBranch)
     if (!head) throw new GitHubError(404, project.defaultBranch, "")
     if (open && previous?.baseSha === head && newest <= sentAt) return
@@ -109,15 +111,24 @@ export async function deliver({ projectId }: DeliverJob) {
     if (await mergeWhenReady(repo, pull, message)) await recordDelivery(project.id, { mergedAt: new Date() })
   } catch (error) {
     console.error(error)
-    await recordDelivery(project.id, { problem: explain(error) })
+    const problem = explain(error)
+    await recordDelivery(project.id, { problem })
+    reportFailure({ kind: "delivery", projectId: project.id, problem, error })
   }
 }
 
 export async function queueDeliveries() {
+  if (!(await deliveriesOn())) return
   const sending = await db
     .select({ id: schema.project.id, shard: schema.project.shard })
     .from(schema.project)
-    .where(and(ne(schema.project.delivery, "off"), ne(schema.project.state, "removed")))
+    .where(
+      and(
+        ne(schema.project.delivery, "off"),
+        ne(schema.project.state, "removed"),
+        isNull(schema.project.pausedAt),
+      ),
+    )
   for (const [index, group] of Map.groupBy(sending, (project) => project.shard)) {
     const rows = await all<{ project_id: string }>(
       shard({ shard: index })

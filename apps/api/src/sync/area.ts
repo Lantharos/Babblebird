@@ -16,7 +16,7 @@ export async function repoOf(project: ProjectRow): Promise<Repo> {
   return { owner: project.owner, name: project.name, token: await installationToken(project.installationId) }
 }
 
-async function glossaryOf(strings: D1Database, projectId: string, lang: string) {
+export async function glossaryOf(strings: D1Database, projectId: string, lang: string) {
   return all<GlossaryTerm>(
     strings
       .prepare("SELECT term, translation, note FROM glossary WHERE project_id = ? AND lang = ?")
@@ -26,7 +26,7 @@ async function glossaryOf(strings: D1Database, projectId: string, lang: string) 
 
 export async function syncArea(job: AreaJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, job.projectId) })
-  if (!project || project.state === "removed") return
+  if (!project || project.state === "removed" || project.pausedAt) return
   const strings = shard(project)
   const repo = await repoOf(project)
   const texts = await readBlobs(repo, job.blobs)

@@ -1,58 +1,477 @@
 {
   "project": "babblebird",
-  "environments": [
-    "dev",
-    "prod"
-  ],
+  "environments": ["dev", "prod"],
   "sync": "prod",
   "delivery": {
     "mode": "webhook",
     "path": "/api/ops"
   },
-  "resources": {},
+  "resources": {
+    "installation": {
+      "source": "src/ops/define/installation.ts:10",
+      "label": "Installation",
+      "plural": "Installations",
+      "icon": "building",
+      "searchable": true,
+      "list": {
+        "filters": {
+          "type": "object",
+          "properties": {
+            "suspended": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "related": {
+        "projects": {
+          "resource": "project",
+          "label": "Projects"
+        }
+      },
+      "actions": {
+        "addMissing": {
+          "source": "src/ops/define/installation.ts:34",
+          "label": "Add missing repositories",
+          "description": "Asks GitHub which repositories this installation covers and adds the ones Babblebird doesn't know yet, for when GitHub's notice never arrived.",
+          "danger": "none",
+          "input": null,
+          "preview": false,
+          "automatable": true,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        }
+      }
+    },
+    "project": {
+      "source": "src/ops/define/project.ts:21",
+      "label": "Project",
+      "plural": "Projects",
+      "icon": "git-branch",
+      "searchable": true,
+      "list": {
+        "filters": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": ["scanning", "ready", "empty", "failed", "removed"]
+            },
+            "delivery": {
+              "type": "string",
+              "enum": ["off", "branch", "direct"]
+            },
+            "paused": {
+              "type": "boolean"
+            },
+            "private": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "related": {},
+      "actions": {
+        "resync": {
+          "source": "src/ops/define/project.ts:51",
+          "label": "Read again",
+          "description": "Reads the default branch again, like a push would.",
+          "danger": "none",
+          "input": null,
+          "preview": false,
+          "automatable": true,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "sendNow": {
+          "source": "src/ops/define/project.ts:61",
+          "label": "Send now",
+          "description": "Sends the translations that are waiting now instead of on the next ten-minute run. A pull request the maintainers closed stays closed until there are new translations.",
+          "danger": "none",
+          "input": null,
+          "preview": false,
+          "automatable": true,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "setDelivery": {
+          "source": "src/ops/define/project.ts:72",
+          "label": "Change delivery",
+          "description": "How translations reach the repository. Maintainers can change it back in their settings.",
+          "danger": "confirm",
+          "input": {
+            "type": "object",
+            "properties": {
+              "delivery": {
+                "type": "string",
+                "enum": ["off", "branch", "direct"]
+              }
+            },
+            "required": ["delivery"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "setWhoTranslates": {
+          "source": "src/ops/define/project.ts:87",
+          "label": "Change who translates",
+          "description": "Whether anyone signed in can translate or only the project's members.",
+          "danger": "confirm",
+          "input": {
+            "type": "object",
+            "properties": {
+              "whoTranslates": {
+                "type": "string",
+                "enum": ["anyone", "members"]
+              }
+            },
+            "required": ["whoTranslates"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "removeTranslatorWork": {
+          "source": "src/ops/define/project.ts:102",
+          "label": "Remove someone's work",
+          "description": "Puts back what the repository has for every translation this person last changed in the project that isn't in the repository yet, and deletes their suggestions here. What's already merged stays.",
+          "danger": "reauth",
+          "input": {
+            "type": "object",
+            "properties": {
+              "person": {
+                "type": "string"
+              }
+            },
+            "required": ["person"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": ["person"],
+          "schedule": null
+        },
+        "pause": {
+          "source": "src/ops/define/project.ts:121",
+          "label": "Pause",
+          "description": "Stops reading pushes, sending translations and taking new translations or suggestions. The project stays listed with a note that it's paused.",
+          "danger": "confirm",
+          "input": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "description": "For the record; the maintainers don’t see it"
+              }
+            },
+            "required": ["reason"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "resume": {
+          "source": "src/ops/define/project.ts:134",
+          "label": "Resume",
+          "description": "Lets the project take translations again and reads the repository to catch up.",
+          "danger": "confirm",
+          "input": null,
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "remove": {
+          "source": "src/ops/define/project.ts:145",
+          "label": "Remove",
+          "description": "Takes the project off Babblebird, as if its maintainers removed it. Its translations are kept, and adding the repository on GitHub again brings it back.",
+          "danger": "reauth",
+          "input": null,
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": "removed",
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "restore": {
+          "source": "src/ops/define/project.ts:156",
+          "label": "Bring back",
+          "description": "Puts a removed project back and reads its repository again.",
+          "danger": "confirm",
+          "input": null,
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        }
+      }
+    },
+    "user": {
+      "source": "src/ops/define/user.ts:19",
+      "label": "Person",
+      "plural": "People",
+      "icon": "user",
+      "searchable": true,
+      "list": {
+        "filters": {
+          "type": "object",
+          "properties": {
+            "suspended": {
+              "type": "boolean"
+            },
+            "github": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "related": {},
+      "actions": {
+        "suspend": {
+          "source": "src/ops/define/user.ts:42",
+          "label": "Suspend",
+          "description": "Signs them out everywhere and stops them from signing in, translating or suggesting. Their work stays as it is.",
+          "danger": "reauth",
+          "input": {
+            "type": "object",
+            "properties": {
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "description": "For the record; they don’t see it"
+              }
+            },
+            "required": ["reason"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "reinstate": {
+          "source": "src/ops/define/user.ts:55",
+          "label": "Reinstate",
+          "description": "Lets them sign in and translate again.",
+          "danger": "confirm",
+          "input": null,
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "signOut": {
+          "source": "src/ops/define/user.ts:64",
+          "label": "Sign out everywhere",
+          "description": "Ends every session. A browser they have open keeps working for up to five minutes.",
+          "danger": "confirm",
+          "input": null,
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        },
+        "removeWork": {
+          "source": "src/ops/define/user.ts:71",
+          "label": "Remove their work",
+          "description": "Puts back what the repository has for every translation they last changed that isn't in the repository yet, and deletes their suggestions. What's already merged stays.",
+          "danger": "reauth",
+          "input": {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string"
+              }
+            },
+            "required": ["project"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": ["project"],
+          "schedule": null
+        },
+        "removeFromProject": {
+          "source": "src/ops/define/user.ts:96",
+          "label": "Remove from a project",
+          "description": "Takes away their role in one project. Access that comes from GitHub comes back on its own.",
+          "danger": "confirm",
+          "input": {
+            "type": "object",
+            "properties": {
+              "project": {
+                "type": "string"
+              }
+            },
+            "required": ["project"]
+          },
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": true,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": ["project"],
+          "schedule": null
+        },
+        "delete": {
+          "source": "src/ops/define/user.ts:119",
+          "label": "Delete account",
+          "description": "Deletes the account, its sign-ins, passkeys and memberships. Their translations stay, credited to a translator without a name. To take those out too, remove their work first.",
+          "danger": "reauth",
+          "input": null,
+          "preview": false,
+          "automatable": false,
+          "approval": false,
+          "contextual": false,
+          "background": false,
+          "moves": null,
+          "pick": {},
+          "choices": [],
+          "schedule": null
+        }
+      }
+    }
+  },
   "actions": {},
   "inboxes": {
+    "failures": {
+      "source": "src/ops/define/inboxes.ts:9",
+      "label": "Failures",
+      "icon": "bug",
+      "resource": "project",
+      "layout": "list",
+      "states": ["open", "fixed", "ignored"],
+      "closed": ["fixed", "ignored"],
+      "reopen": ["fixed"],
+      "data": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["sync", "delivery"]
+          },
+          "problem": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "kind", "problem", "detail"]
+      },
+      "columns": ["title", "occurrences", "tags", "lastSeen"],
+      "intake": null,
+      "triage": null,
+      "reply": false,
+      "hooks": {
+        "state": false
+      },
+      "sla": {
+        "open": 86400000
+      }
+    },
     "mail": {
-      "source": "src/inbox/define/mail.ts:12",
+      "source": "src/ops/define/mail.ts:12",
       "label": "Mail",
       "icon": "mail",
       "resource": null,
       "layout": "list",
-      "states": [
-        "open",
-        "handled",
-        "spam"
-      ],
-      "closed": [
-        "handled",
-        "spam"
-      ],
+      "states": ["open", "handled", "spam"],
+      "closed": ["handled", "spam"],
       "reopen": [],
       "data": {
         "type": "object",
         "properties": {
           "mailbox": {
             "type": "string",
-            "enum": [
-              "hello",
-              "privacy",
-              "security"
-            ]
+            "enum": ["hello", "privacy", "security"]
           },
           "from": {
             "type": "string"
           },
           "name": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "replyTo": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           },
           "subject": {
             "type": "string"
@@ -64,20 +483,9 @@
             "type": "string"
           }
         },
-        "required": [
-          "mailbox",
-          "from",
-          "name",
-          "replyTo",
-          "subject",
-          "text",
-          "raw"
-        ]
+        "required": ["mailbox", "from", "name", "replyTo", "subject", "text", "raw"]
       },
-      "columns": [
-        "title",
-        "lastSeen"
-      ],
+      "columns": ["title", "lastSeen"],
       "intake": null,
       "triage": {
         "instructions": "Each item is an email sent to one of babblebird.dev's addresses: hello, privacy or security. Babblebird is a translation platform for open source projects. Privacy requests and security reports matter even when they're badly written; only close what is plainly unsolicited advertising, phishing or spam.",
@@ -107,14 +515,214 @@
       "sla": {
         "open": 172800000
       }
+    },
+    "new-projects": {
+      "source": "src/ops/define/inboxes.ts:42",
+      "label": "New projects",
+      "icon": "rocket",
+      "resource": "project",
+      "layout": "list",
+      "states": ["open", "fine", "removed"],
+      "closed": ["fine", "removed"],
+      "reopen": [],
+      "data": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string"
+          },
+          "account": {
+            "type": "string"
+          },
+          "description": {
+            "type": ["string", "null"]
+          },
+          "private": {
+            "type": "boolean"
+          }
+        },
+        "required": ["project", "account", "description", "private"]
+      },
+      "columns": ["title", "lastSeen"],
+      "intake": null,
+      "triage": {
+        "instructions": "Each item is a GitHub repository whose owner just added Babblebird, a translation platform for open source projects. It shows what Babblebird found in the repository: its description, languages and how many strings it has. Most are real projects. Flag only ones that plainly look like spam, advertising or content that isn't software.",
+        "questions": {
+          "spam": {
+            "type": "noul",
+            "prompt": "Does this repository look like spam, advertising or something other than software?"
+          }
+        },
+        "rules": [
+          {
+            "name": "Flag spam",
+            "live": false,
+            "then": [
+              {
+                "type": "tag",
+                "tag": "suspicious"
+              }
+            ]
+          }
+        ]
+      },
+      "reply": false,
+      "hooks": {
+        "state": false
+      },
+      "sla": {
+        "open": 259200000
+      }
     }
   },
   "views": {},
-  "pages": {},
-  "flags": {},
+  "pages": {
+    "home": {
+      "source": "src/ops/define/pages.ts:14",
+      "label": "Home",
+      "icon": "layout",
+      "params": null,
+      "blocks": [
+        {
+          "type": "columns",
+          "columns": [
+            [
+              {
+                "type": "count",
+                "inbox": "failures",
+                "filter": {
+                  "state": ["open"]
+                },
+                "view": null,
+                "label": "Failures"
+              }
+            ],
+            [
+              {
+                "type": "count",
+                "inbox": "new-projects",
+                "filter": {
+                  "state": ["open"]
+                },
+                "view": null,
+                "label": "New projects"
+              }
+            ],
+            [
+              {
+                "type": "count",
+                "inbox": "mail",
+                "filter": {
+                  "state": ["open"]
+                },
+                "view": null,
+                "label": "Mail"
+              }
+            ]
+          ]
+        },
+        {
+          "type": "columns",
+          "columns": [
+            [
+              {
+                "type": "items",
+                "inbox": "failures",
+                "filter": {
+                  "state": ["open"]
+                },
+                "sort": "-lastSeen",
+                "view": null,
+                "label": "Failures",
+                "limit": 5
+              }
+            ],
+            [
+              {
+                "type": "items",
+                "inbox": "new-projects",
+                "filter": {
+                  "state": ["open"]
+                },
+                "sort": "-lastSeen",
+                "view": null,
+                "label": "New projects",
+                "limit": 5
+              }
+            ]
+          ]
+        },
+        {
+          "type": "items",
+          "inbox": "mail",
+          "filter": {
+            "state": ["open"]
+          },
+          "sort": "-lastSeen",
+          "view": null,
+          "label": "Mail",
+          "limit": 5
+        },
+        {
+          "type": "columns",
+          "columns": [
+            [
+              {
+                "type": "flag",
+                "flag": "deliveries"
+              }
+            ],
+            [
+              {
+                "type": "flag",
+                "flag": "new-accounts"
+              }
+            ]
+          ]
+        }
+      ]
+    },
+    "overview": {
+      "source": "src/ops/define/pages.ts:28",
+      "label": "Overview",
+      "icon": "gauge",
+      "params": null,
+      "blocks": null
+    }
+  },
+  "flags": {
+    "deliveries": {
+      "source": "src/ops/define/flags.ts:3",
+      "label": "Deliveries",
+      "description": "Sends translations back to GitHub. Turn it off to hold every pull request and commit; what's waiting goes out once it's back on.",
+      "value": {
+        "type": "boolean"
+      },
+      "default": true,
+      "target": null,
+      "attributes": null,
+      "guards": [],
+      "danger": "confirm",
+      "approval": false
+    },
+    "new-accounts": {
+      "source": "src/ops/define/flags.ts:11",
+      "label": "New accounts",
+      "description": "Lets people make a Babblebird account. Turn it off during a wave of spam sign-ups; everyone who has an account can still sign in.",
+      "value": {
+        "type": "boolean"
+      },
+      "default": true,
+      "target": null,
+      "attributes": null,
+      "guards": [],
+      "danger": "confirm",
+      "approval": false
+    }
+  },
   "roles": {},
   "spaces": [],
   "notify": {},
   "status": null,
-  "version": "d99e898167a2"
+  "version": "b354d242ce4c"
 }

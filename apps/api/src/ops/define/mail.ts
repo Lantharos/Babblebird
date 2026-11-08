@@ -1,8 +1,8 @@
 import { b, inbox, noul, setState, triage } from "@lantharos/pult"
 import { z } from "zod"
-import { addressOf, MAILBOXES } from "../addresses.ts"
-import { sendReply } from "../reply.ts"
-import { attachmentsOf, readStored } from "../stored.ts"
+import { addressOf, MAILBOXES } from "../../inbox/addresses.ts"
+import { sendReply } from "../../inbox/reply.ts"
+import { attachmentsOf, readStored } from "../../inbox/stored.ts"
 
 const INSTRUCTIONS =
   "Each item is an email sent to one of babblebird.dev's addresses: hello, privacy or security. " +

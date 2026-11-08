@@ -2,11 +2,14 @@ import { env } from "cloudflare:workers"
 import { passkey } from "@better-auth/passkey"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { APIError } from "better-auth/api"
 import { emailOTP } from "better-auth/plugins"
 import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { CODE_MINUTES, signInCode } from "../mail/codes.ts"
 import { queueNotice } from "../mail/send.ts"
+import { isSuspended, SUSPENDED } from "../moderation/accounts.ts"
+import { takingNewAccounts } from "../ops/events.ts"
 import { claimInvitations } from "../projects/invitations.ts"
 import { installFlow } from "./install.ts"
 
@@ -37,7 +40,22 @@ export const auth = betterAuth({
   account: { accountLinking: { enabled: true, trustedProviders: ["github"], allowDifferentEmails: true } },
   user: { deleteUser: { enabled: true } },
   databaseHooks: {
-    user: { create: { after: (user) => claimInvitations(user.id, [user.email]) } },
+    user: {
+      create: {
+        before: async () => {
+          if (!(await takingNewAccounts()))
+            throw new APIError("FORBIDDEN", { message: "Babblebird isn't taking new accounts right now" })
+        },
+        after: (user) => claimInvitations(user.id, [user.email]),
+      },
+    },
+    session: {
+      create: {
+        before: async (session) => {
+          if (await isSuspended(session.userId)) throw new APIError("FORBIDDEN", { message: SUSPENDED })
+        },
+      },
+    },
     account: {
       create: { after: rememberGitHub },
       update: { after: (account) => rememberGitHub(account as never) },

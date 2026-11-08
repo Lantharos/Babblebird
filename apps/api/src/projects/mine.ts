@@ -3,7 +3,7 @@ import { and, eq, inArray, ne, or } from "drizzle-orm"
 import { Hono } from "hono"
 import { type SignedInVars, signedIn } from "../auth/session.ts"
 import { db, schema } from "../db/core.ts"
-import { all, shard } from "../db/strings.ts"
+import { all, shard, shardsInUse } from "../db/strings.ts"
 import { userInstallations } from "../github/user.ts"
 import { fail } from "../lib/http.ts"
 import { visibleProject } from "./access.ts"
@@ -57,12 +57,11 @@ mineRoutes.get("/me/projects", signedIn, async (c) => {
 
 mineRoutes.get("/me/work", signedIn, async (c) => {
   const viewer = c.get("viewer")
-  const shards = new Set(
-    (await db.select({ shard: schema.project.shard }).from(schema.project)).map((row) => row.shard),
-  )
   const rows = (
     await Promise.all(
-      [...shards].map((index) =>
+      (
+        await shardsInUse()
+      ).map((index) =>
         all<{ project_id: string; lang: string; key: string | null; kind: string; at: number }>(
           shard({ shard: index })
             .prepare(

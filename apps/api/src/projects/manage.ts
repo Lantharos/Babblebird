@@ -3,11 +3,10 @@ import { Hono } from "hono"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { db, schema } from "../db/core.ts"
 import { all, shard } from "../db/strings.ts"
-import { github } from "../github/api.ts"
 import { installationToken } from "../github/app.ts"
 import { fail } from "../lib/http.ts"
-import { scan } from "../sync/jobs.ts"
-import { abilitiesOf, visibleProject } from "./access.ts"
+import { scanHead } from "../sync/head.ts"
+import { abilitiesOf, PAUSED, visibleProject } from "./access.ts"
 
 export const manageRoutes = new Hono<ViewerVars>()
 manageRoutes.use(maybeSignedIn)
@@ -23,14 +22,11 @@ async function asAdmin(owner: string, name: string, viewer: ViewerVars["Variable
 
 manageRoutes.post("/:owner/:name/sync", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const token = await installationToken(project.installationId).catch(() =>
+  if (project.pausedAt) fail(409, PAUSED)
+  await installationToken(project.installationId).catch(() =>
     fail(409, "Babblebird isn't installed on this repository any more. Add it on GitHub again to reconnect."),
   )
-  const branch = await github<{ commit: { sha: string } }>(
-    `/repos/${project.owner}/${project.name}/branches/${encodeURIComponent(project.defaultBranch)}`,
-    { token },
-  )
-  await scan(project.id, branch.commit.sha, { reason: "manual", by: c.get("viewer")?.name ?? null })
+  await scanHead(project, { reason: "manual", by: c.get("viewer")?.name ?? null })
   return c.body(null, 202)
 })
 

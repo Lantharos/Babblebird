@@ -64,6 +64,7 @@ export interface Project extends Omit<ProjectSummary, "languages" | "progress"> 
   sourceLang: string
   languages: LanguageProgress[]
   problem: string | null
+  paused: boolean
   syncedAt: number | null
   headSha: string | null
   delivery: Delivery

@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm"
+import { eq, inArray, sql } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
 import { randomId } from "../../lib/ids.ts"
 import { scan } from "../../sync/jobs.ts"
@@ -43,6 +43,32 @@ export async function addRepositories(installationId: number, repos: { full_name
       .returning({ id: schema.project.id })
     if (branch) await scan(saved!.id, branch.commit.sha, { reason: "install" })
   }
+}
+
+export async function missingRepositories(installationId: number) {
+  const token = await installationToken(installationId)
+  const listed: { id: number; full_name: string }[] = []
+  for (let page = 1; ; page++) {
+    const found = await github<{ repositories: { id: number; full_name: string }[] }>(
+      `/installation/repositories?per_page=100&page=${page}`,
+      { token },
+    )
+    listed.push(...found.repositories)
+    if (found.repositories.length < 100) break
+  }
+  const known = new Set(
+    (
+      await db
+        .select({ repoId: schema.project.repoId })
+        .from(schema.project)
+        .where(
+          sql`${schema.project.repoId} IN (SELECT value FROM json_each(${JSON.stringify(listed.map((repo) => repo.id))}))`,
+        )
+    ).map((row) => row.repoId),
+  )
+  const missing = listed.filter((repo) => !known.has(repo.id))
+  await addRepositories(installationId, missing)
+  return missing.map((repo) => repo.full_name)
 }
 
 export async function removeRepositories(repoIds: number[]) {

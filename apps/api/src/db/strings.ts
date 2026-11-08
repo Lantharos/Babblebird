@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers"
+import { db, schema } from "./core.ts"
 
 const JSON_CHUNK = 400_000
 const STATEMENTS_PER_BATCH = 40
@@ -13,6 +14,11 @@ export function counted<T extends { meta: D1Meta }>(result: T) {
 
 export function shard(project: { shard: number }) {
   return (env as unknown as Record<string, D1Database>)[`STRINGS_${project.shard}`]!
+}
+
+export async function shardsInUse() {
+  const rows = await db.selectDistinct({ shard: schema.project.shard }).from(schema.project)
+  return rows.map((row) => row.shard)
 }
 
 export function rowsAsJson(rows: unknown[][]) {

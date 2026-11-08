@@ -32,7 +32,7 @@ const BLOBS_PER_JOB = 400
 
 export type SyncReason = "install" | "push" | "manual" | "automatic"
 
-interface ScanOptions {
+export interface ScanOptions {
   reason: SyncReason
   credit?: string | null
   message?: string | null

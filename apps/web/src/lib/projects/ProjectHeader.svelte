@@ -26,7 +26,9 @@
   </div>
 </div>
 {#if project.description}<p class="mt-4 max-w-2xl text-[17px] text-ink-soft">{project.description}</p>{/if}
-{#if project.importing}
+{#if project.paused}
+  <p class="mt-4 text-[15px] text-caution">Babblebird has paused this project for now, so it can’t be translated or synced. Write to hello@babblebird.dev if you think that’s a mistake.</p>
+{:else if project.importing}
   <a href="/p/{project.slug}/import" class="mt-6 block max-w-md"><Importing importing={project.importing} /></a>
 {:else if project.state === "failed" && project.problem && project.can.admin}
   <p class="mt-4 text-[15px] text-danger">The last sync didn’t work: {project.problem}</p>

@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers"
 import { createPult, type Pult } from "@lantharos/pult"
 import project from "../../.pult/index.ts"
-import { deliverPending } from "./deliver.ts"
+import { deliverPending } from "./pending.ts"
 
 interface BackOffice {
   pult: Pult

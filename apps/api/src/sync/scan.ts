@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { all, eachRow, runAll, shard } from "../db/strings.ts"
 import { readBlobs, readTree, type TreeEntry } from "../github/repo.ts"
+import { reportFailure } from "../ops/events.ts"
 import { recountArea } from "./apply/progress.ts"
 import { repoOf } from "./area.ts"
 import { importGlossaries } from "./import/glossary.ts"
@@ -60,7 +61,7 @@ function changedBlobs(
 
 export async function scanProject(job: ScanJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, job.projectId) })
-  if (!project || project.state === "removed") return
+  if (!project || project.state === "removed" || project.pausedAt) return
   const strings = shard(project)
   const repo = await repoOf(project)
   try {
@@ -157,10 +158,9 @@ export async function scanProject(job: ScanJob) {
       })
       .where(eq(schema.project.id, project.id))
   } catch (error) {
-    await db
-      .update(schema.project)
-      .set({ state: "failed", problem: (error as Error).message })
-      .where(eq(schema.project.id, project.id))
+    const problem = (error as Error).message
+    await db.update(schema.project).set({ state: "failed", problem }).where(eq(schema.project.id, project.id))
+    reportFailure({ kind: "sync", projectId: project.id, problem, error })
     throw error
   }
 }

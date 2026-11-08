@@ -61,6 +61,7 @@ projectRoutes.get("/:owner/:name", async (c) => {
     sourceLang: project.sourceLang,
     languages,
     problem: project.problem,
+    paused: project.pausedAt !== null,
     syncedAt: project.syncedAt?.getTime() ?? null,
     headSha: project.headSha,
     delivery: project.delivery,

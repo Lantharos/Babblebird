@@ -1,11 +1,9 @@
 import type { Pult } from "@lantharos/pult"
-import { and, eq, isNull, lt } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
+import { mail as mailInbox } from "../ops/define/mail.ts"
 import type { Mailbox } from "./addresses.ts"
-import { mail as mailInbox } from "./define/mail.ts"
 import { attachmentsOf, readStored } from "./stored.ts"
-
-const MAIL_SETTLES_MS = 5 * 60_000
 
 export type MailRow = typeof schema.mail.$inferSelect
 
@@ -43,18 +41,4 @@ export async function deliverMail(pult: Pult, row: MailRow, given?: Stored) {
     },
   })
   await deliveredTo(row, sent.id)
-}
-
-export async function deliverPending(pult: Pult) {
-  const waiting = await db
-    .select()
-    .from(schema.mail)
-    .where(
-      and(
-        eq(schema.mail.direction, "in"),
-        isNull(schema.mail.pultItem),
-        lt(schema.mail.createdAt, new Date(Date.now() - MAIL_SETTLES_MS)),
-      ),
-    )
-  await Promise.all(waiting.map((row) => deliverMail(pult, row)))
 }

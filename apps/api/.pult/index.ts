@@ -5,7 +5,13 @@ import manifest from "./manifest.json" with { type: "json" }
 const project: Project<never> = {
   manifest: manifest as Manifest<never>,
   modules: {
-    "src/inbox/define/mail.ts": () => import("../src/inbox/define/mail.ts"),
+    "src/ops/define/flags.ts": () => import("../src/ops/define/flags.ts"),
+    "src/ops/define/inboxes.ts": () => import("../src/ops/define/inboxes.ts"),
+    "src/ops/define/installation.ts": () => import("../src/ops/define/installation.ts"),
+    "src/ops/define/mail.ts": () => import("../src/ops/define/mail.ts"),
+    "src/ops/define/pages.ts": () => import("../src/ops/define/pages.ts"),
+    "src/ops/define/project.ts": () => import("../src/ops/define/project.ts"),
+    "src/ops/define/user.ts": () => import("../src/ops/define/user.ts"),
   },
 }
 

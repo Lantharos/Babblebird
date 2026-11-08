@@ -44,7 +44,13 @@ export function pushCredit(commits: PushCommit[]) {
 export async function handlePush(push: Push) {
   if (push.deleted) return
   const project = await db.query.project.findFirst({ where: eq(schema.project.repoId, push.repository.id) })
-  if (!project || project.state === "removed" || push.ref !== `refs/heads/${project.defaultBranch}`) return
+  if (
+    !project ||
+    project.state === "removed" ||
+    project.pausedAt ||
+    push.ref !== `refs/heads/${project.defaultBranch}`
+  )
+    return
   const truncated = push.size !== undefined && push.size > push.commits.length
   const relevant =
     truncated ||

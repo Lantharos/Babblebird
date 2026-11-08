@@ -8,6 +8,8 @@ import { fail } from "../lib/http.ts"
 
 export type MemberRow = typeof schema.member.$inferSelect
 
+export const PAUSED = "Babblebird has paused this project for now, so it can't take translations"
+
 const RECHECK_MS = 6 * 60 * 60_000
 const WRITE = new Set(["admin", "maintain", "write"])
 
@@ -74,6 +76,7 @@ export function abilitiesOf(
   area?: string,
 ): Abilities {
   const admin = member?.role === "admin"
+  if (project.pausedAt) return { admin, review: false, translate: false }
   const scoped = !!member && covers(member.languages, lang) && covers(member.areas, area)
   const review = admin || (member?.role === "reviewer" && scoped)
   const translate =

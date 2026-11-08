@@ -11,7 +11,7 @@ import { z } from "zod"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { all, first, shard } from "../db/strings.ts"
 import { fail, readBody, readQuery } from "../lib/http.ts"
-import { abilitiesOf, visibleProject } from "../projects/access.ts"
+import { abilitiesOf, PAUSED, visibleProject } from "../projects/access.ts"
 import { recountArea } from "../sync/apply/progress.ts"
 import { contextFor } from "./context.ts"
 import { peopleById, personOf } from "./people.ts"
@@ -105,6 +105,12 @@ async function loadString(
   return { project, member, db, record, can: abilitiesOf(project, viewer, member, language, area?.slug) }
 }
 
+async function loadForWriting(...args: Parameters<typeof loadString>) {
+  const loaded = await loadString(...args)
+  if (loaded.project.pausedAt) fail(409, PAUSED)
+  return loaded
+}
+
 editorRoutes.get("/:owner/:name/strings/:id{\\d+}", async (c) => {
   const { lang: language } = readQuery(c, z.object({ lang }))
   const { project, db, record } = await loadString(c, c.get("viewer"), language)
@@ -120,7 +126,7 @@ editorRoutes.put("/:owner/:name/strings/:id{\\d+}/:lang", async (c) => {
   const viewer = c.get("viewer")
   if (!viewer) fail(401, "Sign in first")
   const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadString(c, viewer, language)
+  const { project, db, record, can } = await loadForWriting(c, viewer, language)
   if (language === project.sourceLang) fail(403, "The source language changes in the repository")
   const { body, approve } = await readBody(c, saving)
   if (!can.translate) fail(403, "You can suggest a translation here, but not save one")
@@ -150,7 +156,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/approve", async (c) => 
   const viewer = c.get("viewer")
   if (!viewer) fail(401, "Sign in first")
   const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadString(c, viewer, language)
+  const { project, db, record, can } = await loadForWriting(c, viewer, language)
   if (!can.review) fail(403, "Only reviewers of this language can approve")
   if (record.t_body === null) fail(409, "There's nothing to approve yet")
   const problems = await checkTranslation(db, { project, record, lang: language, body: record.t_body })
@@ -174,7 +180,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions", async (c)
   const viewer = c.get("viewer")
   if (!viewer) fail(401, "Sign in first")
   const language = lang.parse(c.req.param("lang"))
-  const { project, db, record } = await loadString(c, viewer, language)
+  const { project, db, record } = await loadForWriting(c, viewer, language)
   const { body } = await readBody(c, saving)
   const problems = await checkTranslation(db, { project, record, lang: language, body })
   if (problems.some((problem) => problem.severity === "error"))
@@ -192,7 +198,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions/:suggestion
   const viewer = c.get("viewer")
   if (!viewer) fail(401, "Sign in first")
   const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadString(c, viewer, language)
+  const { project, db, record, can } = await loadForWriting(c, viewer, language)
   if (!can.translate) fail(403, "You can't accept suggestions here")
   const suggestion = await first<{ body: string }>(
     db
