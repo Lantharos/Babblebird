@@ -35,7 +35,7 @@ The first import also reads `git blame` for every translation file, so each tran
 
 ## Areas
 
-Locale files are found at `**/locales/<lang>/*.ftl`. Files belong to the nearest folder above them with a `Sabine.toml` or `extension.toml`, which gives the area its name and icon. Other folders become one area if they have one file, or one area per file if they have several, the way Kestrel's `desktop.ftl`, `surfaces.ftl` and so on each become their own area. `babblebird.toml` can name, group or skip anything; see [repositories](repositories.md).
+Locale files are found at `**/locales/<lang>/*.ftl`. Files belong to the nearest folder above them with a `Sabine.toml` or `extension.toml`, which gives the area its name and icon. Other folders become one area if they have one file, or one area per file if they have several, the way Kestrel's `desktop.ftl`, `surfaces.ftl` and so on each become their own area. `babblebird.toml` can name, group or skip anything; see [babblebird.toml](https://babblebird.dev/docs/babblebird-toml).
 
 ## Getting started
 
@@ -55,4 +55,6 @@ Earlier translations come from the same text anywhere in the strings database (a
 
 Each project chooses whether translations go back: not at all, through a `babblebird/translations` branch whose pull request merges itself when the checks pass, or straight to the default branch. Every save records the file and language as pending. Every ten minutes the cron builds the changed files from the files at the head of the default branch, changing only the messages that differ so comments and layout stay, and commits them with the Git Data API in one tree and one commit. People who saved translations with a GitHub account are credited as co-authors.
 
-Turning sending on is a deliberate step in the project's status page, since another tool writing the same files would fight with it.
+Every translation row keeps `base`, the value Babblebird last read from the repository. Syncing and sending both merge each message three ways: base, the repository now and the value here. A message changed on one side takes that side; changed differently on both, the repository wins and Babblebird's value becomes a suggestion marked as a conflict. A `pending` file and language stays until the repository holds what was translated here, which is checked by comparing values, so merges, squashes, rebases and force pushes all just work. Renamed messages are matched by their English, moved files by their English file's blob.
+
+Turning sending on is a deliberate step on the project's manage page, since another tool writing the same files would fight with it.

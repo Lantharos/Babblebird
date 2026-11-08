@@ -2,6 +2,7 @@
 @import "./motion.css";
 @import "./tokens.css";
 @import "./fonts.css";
+@import "./prose.css";
 
 @custom-variant dark {
   &:where([data-scheme="dark"], [data-scheme="dark"] *) {
