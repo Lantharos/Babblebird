@@ -9,7 +9,15 @@ export interface AreaBlob {
 }
 
 export type SyncJob =
-  | { kind: "scan"; projectId: string; sha: string; credit: string | null }
+  | {
+      kind: "scan"
+      projectId: string
+      sha: string
+      credit: string | null
+      reason: SyncReason
+      message: string | null
+      by: string | null
+    }
   | {
       kind: "area"
       projectId: string
@@ -22,8 +30,25 @@ export type SyncJob =
 
 const BLOBS_PER_JOB = 400
 
-export function scan(projectId: string, sha: string, credit: string | null = null) {
-  return env.SYNC.send({ kind: "scan", projectId, sha, credit } satisfies SyncJob)
+export type SyncReason = "install" | "push" | "manual" | "automatic"
+
+interface ScanOptions {
+  reason: SyncReason
+  credit?: string | null
+  message?: string | null
+  by?: string | null
+}
+
+export function scan(projectId: string, sha: string, options: ScanOptions) {
+  return env.SYNC.send({
+    kind: "scan",
+    projectId,
+    sha,
+    reason: options.reason,
+    credit: options.credit ?? null,
+    message: options.message ?? null,
+    by: options.by ?? null,
+  } satisfies SyncJob)
 }
 
 export function areaJobs(base: Omit<Extract<SyncJob, { kind: "area" }>, "blobs">, blobs: AreaBlob[]) {

@@ -87,3 +87,16 @@ export interface MissingRow {
   lang: string
   areas: { slug: string; name: string; missing: number; review: number; problems: number }[]
 }
+
+export interface SyncEntry {
+  id: number
+  at: number
+  sha: string
+  reason?: "install" | "push" | "manual" | "automatic"
+  message?: string | null
+  by?: string | null
+  sourceFiles?: number
+  translationFiles?: number
+  languages?: string[]
+  files?: number
+}

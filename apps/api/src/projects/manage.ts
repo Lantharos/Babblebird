@@ -30,7 +30,7 @@ manageRoutes.post("/:owner/:name/sync", async (c) => {
     `/repos/${project.owner}/${project.name}/branches/${encodeURIComponent(project.defaultBranch)}`,
     { token },
   )
-  await scan(project.id, branch.commit.sha)
+  await scan(project.id, branch.commit.sha, { reason: "manual", by: c.get("viewer")?.name ?? null })
   return c.body(null, 202)
 })
 

@@ -13,7 +13,7 @@ async function rescan(project: ProjectRow) {
     `/repos/${project.owner}/${project.name}/branches/${encodeURIComponent(project.defaultBranch)}`,
     { token },
   )
-  await scan(project.id, branch.commit.sha)
+  await scan(project.id, branch.commit.sha, { reason: "automatic" })
 }
 
 export async function rescanStale() {

@@ -41,7 +41,7 @@ export async function addRepositories(installationId: number, repos: { full_name
       .values({ id: randomId(), repoId: repo.id, ...values })
       .onConflictDoUpdate({ target: schema.project.repoId, set: values })
       .returning({ id: schema.project.id })
-    await scan(saved!.id, branch.commit.sha)
+    await scan(saved!.id, branch.commit.sha, { reason: "install" })
   }
 }
 

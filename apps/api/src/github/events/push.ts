@@ -13,6 +13,8 @@ interface PushCommit {
 
 interface Push {
   ref: string
+  pusher?: { name: string }
+  sender?: { login: string }
   after: string
   deleted: boolean
   size?: number
@@ -47,5 +49,12 @@ export async function handlePush(push: Push) {
     push.commits.some((commit) =>
       [...commit.added, ...commit.removed, ...commit.modified].some((path) => RELEVANT.test(path)),
     )
-  if (relevant) await scan(project.id, push.after, pushCredit(push.commits))
+  const head = push.commits.at(-1)
+  if (relevant)
+    await scan(project.id, push.after, {
+      reason: "push",
+      credit: pushCredit(push.commits),
+      message: head?.message.split("\n")[0] ?? null,
+      by: push.sender?.login ?? push.pusher?.name ?? null,
+    })
 }

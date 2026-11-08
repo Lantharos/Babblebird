@@ -115,9 +115,27 @@ export async function scanProject(job: ScanJob) {
         .set({ state: "scanning", importTotal: blobCount, importDone: 0, importStartedAt: new Date() })
         .where(eq(schema.project.id, project.id))
     await sendJobs(jobs)
+    const allBlobs = jobs.flatMap((queued) => (queued.kind === "area" ? queued.blobs : []))
+    const sourceFiles = allBlobs.filter((blob) => blob.lang === config.source).length
+    const translationLangs = [
+      ...new Set(allBlobs.filter((blob) => blob.lang !== config.source).map((blob) => blob.lang)),
+    ]
     await strings
       .prepare("INSERT INTO activity (project_id, kind, detail, at) VALUES (?, 'synced', ?, ?)")
-      .bind(project.id, JSON.stringify({ sha: job.sha, files: blobCount, areas: areas.length }), Date.now())
+      .bind(
+        project.id,
+        JSON.stringify({
+          sha: job.sha,
+          reason: job.reason,
+          message: job.message,
+          by: job.by,
+          sourceFiles,
+          translationFiles: allBlobs.length - sourceFiles,
+          languages: translationLangs,
+          areas: areas.length,
+        }),
+        Date.now(),
+      )
       .run()
     for (const areaId of saved.recount) await recountArea(strings, project.id, areaId, null)
     const languages = [

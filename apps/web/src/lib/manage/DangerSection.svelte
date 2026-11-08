@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Project } from "@babblebird/protocol"
+  import { INSTALL_URL, type Project } from "@babblebird/protocol"
   import { api } from "#lib/api/client.ts"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
@@ -18,19 +18,20 @@
   }
 </script>
 
-<section>
-  <h2 class="text-[22px] font-semibold tracking-[-0.02em]">Remove the project</h2>
-  <p class="mt-2 max-w-xl text-[15px] text-ink-soft">
-    Translators can’t open it any more and nothing is sent to the repository. Adding the repository again on GitHub brings it back.
+<section class="mt-16 border-t border-hairline pt-10 text-[15px] text-ink-soft">
+  <p>
+    If Babblebird was removed from {project.name} on GitHub, <a href={INSTALL_URL} class="link">add it again</a> to reconnect. Translations made here are kept.
   </p>
-  <button type="button" class="button button-danger mt-4" onclick={() => (asking = true)}>Remove {project.name}</button>
+  <p class="mt-3">
+    <button type="button" class="font-medium text-danger hover:underline" onclick={() => (asking = true)}>Remove {project.name} from Babblebird</button>
+  </p>
 </section>
 
 <Dialog bind:open={asking}>
   <div class="p-6">
     <h2 class="text-[20px] font-semibold">Remove {project.owner}/{project.name}?</h2>
     <p class="mt-2 text-[15px] leading-relaxed text-ink-soft">
-      Its translators lose access right away. To stop Babblebird reading the repository too, remove it from the app’s settings on GitHub.
+      Translators lose access right away and nothing more is sent to the repository. To stop Babblebird reading it too, remove the repository from the app’s settings on GitHub.
     </p>
     <div class="mt-6 flex justify-end gap-2">
       <button type="button" class="button button-quiet" data-dismiss onclick={() => (asking = false)}>Keep it</button>
