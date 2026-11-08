@@ -96,7 +96,7 @@
       <section class="mt-20">
         <h2 class="text-[24px] font-semibold tracking-[-0.02em]">Translating</h2>
         {#if session.me?.languages.length}
-          <p class="mt-1 text-[15px] text-ink-soft">Into {session.me.languages.map(nativeName).join(", ")}</p>
+          <p class="mt-1 text-[15px] text-ink-soft">Into {session.me.languages.map(nativeName).join(", ")} · <a href="/settings" class="link">Change</a></p>
         {/if}
         <ul class="mt-6 flex flex-wrap gap-3">
           {#each translating as project (project.slug)}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import KeyRound from "@lucide/svelte/icons/key-round"
   import LogOut from "@lucide/svelte/icons/log-out"
+  import Languages from "#lib/account/Languages.svelte"
   import { auth } from "#lib/api/auth.ts"
   import { session } from "#lib/api/session.svelte.ts"
   import Footer from "#lib/layout/Footer.svelte"
@@ -59,6 +60,7 @@
         <button class="button button-quiet" disabled={!name.trim() || name === session.me.name}>Save</button>
       </div>
     </form>
+    <Languages />
     <section class="mt-10 space-y-3">
       <h2 class="text-[20px] font-semibold">Signing in</h2>
       <p class="text-[15px] text-ink-soft">You sign in as {session.me.email}{session.me.githubLogin ? ` and with GitHub as ${session.me.githubLogin}` : ""}.</p>

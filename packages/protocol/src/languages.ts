@@ -38,6 +38,8 @@ const KNOWN: Record<string, { native: string; english: string }> = {
   uk: { native: "Українська", english: "Ukrainian" },
 }
 
+export const KNOWN_LANGUAGES = Object.keys(KNOWN)
+
 const displays = new Map<string, Intl.DisplayNames>()
 
 function display(tag: string, locale: string) {

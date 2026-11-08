@@ -1,6 +1,7 @@
 import { type GlossaryTerm, type Problem, problemFlags, runChecks, termsIn } from "@babblebird/fluent"
 import { STATE } from "@babblebird/protocol"
-import type { ProjectRow } from "../db/core.ts"
+import { sql } from "drizzle-orm"
+import { db as core, type ProjectRow } from "../db/core.ts"
 import { all, runAll } from "../db/strings.ts"
 import { recountArea } from "../sync/apply/progress.ts"
 import type { StringRecord } from "./queries.ts"
@@ -63,3 +64,10 @@ export async function saveTranslation(db: D1Database, input: SaveInput, problems
 }
 
 export const stateFor = (approve: boolean) => (approve ? STATE.approved : STATE.translated)
+
+export async function rememberLanguage(userId: string, lang: string) {
+  await core.run(
+    sql`UPDATE user SET languages = json_insert(languages, '$[#]', ${lang})
+        WHERE id = ${userId} AND NOT EXISTS (SELECT 1 FROM json_each(user.languages) WHERE value = ${lang})`,
+  )
+}

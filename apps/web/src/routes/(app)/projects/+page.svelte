@@ -51,7 +51,7 @@
       <h1 class="text-[34px] font-semibold tracking-[-0.025em]">Projects you can help translate</h1>
       <p class="mt-1 text-[17px] text-ink-soft">Pick one and put it into your language. All you need is an account.</p>
     </div>
-    <LanguageSelect value={lang} {languages} onchange={(next) => session.chooseLanguage(next)} />
+    <LanguageSelect value={lang} {languages} onchange={(next) => session.browseIn(next)} />
   </div>
 
   {#if projects === null}

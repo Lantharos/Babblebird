@@ -16,7 +16,7 @@ import { recountArea } from "../sync/apply/progress.ts"
 import { contextFor } from "./context.ts"
 import { peopleById, personOf } from "./people.ts"
 import { type StringRecord, stringById, stringPage } from "./queries.ts"
-import { checkTranslation, saveTranslation, stateFor } from "./save.ts"
+import { checkTranslation, rememberLanguage, saveTranslation, stateFor } from "./save.ts"
 
 export const editorRoutes = new Hono<ViewerVars>()
 editorRoutes.use(maybeSignedIn)
@@ -141,6 +141,7 @@ editorRoutes.put("/:owner/:name/strings/:id{\\d+}/:lang", async (c) => {
     },
     problems,
   )
+  await rememberLanguage(viewer.id, language)
   const [row] = await rowsOf([(await stringById(db, project.id, record.id, language))!])
   return c.json({ row: row!, problems })
 })
@@ -182,6 +183,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions", async (c)
     .prepare("INSERT INTO suggestion (source_id, lang, body, by, at) VALUES (?, ?, ?, ?, ?)")
     .bind(record.id, language, body, viewer.id, Date.now())
     .run()
+  await rememberLanguage(viewer.id, language)
   await recountArea(db, project.id, record.area_id, [language])
   return c.body(null, 204)
 })

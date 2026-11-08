@@ -24,7 +24,7 @@ class Session {
   me = $state<Me | null>(null)
   #language = $state<string | null>(null)
 
-  language = $derived(this.me?.languages[0] ?? this.#language)
+  language = $derived(this.#language ?? this.me?.languages[0] ?? null)
 
   async load() {
     if (this.loaded) return
@@ -33,16 +33,16 @@ class Session {
     this.loaded = true
   }
 
-  async chooseLanguage(lang: string) {
+  browseIn(lang: string) {
     this.#language = lang
     try {
       localStorage.setItem(LANGUAGE, lang)
     } catch {}
-    if (this.me) {
-      const languages = [lang, ...this.me.languages.filter((other) => other !== lang)]
-      this.me.languages = languages
-      await api.put("/me/languages", { languages })
-    }
+  }
+
+  async setLanguages(languages: string[]) {
+    await api.put("/me/languages", { languages })
+    if (this.me) this.me.languages = languages
   }
 
   async reload() {

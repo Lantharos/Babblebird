@@ -20,7 +20,7 @@
   const overall = $derived(project.data?.languages.find((language) => language.lang === lang) ?? null)
 
   $effect(() => {
-    if (session.loaded && lang !== session.language) void session.chooseLanguage(lang)
+    if (session.loaded && lang !== session.language) session.browseIn(lang)
   })
 </script>
 
