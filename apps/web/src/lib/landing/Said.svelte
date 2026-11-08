@@ -5,11 +5,33 @@
   let { side = "left", children }: { side?: "left" | "right"; children: Snippet } = $props()
 </script>
 
-<div class="relative w-fit {side === 'left' ? 'pl-12' : 'pr-12 lg:ml-auto'}">
-  <p class="max-w-md rounded-[26px] bg-raised px-6 py-5 text-[20px] leading-snug ring-1 ring-hairline {side === 'left' ? 'rounded-bl-[6px]' : 'rounded-br-[6px]'}">
+<div class="mb-10 w-fit max-w-md {side === 'left' ? 'ml-13' : 'mr-13 lg:ml-auto'}">
+  <p class="relative rounded-[26px] bg-raised px-6 py-5 text-[20px] leading-snug ring-1 ring-hairline {side === 'left' ? 'rounded-bl-none' : 'rounded-br-none'}">
     {@render children()}
+    <span class="speaker {side}" aria-hidden="true"><Bird class="size-full" /></span>
   </p>
-  <span class="absolute -bottom-3 {side === 'left' ? 'left-0 -rotate-[28deg]' : 'right-0 -scale-x-100 -rotate-[28deg]'}" aria-hidden="true">
-    <Bird class="h-10 w-12" />
-  </span>
 </div>
+
+<style>
+  .speaker {
+    --width: 56px;
+    --height: calc(var(--width) * 38 / 44);
+    --tip-x: calc(var(--width) * 42 / 44);
+    --tip-y: calc(var(--height) * 17.6 / 38);
+    position: absolute;
+    width: var(--width);
+    height: var(--height);
+    top: calc(100% - var(--tip-y));
+    transform-origin: var(--tip-x) var(--tip-y);
+  }
+
+  .left {
+    left: calc(0px - var(--tip-x));
+    rotate: -38deg;
+  }
+
+  .right {
+    left: calc(100% - var(--tip-x));
+    transform: rotate(38deg) scaleX(-1);
+  }
+</style>
