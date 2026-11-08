@@ -29,9 +29,10 @@
   ]
 </script>
 
-<footer class="page mt-24 pb-14">
-  <div class="relative border-t border-hairline">
-    <div class="absolute -top-[37px] right-6 flex items-end gap-2 sm:right-10" aria-hidden="true">
+<footer class="page mt-14 pb-14">
+  <div class="flex items-end gap-5 pr-6 sm:pr-10">
+    <div class="h-px flex-1 bg-hairline"></div>
+    <div class="flex items-end gap-2" aria-hidden="true">
       <span class="mb-7 rounded-[14px] rounded-br-[4px] bg-raised px-3 py-1.5 text-[14px] font-medium ring-1 ring-hairline" lang={goodbye.lang}>{goodbye.text}</span>
       <Bird class="h-9 w-[42px] -scale-x-100" />
     </div>
