@@ -51,4 +51,4 @@ Mail to `hello@`, `privacy@` and `security@babblebird.dev` reaches the API Worke
 
 Each new conversation becomes an item in the `mail` inbox of the Pult project `babblebird`, tagged with its address, with the original message and attachments as files; the raw message is kept in R2 under `mail/`. Replies written in Pult go out from the address the mail came to, and answers thread back onto the same item. Mail failing its sender's DMARC policy is refused, mail failing SPF without DKIM is only kept in `mail/quarantine/`, and one sender can send ten messages a minute. If Pult can't be reached, the message waits and goes on the next scheduled run.
 
-`pult build` in `apps/api` turns the inbox definitions in `src/inbox/define` into `.pult/`, which is committed; the Worker publishes them to Pult when they change.
+`pult build` in `apps/api` turns the inbox definitions in `src/inbox/define` into `.pult/`, which is committed. The deployed Worker publishes them to the `prod` environment by itself the first time it sends something after they change, so deploying the Worker is enough; the `dev` environment takes them with `bunx pult deploy` and its own key.

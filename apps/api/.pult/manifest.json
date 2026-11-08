@@ -1,7 +1,10 @@
 {
   "project": "babblebird",
-  "environments": ["dev", "prod"],
-  "sync": "dev",
+  "environments": [
+    "dev",
+    "prod"
+  ],
+  "sync": "prod",
   "delivery": {
     "mode": "webhook",
     "path": "/api/ops"
@@ -15,24 +18,41 @@
       "icon": "mail",
       "resource": null,
       "layout": "list",
-      "states": ["open", "handled", "spam"],
-      "closed": ["handled", "spam"],
+      "states": [
+        "open",
+        "handled",
+        "spam"
+      ],
+      "closed": [
+        "handled",
+        "spam"
+      ],
       "reopen": [],
       "data": {
         "type": "object",
         "properties": {
           "mailbox": {
             "type": "string",
-            "enum": ["hello", "privacy", "security"]
+            "enum": [
+              "hello",
+              "privacy",
+              "security"
+            ]
           },
           "from": {
             "type": "string"
           },
           "name": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "replyTo": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "subject": {
             "type": "string"
@@ -44,9 +64,20 @@
             "type": "string"
           }
         },
-        "required": ["mailbox", "from", "name", "replyTo", "subject", "text", "raw"]
+        "required": [
+          "mailbox",
+          "from",
+          "name",
+          "replyTo",
+          "subject",
+          "text",
+          "raw"
+        ]
       },
-      "columns": ["title", "lastSeen"],
+      "columns": [
+        "title",
+        "lastSeen"
+      ],
       "intake": null,
       "triage": {
         "instructions": "Each item is an email sent to one of babblebird.dev's addresses: hello, privacy or security. Babblebird is a translation platform for open source projects. Privacy requests and security reports matter even when they're badly written; only close what is plainly unsolicited advertising, phishing or spam.",
@@ -85,5 +116,5 @@
   "spaces": [],
   "notify": {},
   "status": null,
-  "version": "5c3592b119bb"
+  "version": "d99e898167a2"
 }

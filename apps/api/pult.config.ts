@@ -5,5 +5,5 @@ export default defineConfig({
   include: ["src/inbox/define/**/*.ts"],
   delivery: { mode: "webhook", path: "/api/ops" },
   environments: ["dev", "prod"],
-  sync: "dev",
+  sync: "prod",
 })
