@@ -37,6 +37,12 @@ The first import also reads `git blame` for every translation file, so each tran
 
 Locale files are found at `**/locales/<lang>/*.ftl`. Files belong to the nearest folder above them with a `Sabine.toml` or `extension.toml`, which gives the area its name and icon. Other folders become one area if they have one file, or one area per file if they have several, the way Kestrel's `desktop.ftl`, `surfaces.ftl` and so on each become their own area. `babblebird.toml` can name, group or skip anything; see [repositories](repositories.md).
 
+## Getting started
+
+Signing in comes first and leads to the dashboard, which lists the repositories you can push to that have the app, the projects you translate for and your recent work. Adding a repository goes to GitHub's install page; GitHub sends you back to `/setup`, which waits for the installation to arrive and then shows that repository's import as it happens: areas as they're found, strings and translations read in, and the time left. The import's progress is kept on the project, so the project page, the public list and the dashboard all show it until it's done.
+
+Each project has a manage page for its maintainers: syncing and its history, how translations go back, who can translate, people and invitations, and removing it. Invitations by GitHub name or email turn into memberships when that person signs in. A project whose sync failed is read again on the next ten-minute run, picking up only the files it hadn't finished.
+
 ## Translating
 
 Anyone signed in can translate public projects unless the project limits it to members; everyone else can suggest. Maintainers are whoever has write access to the repository, checked through the app and remembered for six hours. Maintainers add translators and reviewers, each for some or all languages and areas.

@@ -18,6 +18,7 @@ An optional `babblebird.toml` at the root of the repository changes any of this:
 source = "en"
 ignore = ["kestrel/tools/fixtures/**"]
 glossary = "packages/i18n/glossary/{lang}.tbx"
+icon = "web/site/public/favicon.svg"
 
 [[areas]]
 name = "Website"
@@ -30,6 +31,8 @@ icon = "kestrel/ui/icons/desktop.svg"
 ```
 
 `files` takes patterns with `{lang}` where the language folder is, and `*` and `**` as usual. Areas listed here come first, in this order; files they don't claim are grouped as above.
+
+An area's icon is its own `icon`, then the icon of the app or extension all its files belong to, then the top-level `icon`. Icons are SVG, PNG or WebP files in the repository.
 
 ## What gets written
 
