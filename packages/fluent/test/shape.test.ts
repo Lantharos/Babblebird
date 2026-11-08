@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { FluentSerializer } from "@fluent/syntax"
-import { composeBody, fitShape, parseBody, patchFile, shapeOf } from "../src/index.ts"
+import { composeBody, fitShape, parseBody, shapeOf } from "../src/index.ts"
 
 const serializer = new FluentSerializer()
 const normal = (body: string) => serializer.serializeEntry(parseBody(body)!)
@@ -36,17 +36,4 @@ test("a translation gets the plural forms of its language", () => {
     "one",
     "other",
   ])
-})
-
-test("patching a file keeps its layout and only touches what changed", () => {
-  const existing = "## Shared\n\na = Eins\n\n## More\n\nc = Drei\nd = Vier\n"
-  const bodies = new Map([
-    ["a", "= Eins"],
-    ["b", "= Zwei"],
-    ["c", "= Drei!"],
-  ])
-  expect(patchFile(existing, ["a", "b", "c", "d"], bodies)).toBe(
-    "## Shared\n\na = Eins\nb = Zwei\n\n## More\n\nc = Drei!\n",
-  )
-  expect(patchFile("", ["a", "b"], bodies)).toBe("a = Eins\nb = Zwei\n")
 })

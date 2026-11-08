@@ -100,3 +100,12 @@ export interface SyncEntry {
   languages?: string[]
   files?: number
 }
+
+export interface DeliveryStatus {
+  waitingFiles: number
+  pullNumber: number | null
+  sentAt: number | null
+  mergedAt: number | null
+  closedAt: number | null
+  problem: string | null
+}

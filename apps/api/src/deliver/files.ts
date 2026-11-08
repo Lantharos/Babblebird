@@ -1,4 +1,4 @@
-import { patchFile } from "@babblebird/fluent"
+import { mergeMessage, messagesOf, patchMessages } from "@babblebird/fluent"
 import { all } from "../db/strings.ts"
 
 export interface PendingFile {
@@ -21,21 +21,26 @@ export function pendingFiles(db: D1Database, projectId: string) {
 export const pathOf = (file: PendingFile) => file.pattern.replace("{lang}", file.lang)
 
 export async function buildFile(db: D1Database, file: PendingFile, existing: string) {
-  const rows = await all<{ key: string; body: string | null }>(
+  const rows = await all<{ key: string; body: string | null; base: string | null }>(
     db
       .prepare(
-        `SELECT s.key, t.body FROM source s LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
+        `SELECT s.key, t.body, t.base FROM source s LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
          WHERE s.file_id = ?1 ORDER BY s.position`,
       )
       .bind(file.file_id, file.lang),
   )
-  const bodies = new Map(rows.filter((row) => row.body !== null).map((row) => [row.key, row.body!]))
+  const theirs = messagesOf(existing)
+  const changes = new Map<string, string>()
+  for (const row of rows)
+    if (row.body !== null && mergeMessage(row.base, row.body, theirs.get(row.key) ?? null).kind === "ours")
+      changes.set(row.key, row.body)
+  if (!changes.size) return null
   return {
     path: pathOf(file),
-    content: patchFile(
+    content: patchMessages(
       existing,
       rows.map((row) => row.key),
-      bodies,
+      changes,
     ),
   }
 }

@@ -40,9 +40,9 @@ export async function contextFor(
   const [glossary, memory, suggestions, shots, history] = await Promise.all([
     glossaryFor(db, project.id, lang, record.plain),
     memoryFor(db, record, lang),
-    all<{ id: number; body: string; by: string; at: number }>(
+    all<{ id: number; body: string; by: string; at: number; note: string | null }>(
       db
-        .prepare("SELECT id, body, by, at FROM suggestion WHERE source_id = ? AND lang = ? ORDER BY id")
+        .prepare("SELECT id, body, by, at, note FROM suggestion WHERE source_id = ? AND lang = ? ORDER BY id")
         .bind(record.id, lang),
     ),
     all<Shot>(
@@ -73,6 +73,7 @@ export async function contextFor(
     suggestions: suggestions.map((row) => ({
       id: row.id,
       body: row.body,
+      note: row.note,
       at: row.at,
       by: personOf(people, row.by, null)!,
     })),

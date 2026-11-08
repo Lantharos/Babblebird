@@ -41,9 +41,21 @@ export async function applySources(
     if (open) for (const band of bandsOf(row.plain)) oldBands.push([band, row.id])
   }
   const stale: number[] = []
+  const renamed: unknown[][] = []
+  const keys = new Set(units.map((unit) => unit.key))
+  const leaving = Map.groupBy(
+    [...existing.values()].filter((row) => !keys.has(row.key)),
+    (row) => row.hash,
+  )
   units.forEach((unit, position) => {
     const before = existing.get(unit.key)
     existing.delete(unit.key)
+    const renamedFrom = before ? undefined : leaving.get(unit.hash)?.shift()
+    if (renamedFrom) {
+      existing.delete(renamedFrom.key)
+      renamed.push([renamedFrom.id, unit.key, position, unit.comment, unit.section])
+      return
+    }
     const row = [
       unit.body,
       unit.hash,
@@ -98,6 +110,12 @@ export async function applySources(
     ),
     ...eachRow(
       db,
+      `UPDATE source SET key = j.value->>1, position = j.value->>2, comment = j.value->>3, section = j.value->>4
+       FROM json_each(?1) j WHERE source.id = j.value->>0`,
+      renamed,
+    ),
+    ...eachRow(
+      db,
       `UPDATE translation SET state = ${STATE.review}
        WHERE source_id IN (SELECT j.value->>0 FROM json_each(?1) j) AND state != ${STATE.review}`,
       stale.map((id) => [id]),
@@ -121,5 +139,5 @@ export async function applySources(
       bands.map(([source, band]) => [band, typeof source === "number" ? source : insertedIds.get(source)]),
     ),
   ])
-  return added.length + edited.length + removed.length > 0
+  return added.length + edited.length + removed.length + renamed.length > 0
 }

@@ -65,18 +65,16 @@ function spotsOf(text: string) {
   return spots
 }
 
-export function patchFile(existing: string, order: string[], bodies: Map<string, string>) {
+export function patchMessages(existing: string, order: string[], changes: Map<string, string>) {
   const spots = spotsOf(existing)
   const edits: { at: number; to: number; text: string }[] = []
   const inserts = new Map<number, string[]>()
   let anchor = -1
   for (const key of order) {
-    const body = bodies.get(key)
+    const body = changes.get(key)
     const spot = spots.get(key)
-    if (spot && body === undefined)
-      edits.push({ at: spot.start, to: spot.end + (existing[spot.end] === "\n" ? 1 : 0), text: "" })
-    else if (spot && body !== undefined) {
-      if (existing.slice(spot.keyEnd, spot.end).trim() !== body)
+    if (spot) {
+      if (body !== undefined && existing.slice(spot.keyEnd, spot.end).trim() !== body)
         edits.push({ at: spot.keyEnd, to: spot.end, text: ` ${body}` })
       anchor = spot.end
     } else if (body !== undefined) inserts.set(anchor, [...(inserts.get(anchor) ?? []), `${key} ${body}`])
@@ -91,4 +89,10 @@ export function patchFile(existing: string, order: string[], bodies: Map<string,
   for (const edit of edits.sort((a, b) => b.at - a.at))
     text = text.slice(0, edit.at) + edit.text + text.slice(edit.to)
   return text && !text.endsWith("\n") ? `${text}\n` : text
+}
+
+export function messagesOf(text: string) {
+  const found = new Map<string, string>()
+  for (const [key, spot] of spotsOf(text)) found.set(key, text.slice(spot.keyEnd, spot.end).trim())
+  return found
 }

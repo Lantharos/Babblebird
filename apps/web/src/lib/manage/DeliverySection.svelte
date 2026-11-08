@@ -1,5 +1,7 @@
 <script lang="ts">
-  import type { Delivery, Project } from "@babblebird/protocol"
+  import type { Delivery, DeliveryStatus, Project } from "@babblebird/protocol"
+  import { resource } from "#lib/api/resource.svelte.ts"
+  import { projectPath } from "#lib/projects/project.svelte.ts"
   import Choices from "#lib/ui/fields/Choices.svelte"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
@@ -7,6 +9,7 @@
   import { deliveries, saveSettings } from "./settings.ts"
 
   let { project, onchange }: { project: Project; onchange: () => void } = $props()
+  const status = $derived(resource<DeliveryStatus>(`${projectPath(project.owner, project.name)}/delivery`))
   let open = $state(false)
   let chosen = $state<Delivery>("off")
   const current = $derived(deliveries.find((option) => option.value === project.delivery)!)
@@ -31,6 +34,22 @@
 <Section title="Sending translations back" text="How translations made here reach {project.name}.">
   <p class="text-[16px] font-medium">{current.label}</p>
   <p class="mt-1 max-w-md text-[15px] leading-relaxed text-ink-soft">{current.text}</p>
+  {#if status.data}
+    {@const state = status.data}
+    {#if state.problem}
+      <p class="mt-3 max-w-md text-[15px] leading-relaxed text-caution">{state.problem}</p>
+    {:else if project.delivery !== "off" && state.pullNumber && !state.mergedAt}
+      <p class="mt-3 text-[15px] text-ink-soft">
+        <a href="https://github.com/{project.owner}/{project.name}/pull/{state.pullNumber}" class="link">Pull request #{state.pullNumber}</a> is waiting for the checks
+      </p>
+    {:else if state.waitingFiles}
+      <p class="mt-3 text-[15px] text-ink-soft">
+        {state.waitingFiles === 1 ? "1 file has" : `${state.waitingFiles} files have`} translations that aren’t in the repository yet{project.delivery !== "off" ? ". They go out within ten minutes." : "."}
+      </p>
+    {:else if state.mergedAt}
+      <p class="mt-3 text-[15px] text-ink-soft">Everything translated here is in the repository.</p>
+    {/if}
+  {/if}
   <button type="button" class="button button-sm button-quiet mt-4" onclick={edit}>Change</button>
 </Section>
 

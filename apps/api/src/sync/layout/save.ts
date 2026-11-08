@@ -57,10 +57,37 @@ async function removeFiles(db: D1Database, ids: number[]) {
   ]
 }
 
+async function movedFiles(db: D1Database, rows: FileRow[], detected: DetectedArea[], sourceLang: string) {
+  const patterns = new Set(rows.map((row) => row.pattern))
+  const arriving = detected.flatMap((area) => area.files).filter((file) => !patterns.has(file.pattern))
+  const leaving = rows.filter(
+    (row) => !detected.some((area) => area.files.some((file) => file.pattern === row.pattern)),
+  )
+  if (!arriving.length || !leaving.length) return new Map<string, FileRow>()
+  const shas = await all<{ file_id: number; sha: string }>(
+    db
+      .prepare(
+        "SELECT file_id, sha FROM blob WHERE lang = ?1 AND file_id IN (SELECT value FROM json_each(?2))",
+      )
+      .bind(sourceLang, JSON.stringify(leaving.map((row) => row.id))),
+  )
+  const bySha = new Map(shas.map((row) => [row.sha, leaving.find((file) => file.id === row.file_id)!]))
+  const moves = new Map<string, FileRow>()
+  for (const file of arriving) {
+    const from = bySha.get(file.langs.get(sourceLang)?.sha ?? "")
+    if (from) {
+      moves.set(file.pattern, from)
+      bySha.delete(file.langs.get(sourceLang)!.sha)
+    }
+  }
+  return moves
+}
+
 export async function saveLayout(
   db: D1Database,
   projectId: string,
   detected: DetectedArea[],
+  sourceLang: string,
 ): Promise<SavedLayout> {
   const areaRows = new Map(
     (
@@ -80,6 +107,13 @@ export async function saveLayout(
       )
     ).map((row) => [row.pattern, row]),
   )
+  const updates: D1PreparedStatement[] = []
+  const moves = await movedFiles(db, [...fileRows.values()], detected, sourceLang)
+  for (const [pattern, from] of moves) {
+    fileRows.delete(from.pattern)
+    updates.push(db.prepare("UPDATE file SET pattern = ? WHERE id = ?").bind(pattern, from.id))
+    fileRows.set(pattern, { ...from, pattern })
+  }
   const saved: SavedLayout = {
     areas: new Map(),
     files: new Map(),
@@ -87,7 +121,6 @@ export async function saveLayout(
     icons: [],
     recount: new Set(),
   }
-  const updates: D1PreparedStatement[] = []
   let filePosition = 0
   for (const [position, area] of detected.entries()) {
     let row = areaRows.get(area.slug)

@@ -51,6 +51,7 @@ export interface GlossaryEntry {
 export interface SuggestionView {
   id: number
   body: string
+  note: string | null
   by: Person
   at: number
 }

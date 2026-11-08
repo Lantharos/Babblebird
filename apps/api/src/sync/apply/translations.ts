@@ -1,4 +1,4 @@
-import { type GlossaryTerm, problemFlags, runChecks, type Unit } from "@babblebird/fluent"
+import { type GlossaryTerm, mergeMessage, problemFlags, runChecks, type Unit } from "@babblebird/fluent"
 import { STATE } from "@babblebird/protocol"
 import { all, eachRow, runAll } from "../../db/strings.ts"
 
@@ -8,53 +8,69 @@ interface Row {
   hash: number
   source: string
   body: string | null
+  base: string | null
   by: string | null
-  at: number | null
 }
 
 export interface TranslationInput {
+  projectId: string
   fileId: number
   lang: string
   units: Unit[]
   credit: (key: string) => string | null
-  keepSince: number | null
   glossary: GlossaryTerm[]
 }
+
+export const CONFLICT_NOTE = "changed in the repository meanwhile"
 
 export async function applyTranslations(db: D1Database, input: TranslationInput) {
   const rows = await all<Row>(
     db
       .prepare(
-        `SELECT s.id, s.key, s.hash, s.body source, t.body, t.by, t.at FROM source s
+        `SELECT s.id, s.key, s.hash, s.body source, t.body, t.base, t.by FROM source s
          LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2 WHERE s.file_id = ?1`,
       )
       .bind(input.fileId, input.lang),
   )
-  const byKey = new Map(rows.map((row) => [row.key, row]))
-  const kept = (row: Row) => input.keepSince !== null && row.by !== null && (row.at ?? 0) >= input.keepSince
+  const theirs = new Map<string, string>()
+  for (const unit of input.units) if (!theirs.has(unit.key)) theirs.set(unit.key, unit.body)
   const now = Date.now()
-  const written: unknown[][] = []
-  const seen = new Set<string>()
-  for (const unit of input.units) {
-    const row = byKey.get(unit.key)
-    if (!row || seen.has(unit.key)) continue
-    seen.add(unit.key)
-    if (row.body === unit.body || (row.body !== null && kept(row))) continue
-    const flags = problemFlags(runChecks(row.source, unit.body, input.lang, input.glossary))
-    written.push([row.id, unit.body, row.hash, flags, input.credit(unit.key), now])
+  const taken: unknown[][] = []
+  const settled: unknown[][] = []
+  const removed: unknown[][] = []
+  const conflicts: unknown[][] = []
+  const history: unknown[][] = []
+  for (const row of rows) {
+    const repo = theirs.get(row.key) ?? null
+    if (row.body === null ? repo === null : row.base === repo) continue
+    const merge = mergeMessage(row.base, row.body, repo)
+    if (merge.kind === "same") settled.push([row.id, repo])
+    else if (merge.kind === "conflict" || merge.kind === "theirs") {
+      if (merge.kind === "conflict" && row.by) conflicts.push([row.id, row.body, row.by])
+      if (repo === null) removed.push([row.id])
+      else {
+        const flags = problemFlags(runChecks(row.source, repo, input.lang, input.glossary))
+        taken.push([row.id, repo, row.hash, flags, input.credit(row.key)])
+      }
+      if (row.body !== null) history.push([row.id, repo])
+    }
   }
-  const removed = rows
-    .filter((row) => row.body !== null && !seen.has(row.key) && !kept(row))
-    .map((row) => [row.id])
   await runAll(db, [
     ...eachRow(
       db,
-      `INSERT INTO translation (source_id, lang, body, state, source_hash, flags, by, credit, at)
-       SELECT j.value->>0, ?1, j.value->>1, ${STATE.translated}, j.value->>2, j.value->>3, NULL, j.value->>4, j.value->>5
-       FROM json_each(?2) j WHERE true
-       ON CONFLICT (source_id, lang) DO UPDATE SET body = excluded.body, state = excluded.state,
+      `INSERT INTO translation (source_id, lang, body, base, state, source_hash, flags, by, credit, at)
+       SELECT j.value->>0, ?1, j.value->>1, j.value->>1, ${STATE.translated}, j.value->>2, j.value->>3, NULL, j.value->>4, ?2
+       FROM json_each(?3) j WHERE true
+       ON CONFLICT (source_id, lang) DO UPDATE SET body = excluded.body, base = excluded.base, state = excluded.state,
          source_hash = excluded.source_hash, flags = excluded.flags, by = NULL, credit = excluded.credit, at = excluded.at`,
-      written,
+      taken,
+      input.lang,
+      now,
+    ),
+    ...eachRow(
+      db,
+      "UPDATE translation SET base = j.value->>1 FROM json_each(?2) j WHERE source_id = j.value->>0 AND lang = ?1",
+      settled,
       input.lang,
     ),
     ...eachRow(
@@ -63,6 +79,34 @@ export async function applyTranslations(db: D1Database, input: TranslationInput)
       removed,
       input.lang,
     ),
+    ...eachRow(
+      db,
+      `INSERT INTO suggestion (source_id, lang, body, by, at, note)
+       SELECT j.value->>0, ?1, j.value->>1, j.value->>2, ?2, '${CONFLICT_NOTE}' FROM json_each(?3) j`,
+      conflicts,
+      input.lang,
+      now,
+    ),
+    ...eachRow(
+      db,
+      `INSERT INTO activity (project_id, lang, source_id, user_id, kind, detail, at)
+       SELECT ?1, ?2, j.value->>0, NULL, 'changed in the repository', j.value->>1, ?3 FROM json_each(?4) j`,
+      history,
+      input.projectId,
+      input.lang,
+      now,
+    ),
   ])
-  return written.length + removed.length > 0
+  return taken.length + removed.length + conflicts.length > 0
+}
+
+export function clearSettled(db: D1Database, projectId: string, fileId: number, lang: string) {
+  return db
+    .prepare(
+      `DELETE FROM pending WHERE project_id = ?1 AND file_id = ?2 AND lang = ?3 AND NOT EXISTS (
+         SELECT 1 FROM source s JOIN translation t ON t.source_id = s.id AND t.lang = ?3
+         WHERE s.file_id = ?2 AND (t.base IS NULL OR t.base != t.body))`,
+    )
+    .bind(projectId, fileId, lang)
+    .run()
 }

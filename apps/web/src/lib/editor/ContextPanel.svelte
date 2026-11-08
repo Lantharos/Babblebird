@@ -94,7 +94,7 @@
           <li class="rounded-2xl bg-well px-4 py-3">
             <p><Highlighted text={text(suggestion.body)} /></p>
             <div class="mt-2 flex items-center gap-2 text-[13px] text-ink-muted">
-              <span class="mr-auto">{suggestion.by.name} · {when(suggestion.at)}</span>
+              <span class="mr-auto">{suggestion.by.name} · {when(suggestion.at)}{#if suggestion.note}<span class="block text-caution">Its translation, {suggestion.note}</span>{/if}</span>
               {#if can.translate}
                 <button type="button" class="button button-sm button-quiet" onclick={() => editor.accept(suggestion.id)}><Check class="size-4" />Use</button>
               {/if}

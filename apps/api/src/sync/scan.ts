@@ -66,7 +66,7 @@ export async function scanProject(job: ScanJob) {
   try {
     const tree = await readTree(repo, job.sha)
     const { config, areas } = await readLayout(tree, repo)
-    const saved = await saveLayout(strings, project.id, areas)
+    const saved = await saveLayout(strings, project.id, areas, config.source)
     await storeIcons(strings, repo, saved.icons)
     const iconEntry = projectIcon(tree, config)
     const icon = iconEntry ? await storeIcon(repo, iconEntry) : null

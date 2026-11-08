@@ -17,6 +17,7 @@ interface Push {
   sender?: { login: string }
   after: string
   deleted: boolean
+  forced?: boolean
   size?: number
   commits: PushCommit[]
   repository: { id: number }
@@ -45,6 +46,8 @@ export async function handlePush(push: Push) {
   const truncated = push.size !== undefined && push.size > push.commits.length
   const relevant =
     truncated ||
+    push.forced ||
+    !push.commits.length ||
     project.state === "failed" ||
     push.commits.some((commit) =>
       [...commit.added, ...commit.removed, ...commit.modified].some((path) => RELEVANT.test(path)),

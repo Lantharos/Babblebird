@@ -49,16 +49,12 @@ export async function saveTranslation(db: D1Database, input: SaveInput, problems
         "INSERT INTO activity (project_id, lang, source_id, user_id, kind, detail, at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(project.id, lang, record.id, userId, input.kind, body, now),
-    ...(project.delivery === "off"
-      ? []
-      : [
-          db
-            .prepare(
-              `INSERT INTO pending (project_id, file_id, lang, since, changed) VALUES (?1, ?2, ?3, ?4, ?4)
-               ON CONFLICT (project_id, file_id, lang) DO UPDATE SET changed = excluded.changed`,
-            )
-            .bind(project.id, record.file_id, lang, now),
-        ]),
+    db
+      .prepare(
+        `INSERT INTO pending (project_id, file_id, lang, since, changed) VALUES (?1, ?2, ?3, ?4, ?4)
+         ON CONFLICT (project_id, file_id, lang) DO UPDATE SET changed = excluded.changed`,
+      )
+      .bind(project.id, record.file_id, lang, now),
   ])
   await recountArea(db, project.id, record.area_id, [lang])
 }

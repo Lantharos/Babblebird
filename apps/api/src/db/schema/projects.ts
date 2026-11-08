@@ -78,6 +78,8 @@ export const delivery = sqliteTable("delivery", {
     .primaryKey()
     .references(() => project.id, { onDelete: "cascade" }),
   branchSha: text("branch_sha"),
+  baseSha: text("base_sha"),
+  closedAt: integer("closed_at", { mode: "timestamp_ms" }),
   pullNumber: integer("pull_number"),
   sentAt: integer("sent_at", { mode: "timestamp_ms" }),
   mergedAt: integer("merged_at", { mode: "timestamp_ms" }),

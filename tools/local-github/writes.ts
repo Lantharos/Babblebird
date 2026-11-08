@@ -11,7 +11,7 @@ interface Pull {
   head: string
   base: string
   title: string
-  merged: boolean
+  closed: boolean
 }
 
 const pulls: Pull[] = []
@@ -43,7 +43,7 @@ function squash(pull: Pull) {
   const parent = git.resolve(pull.base)
   const commit = git.text(["commit-tree", tree, "-p", parent, "-m", pull.title]).trim()
   git.run(["update-ref", `refs/heads/${pull.base}`, commit])
-  pull.merged = true
+  pull.closed = true
   console.log(`merged #${pull.number} into ${pull.base} as ${commit}`)
 }
 
@@ -111,15 +111,26 @@ export function writeRoutes(prefix: string): Route[] {
         return json({ object: { sha } }, 201)
       },
     ],
-    [new RegExp(`^${prefix}/pulls$`), "GET", () => json(pulls.filter((pull) => !pull.merged))],
+    [new RegExp(`^${prefix}/pulls$`), "GET", () => json(pulls.filter((pull) => !pull.closed))],
     [
       new RegExp(`^${prefix}/pulls$`),
       "POST",
       async (_, request) => {
         const body = (await request.json()) as { title: string; head: string; base: string }
-        const pull = { number: pulls.length + 1, node_id: `PR_${pulls.length + 1}`, ...body, merged: false }
+        const pull = { number: pulls.length + 1, node_id: `PR_${pulls.length + 1}`, ...body, closed: false }
         pulls.push(pull)
         return json(pull, 201)
+      },
+    ],
+    [
+      new RegExp(`^${prefix}/pulls/(\\d+)$`),
+      "PATCH",
+      async (match, request) => {
+        const pull = pulls.find((candidate) => candidate.number === Number(match[1]))
+        const { state } = (await request.json()) as { state: string }
+        if (!pull) return json({ message: "Not Found" }, 404)
+        if (state === "closed") pull.closed = true
+        return json(pull)
       },
     ],
     [
@@ -127,7 +138,7 @@ export function writeRoutes(prefix: string): Route[] {
       "PUT",
       (match) => {
         const pull = pulls.find((candidate) => candidate.number === Number(match[1]))
-        if (!pull || pull.merged) return json({ message: "Not mergeable" }, 405)
+        if (!pull || pull.closed) return json({ message: "Not mergeable" }, 405)
         squash(pull)
         return json({ merged: true })
       },
@@ -135,7 +146,8 @@ export function writeRoutes(prefix: string): Route[] {
   ]
 }
 
-export function autoMerge() {
+export function autoMerge(waitForChecks: boolean) {
+  if (waitForChecks) return { data: { enablePullRequestAutoMerge: { clientMutationId: null } } }
   return {
     data: { enablePullRequestAutoMerge: null },
     errors: [{ message: "Pull request is in clean status" }],

@@ -6,7 +6,7 @@ import { installationToken } from "../github/app.ts"
 import { type Repo, readBlobs } from "../github/repo.ts"
 import { projectTotals, recountArea } from "./apply/progress.ts"
 import { applySources } from "./apply/sources.ts"
-import { applyTranslations } from "./apply/translations.ts"
+import { applyTranslations, clearSettled } from "./apply/translations.ts"
 import { blameCredits } from "./import/credits.ts"
 import type { SyncJob } from "./jobs.ts"
 
@@ -22,13 +22,6 @@ async function glossaryOf(strings: D1Database, projectId: string, lang: string) 
       .prepare("SELECT term, translation, note FROM glossary WHERE project_id = ? AND lang = ?")
       .bind(projectId, lang),
   )
-}
-
-async function pendingSince(strings: D1Database, projectId: string) {
-  const rows = await all<{ file_id: number; lang: string; since: number }>(
-    strings.prepare("SELECT file_id, lang, since FROM pending WHERE project_id = ?").bind(projectId),
-  )
-  return new Map(rows.map((row) => [`${row.file_id}:${row.lang}`, row.since]))
 }
 
 export async function syncArea(job: AreaJob) {
@@ -56,7 +49,6 @@ export async function syncArea(job: AreaJob) {
         targets.map((blob) => ({ path: blob.path, text: texts.get(blob.sha)! })),
       )
     : null
-  const pending = await pendingSince(strings, project.id)
   const glossaries = new Map<string, GlossaryTerm[]>()
   const touched = new Set<string>()
   for (const blob of targets) {
@@ -64,14 +56,15 @@ export async function syncArea(job: AreaJob) {
       glossaries.set(blob.lang, await glossaryOf(strings, project.id, blob.lang))
     const fileCredits = credits?.get(blob.path)
     const changed = await applyTranslations(strings, {
+      projectId: project.id,
       fileId: blob.fileId,
       lang: blob.lang,
       units: readFile(texts.get(blob.sha)!).units,
       credit: (key) => fileCredits?.get(key) ?? job.credit,
-      keepSince: pending.get(`${blob.fileId}:${blob.lang}`) ?? null,
       glossary: glossaries.get(blob.lang)!,
     })
     if (changed) touched.add(blob.lang)
+    await clearSettled(strings, project.id, blob.fileId, blob.lang)
   }
   await runAll(
     strings,

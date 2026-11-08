@@ -10,6 +10,7 @@ const { values } = parseArgs({
     name: { type: "string", default: "Luft" },
     login: { type: "string", default: "kristof" },
     port: { type: "string", default: "8790" },
+    checks: { type: "boolean", default: false },
   },
 })
 
@@ -108,7 +109,7 @@ const routes: [
         query: string
         variables: Record<string, string>
       }
-      if (query.includes("enablePullRequestAutoMerge")) return json(autoMerge())
+      if (query.includes("enablePullRequestAutoMerge")) return json(autoMerge(values.checks!))
       return json({ data: graphql(query, variables) })
     },
   ],

@@ -46,6 +46,24 @@ manageRoutes.get("/:owner/:name/history", async (c) => {
   return c.json(rows.map((row) => ({ id: row.id, at: row.at, ...JSON.parse(row.detail) })))
 })
 
+manageRoutes.get("/:owner/:name/delivery", async (c) => {
+  const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
+  const [delivery, pending] = await Promise.all([
+    db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) }),
+    all<{ files: number }>(
+      shard(project).prepare("SELECT count(*) files FROM pending WHERE project_id = ?").bind(project.id),
+    ),
+  ])
+  return c.json({
+    waitingFiles: pending[0]?.files ?? 0,
+    pullNumber: delivery?.pullNumber ?? null,
+    sentAt: delivery?.sentAt?.getTime() ?? null,
+    mergedAt: delivery?.mergedAt?.getTime() ?? null,
+    closedAt: delivery?.closedAt?.getTime() ?? null,
+    problem: delivery?.problem ?? null,
+  })
+})
+
 manageRoutes.delete("/:owner/:name", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
   await db.update(schema.project).set({ state: "removed" }).where(eq(schema.project.id, project.id))

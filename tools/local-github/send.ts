@@ -10,6 +10,7 @@ const { values, positionals } = parseArgs({
     owner: { type: "string", default: "Lantharos" },
     name: { type: "string", default: "Luft" },
     api: { type: "string", default: "http://localhost:8787" },
+    github: { type: "string", default: "http://localhost:8790" },
   },
 })
 
@@ -59,7 +60,18 @@ function pushOf(git: Git, before: string, after: string) {
       changes.filter((line) => line.startsWith(status)).map((line) => line.split("\t").pop()!)
     return { id: sha, message, author: { name }, added: of("A"), removed: of("D"), modified: of("M") }
   })
-  return { ref: "refs/heads/main", before, after, deleted: false, size: commits.length, commits, repository }
+  const forced =
+    Bun.spawnSync(["git", "-C", git.dir, "merge-base", "--is-ancestor", before, after]).exitCode !== 0
+  return {
+    ref: "refs/heads/main",
+    before,
+    after,
+    deleted: false,
+    forced,
+    size: commits.length,
+    commits,
+    repository,
+  }
 }
 
 const [command, ...rest] = positionals
@@ -68,4 +80,20 @@ if (command === "install")
 else if (command === "push") {
   const git = new Git(values.repo!)
   await deliver("push", pushOf(git, git.resolve(rest[0]!), git.resolve(rest[1]!)))
-} else console.log("Usage: send.ts install | push <before> <after> --repo <dir>")
+} else if (command === "pull") {
+  const [number, outcome] = rest
+  await fetch(`${values.github}/repos/${values.owner}/${values.name}/pulls/${number}`, {
+    method: "PATCH",
+    body: JSON.stringify({ state: "closed" }),
+  })
+  await deliver("pull_request", {
+    action: "closed",
+    pull_request: {
+      number: Number(number),
+      merged: outcome === "merged",
+      head: { ref: "babblebird/translations" },
+    },
+    repository,
+  })
+} else
+  console.log("Usage: send.ts install | push <before> <after> --repo <dir> | pull <number> merged|closed")

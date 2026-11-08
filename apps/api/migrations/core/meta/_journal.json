@@ -29,6 +29,13 @@
       "when": 1794165333382,
       "tag": "0003_project_icon",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794167956509,
+      "tag": "0004_delivery_state",
+      "breakpoints": true
     }
   ]
 }
