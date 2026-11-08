@@ -13,7 +13,10 @@
   }
 
   const preview = (row: StringRow) =>
-    (row.translation?.body ?? row.body).replace(/^=\s*/, "").split(/\n\s*\./)[0]!.replace(/\s+/g, " ")
+    (row.translation?.body ?? row.body)
+      .replace(/^=\s*/, "")
+      .split(/\n\s*\./)[0]!
+      .replace(/\s+/g, " ")
   const dot = (row: StringRow) =>
     row.translation?.flags ? "bg-danger" : DOTS[row.translation?.state ?? "untranslated"]
 
