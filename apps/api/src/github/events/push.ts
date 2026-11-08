@@ -1,5 +1,7 @@
+import { env } from "cloudflare:workers"
 import { eq } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
+import type { DeliverJob } from "../../deliver/deliver.ts"
 import { creditOf } from "../../sync/import/credits.ts"
 import { scan } from "../../sync/jobs.ts"
 
@@ -60,4 +62,16 @@ export async function handlePush(push: Push) {
       message: head?.message.split("\n")[0] ?? null,
       by: push.sender?.login ?? push.pusher?.name ?? null,
     })
+  await recheckOpenPull(project)
+}
+
+const RECHECK_AFTER_SECONDS = 20
+
+async function recheckOpenPull(project: { id: string; delivery: string }) {
+  if (project.delivery === "off") return
+  const delivery = await db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) })
+  if (!delivery?.pullNumber || delivery.mergedAt || delivery.closedAt) return
+  await env.DELIVER.send({ projectId: project.id } satisfies DeliverJob, {
+    delaySeconds: RECHECK_AFTER_SECONDS,
+  })
 }

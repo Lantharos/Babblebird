@@ -64,7 +64,7 @@ interface Pull {
   node_id: string
 }
 
-export async function openPull(repo: Repo, base: string, languages: string) {
+export async function openPull(repo: Repo, base: string, title: string) {
   const open = await github<Pull[]>(path(repo, `/pulls?state=open&head=${repo.owner}:${BRANCH}`), {
     token: repo.token,
   })
@@ -73,7 +73,7 @@ export async function openPull(repo: Repo, base: string, languages: string) {
     token: repo.token,
     method: "POST",
     body: {
-      title: `Update ${languages} translations`,
+      title,
       head: BRANCH,
       base,
       body: "Translations from Babblebird. This merges itself once the checks pass.",
@@ -119,4 +119,20 @@ export async function mergeNow(repo: Repo, number: number, message: string) {
     if (error instanceof GitHubError && (error.status === 405 || error.status === 409)) return false
     throw error
   }
+}
+
+export async function closePull(repo: Repo, number: number, comment: string) {
+  const pull = await github<{ state: string }>(path(repo, `/pulls/${number}`), { token: repo.token })
+  if (pull.state !== "open") return false
+  await github(path(repo, `/issues/${number}/comments`), {
+    token: repo.token,
+    method: "POST",
+    body: { body: comment },
+  })
+  await github(path(repo, `/pulls/${number}`), {
+    token: repo.token,
+    method: "PATCH",
+    body: { state: "closed" },
+  })
+  return true
 }

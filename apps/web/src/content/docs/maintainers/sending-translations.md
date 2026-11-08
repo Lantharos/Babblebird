@@ -6,7 +6,9 @@ Choose how translations reach the repository on the project's manage page, under
 - **After the checks pass**: changes go to a `babblebird/translations` branch with a pull request that merges itself once the repository's required checks pass (with GitHub's auto-merge), or right away if there are none.
 - **Straight to the default branch**: changes are committed to the default branch. If it's protected, they go through the pull request instead.
 
-Batches go out every ten minutes. Each is one commit that changes only the messages translated here, leaving comments, layout and everything else in the files as they were. Everyone who translated something in it with a GitHub account is a co-author.
+Batches go out every ten minutes. Each is one commit that changes only the messages translated here, leaving comments, layout and everything else in the files as they were. Everyone who translated something in it with a GitHub account is a co-author, and stays one when the pull request is squashed.
+
+If you turn off auto-merge on a translations pull request, Babblebird leaves it for you to merge however you like.
 
 ## How changes on both sides are merged
 
@@ -19,7 +21,7 @@ Each message is merged on its own, against what Babblebird last read from the re
 - Both changed it to the same thing: nothing to do.
 - Both changed it differently: the repository wins, and the version made here is kept as a suggestion marked "changed in the repository meanwhile", for a reviewer to pick up or dismiss.
 
-Different messages never conflict, even in the same file, and a conflict never holds up the rest.
+Different messages never conflict, even in the same file, and a conflict never holds up the rest. When the default branch moves while a translations pull request is open, Babblebird checks it again: if its messages changed or were removed in the repository it's rebuilt without them, and if nothing is left it's closed with a note saying why.
 
 Messages deleted from the English disappear with their translations. Messages renamed without changing their text, and files moved or renamed without changing their English, keep their translations.
 

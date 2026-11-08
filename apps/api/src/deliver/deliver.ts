@@ -1,13 +1,12 @@
 import { env } from "cloudflare:workers"
-import { englishName } from "@babblebird/protocol"
 import { and, eq, ne } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { all, shard } from "../db/strings.ts"
 import { GitHubError } from "../github/api.ts"
-import { readPaths } from "../github/repo.ts"
+import { type Repo, readPaths } from "../github/repo.ts"
 import { repoOf } from "../sync/area.ts"
 import { buildFile, pathOf, pendingFiles, translators } from "./files.ts"
-import { BRANCH, commitFiles, headOf, mergeWhenReady, moveBranch, openPull } from "./git.ts"
+import { BRANCH, closePull, commitFiles, headOf, mergeWhenReady, moveBranch, openPull } from "./git.ts"
 import { commitMessage } from "./message.ts"
 
 export interface DeliverJob {
@@ -15,6 +14,8 @@ export interface DeliverJob {
 }
 
 const CREDIT_WINDOW_MS = 7 * 86_400_000
+const OVERTAKEN =
+  "Everything in this pull request was changed or removed in the repository in the meantime, so Babblebird closed it. Translations that differ from the repository are kept as suggestions in Babblebird."
 
 export async function recordDelivery(
   projectId: string,
@@ -34,26 +35,50 @@ function explain(error: unknown) {
   return "Sending didn’t work. Babblebird tries again within ten minutes."
 }
 
+async function withdraw(projectId: string, repo: Repo, pullNumber: number) {
+  if (await closePull(repo, pullNumber, OVERTAKEN))
+    await recordDelivery(projectId, { pullNumber: null, branchSha: null, problem: null })
+}
+
+async function sameAsSent(repo: Repo, branchSha: string | null, built: { path: string; content: string }[]) {
+  if (!branchSha) return false
+  const sent = await readPaths(
+    repo,
+    branchSha,
+    built.map((file) => file.path),
+  )
+  return built.every((file) => sent.get(file.path) === file.content)
+}
+
 export async function deliver({ projectId }: DeliverJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, projectId) })
   if (!project || project.delivery === "off" || project.state === "removed") return
   const strings = shard(project)
   const files = await pendingFiles(strings, project.id)
-  if (!files.length) return
   const previous = await db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) })
+  const open = previous?.pullNumber && !previous.mergedAt && !previous.closedAt ? previous.pullNumber : null
+  if (!files.length) {
+    if (open) await withdraw(project.id, await repoOf(project), open)
+    return
+  }
   const newest = Math.max(...files.map((file) => file.changed))
   if (previous?.closedAt && newest <= previous.closedAt.getTime()) return
   const repo = await repoOf(project)
+  const sentAt = previous?.sentAt?.getTime() ?? 0
   try {
     const head = await headOf(repo, project.defaultBranch)
     if (!head) throw new GitHubError(404, project.defaultBranch, "")
-    const waiting = previous?.pullNumber && !previous.mergedAt && !previous.closedAt
-    if (waiting && previous.baseSha === head && newest <= (previous.sentAt?.getTime() ?? 0)) return
+    if (open && previous?.baseSha === head && newest <= sentAt) return
     const existing = await readPaths(repo, head, files.map(pathOf))
     const built = (
       await Promise.all(files.map((file) => buildFile(strings, file, existing.get(pathOf(file))!)))
     ).filter((file) => file !== null)
-    if (!built.length) return
+    if (!built.length) {
+      if (open) await withdraw(project.id, repo, open)
+      return
+    }
+    if (open && newest <= sentAt && (await sameAsSent(repo, previous?.branchSha ?? null, built)))
+      return recordDelivery(project.id, { baseSha: head })
     const since = Math.min(...files.map((file) => file.changed))
     const message = await commitMessage(
       files.map((file) => file.lang),
@@ -72,12 +97,7 @@ export async function deliver({ projectId }: DeliverJob) {
     if (project.delivery === "direct" && (await moveBranch(repo, project.defaultBranch, commit, false)))
       return recordDelivery(project.id, { ...sent, pullNumber: null, mergedAt: new Date() })
     await moveBranch(repo, BRANCH, commit, true)
-    const languages = [...new Set(files.map((file) => englishName(file.lang)))]
-    const pull = await openPull(
-      repo,
-      project.defaultBranch,
-      languages.length > 3 ? `${languages.length} languages’` : languages.join(", "),
-    )
+    const pull = await openPull(repo, project.defaultBranch, message.split("\n")[0]!)
     await recordDelivery(project.id, {
       ...sent,
       pullNumber: pull.number,

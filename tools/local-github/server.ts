@@ -78,6 +78,7 @@ const routes: [
         private: false,
         description: "Local copy",
         default_branch: "main",
+        allow_auto_merge: values.checks,
         owner: { login: repo.owner },
       }),
   ],

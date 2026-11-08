@@ -124,6 +124,17 @@ export function writeRoutes(prefix: string): Route[] {
     ],
     [
       new RegExp(`^${prefix}/pulls/(\\d+)$`),
+      "GET",
+      (match) => {
+        const pull = pulls.find((candidate) => candidate.number === Number(match[1]))
+        return pull
+          ? json({ ...pull, state: pull.closed ? "closed" : "open" })
+          : json({ message: "Not Found" }, 404)
+      },
+    ],
+    [new RegExp(`^${prefix}/issues/(\\d+)/comments$`), "POST", () => json({}, 201)],
+    [
+      new RegExp(`^${prefix}/pulls/(\\d+)$`),
       "PATCH",
       async (match, request) => {
         const pull = pulls.find((candidate) => candidate.number === Number(match[1]))
