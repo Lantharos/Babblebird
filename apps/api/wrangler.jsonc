@@ -1,0 +1,45 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "babblebird-api",
+  "account_id": "2e3bfcbc9512a7ab1ea3a9cb9a474b30",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "limits": { "cpu_ms": 60000 },
+  "vars": {
+    "PUBLIC_URL": "https://babblebird.dev",
+    "NOTIFY_FROM": "no-reply@babblebird.dev",
+    "GITHUB_API": "https://api.github.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "babblebird",
+      "database_id": "e0edca1e-a134-4137-80bb-882342a05945",
+      "migrations_dir": "migrations/core"
+    },
+    {
+      "binding": "STRINGS_0",
+      "database_name": "babblebird-strings-0",
+      "database_id": "886d1cf0-1e49-410b-a821-0884d5198445",
+      "migrations_dir": "migrations/strings"
+    }
+  ],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "babblebird" }],
+  "queues": {
+    "producers": [
+      { "binding": "SYNC", "queue": "babblebird-sync" },
+      { "binding": "DELIVER", "queue": "babblebird-deliver" }
+    ],
+    "consumers": [
+      { "queue": "babblebird-sync", "max_batch_size": 4, "max_batch_timeout": 1, "max_retries": 5 },
+      { "queue": "babblebird-deliver", "max_batch_size": 10, "max_batch_timeout": 5, "max_retries": 5 }
+    ]
+  },
+  "send_email": [{ "name": "EMAIL" }],
+  "ratelimits": [{ "name": "AUTH_LIMIT", "namespace_id": "3001", "simple": { "limit": 20, "period": 60 } }],
+  "triggers": { "crons": ["*/10 * * * *"] }
+}

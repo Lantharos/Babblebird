@@ -1,0 +1,19 @@
+{
+  "name": "Babblebird",
+  "url": "https://babblebird.dev",
+  "description": "Translate the Fluent files in your repository. Babblebird reads them, lets people translate with the screen in view and sends translations back as commits.",
+  "public": true,
+  "hook_attributes": { "url": "https://babblebird.dev/api/github/webhook", "active": true },
+  "callback_urls": ["https://babblebird.dev/api/auth/callback/github"],
+  "setup_url": "https://babblebird.dev/projects",
+  "setup_on_update": true,
+  "request_oauth_on_install": false,
+  "default_permissions": {
+    "contents": "write",
+    "metadata": "read",
+    "pull_requests": "write",
+    "checks": "read",
+    "email_addresses": "read"
+  },
+  "default_events": ["push", "pull_request", "check_suite", "repository"]
+}
