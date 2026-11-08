@@ -1,0 +1,8 @@
+node_modules
+.svelte-kit
+dist
+!/action/dist
+.wrangler
+.dev.vars
+*.log
+.env
