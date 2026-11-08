@@ -4,8 +4,10 @@
   import { session } from "#lib/api/session.svelte.ts"
   import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
+  import Importing from "#lib/projects/Importing.svelte"
   import LanguageSelect from "#lib/projects/LanguageSelect.svelte"
   import ProgressBar from "#lib/projects/ProgressBar.svelte"
+  import { poll } from "#lib/projects/poll.svelte.ts"
   import { donePercent } from "#lib/projects/progress.ts"
 
   let projects = $state<ProjectSummary[] | null>(null)
@@ -30,17 +32,23 @@
     void lang
     void load()
   })
+
+  poll(
+    () => load(),
+    4000,
+    () => !!projects?.some((project) => project.importing),
+  )
 </script>
 
-<svelte:head><title>Projects · Babblebird</title></svelte:head>
+<svelte:head><title>Help translate · Babblebird</title></svelte:head>
 
 <Header />
 
 <main class="page pt-10">
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="text-[34px] font-semibold tracking-[-0.025em]">Projects</h1>
-      <p class="mt-1 text-[17px] text-ink-soft">Pick a project and help put it into your language.</p>
+      <h1 class="text-[34px] font-semibold tracking-[-0.025em]">Projects you can help translate</h1>
+      <p class="mt-1 text-[17px] text-ink-soft">Pick one and put it into your language. All you need is an account.</p>
     </div>
     <LanguageSelect value={lang} {languages} onchange={(next) => session.chooseLanguage(next)} />
   </div>
@@ -50,7 +58,7 @@
       {#each { length: 3 } as _}<div class="placeholder h-28"></div>{/each}
     </div>
   {:else if !projects.length}
-    <p class="mt-16 text-ink-muted">No projects yet.</p>
+    <p class="mt-16 text-ink-muted">Nobody’s looking for translators yet. Check back soon.</p>
   {:else}
     <ul class="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
       {#each projects as project, index (project.slug)}
@@ -64,7 +72,9 @@
               </div>
             </div>
             {#if project.description}<p class="mt-3 line-clamp-2 text-[15px] text-ink-soft">{project.description}</p>{/if}
-            {#if lang && project.progress}
+            {#if project.importing}
+              <Importing importing={project.importing} class="mt-4" />
+            {:else if lang && project.progress}
               <ProgressBar class="mt-4" progress={project.progress} total={project.strings} />
               <p class="mt-2 text-sm text-ink-muted tabular">{donePercent(project.progress, project.strings)}% done · {project.strings.toLocaleString()} strings</p>
             {:else}

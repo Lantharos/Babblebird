@@ -9,7 +9,9 @@ import { githubRoutes } from "./github/routes.ts"
 import { errorResponse, fail } from "./lib/http.ts"
 import { meRoutes } from "./me/routes.ts"
 import { glossaryRoutes } from "./projects/glossary.ts"
+import { manageRoutes } from "./projects/manage.ts"
 import { memberRoutes } from "./projects/members.ts"
+import { mineRoutes } from "./projects/mine.ts"
 import { projectRoutes } from "./projects/routes.ts"
 import { screenshotRoutes } from "./screenshots/routes.ts"
 import { consumeSync } from "./sync/consumer.ts"
@@ -33,9 +35,11 @@ app.route("/auth", authRoutes)
 app.route("/badge", badgeRoutes)
 app.route("/github", githubRoutes)
 app.route("/me", meRoutes)
+app.route("/", mineRoutes)
 app.route("/projects", projectRoutes)
 app.route("/projects", editorRoutes)
 app.route("/projects", memberRoutes)
+app.route("/projects", manageRoutes)
 app.route("/projects", glossaryRoutes)
 app.route("/projects", screenshotRoutes)
 app.route("/", fileRoutes)

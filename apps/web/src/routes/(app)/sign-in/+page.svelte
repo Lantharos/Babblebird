@@ -14,7 +14,7 @@
   let sent = $state(false)
   let error = $state<string | null>(null)
   let busy = $state<"email" | "code" | "passkey" | "github" | null>(null)
-  const next = $derived(page.url.searchParams.get("next") ?? "/projects")
+  const next = $derived(page.url.searchParams.get("next") ?? "/dashboard")
 
   async function finish() {
     await session.reload()

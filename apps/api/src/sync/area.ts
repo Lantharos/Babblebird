@@ -1,5 +1,5 @@
 import { type GlossaryTerm, readFile } from "@babblebird/fluent"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { db, type ProjectRow, schema } from "../db/core.ts"
 import { all, eachRow, runAll, shard } from "../db/strings.ts"
 import { installationToken } from "../github/app.ts"
@@ -85,5 +85,15 @@ export async function syncArea(job: AreaJob) {
   if (sourcesChanged || touched.size)
     await recountArea(strings, project.id, job.areaId, sourcesChanged ? null : [...touched])
   const totals = await projectTotals(strings, project.id)
-  await db.update(schema.project).set(totals).where(eq(schema.project.id, project.id))
+  const done = sql`${schema.project.importDone} + ${job.blobs.length}`
+  await db
+    .update(schema.project)
+    .set({
+      ...totals,
+      ...(project.state === "scanning" && {
+        importDone: done,
+        state: sql`CASE WHEN ${done} >= ${schema.project.importTotal} THEN 'ready' ELSE ${schema.project.state} END`,
+      }),
+    })
+    .where(eq(schema.project.id, project.id))
 }

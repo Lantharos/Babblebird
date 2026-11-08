@@ -12,6 +12,14 @@ export interface LanguageProgress extends Progress {
   lang: string
 }
 
+export type ProjectState = "scanning" | "ready" | "empty" | "failed" | "removed"
+
+export interface ImportProgress {
+  total: number
+  done: number
+  startedAt: number | null
+}
+
 export interface ProjectSummary {
   slug: string
   owner: string
@@ -20,7 +28,19 @@ export interface ProjectSummary {
   strings: number
   words: number
   languages: number
+  state: ProjectState
+  importing: ImportProgress | null
   progress: Progress | null
+}
+
+export interface ImportStatus {
+  state: ProjectState
+  problem: string | null
+  importing: ImportProgress | null
+  areas: { slug: string; name: string; icon: string | null; strings: number }[]
+  strings: number
+  translations: number
+  languages: number
 }
 
 export interface AreaSummary {
@@ -39,16 +59,9 @@ export interface Abilities {
   admin: boolean
 }
 
-export interface Project {
-  slug: string
-  owner: string
-  name: string
-  description: string | null
+export interface Project extends Omit<ProjectSummary, "languages" | "progress"> {
   sourceLang: string
   languages: LanguageProgress[]
-  strings: number
-  words: number
-  state: "scanning" | "ready" | "empty" | "failed" | "removed"
   problem: string | null
   syncedAt: number | null
   headSha: string | null

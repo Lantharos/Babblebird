@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { CODE_MINUTES, signInCode } from "../mail/codes.ts"
 import { queueNotice } from "../mail/send.ts"
+import { claimInvitations } from "../projects/invitations.ts"
 
 const publicUrl = new URL(env.PUBLIC_URL)
 const SESSION_CACHE_SECONDS = 5 * 60
@@ -22,6 +23,7 @@ async function rememberGitHub(account: { providerId: string; userId: string; acc
     .update(schema.user)
     .set({ githubLogin: profile.login, githubId: String(profile.id) })
     .where(eq(schema.user.id, account.userId))
+  await claimInvitations(account.userId, [profile.login])
 }
 
 export const auth = betterAuth({
@@ -34,6 +36,7 @@ export const auth = betterAuth({
   account: { accountLinking: { enabled: true, trustedProviders: ["github"] } },
   user: { deleteUser: { enabled: true } },
   databaseHooks: {
+    user: { create: { after: (user) => claimInvitations(user.id, [user.email]) } },
     account: {
       create: { after: rememberGitHub },
       update: { after: (account) => rememberGitHub(account as never) },

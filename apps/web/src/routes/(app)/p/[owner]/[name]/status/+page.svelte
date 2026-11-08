@@ -4,15 +4,13 @@
   import ProjectHeader from "#lib/projects/ProjectHeader.svelte"
   import { projectResource } from "#lib/projects/project.svelte.ts"
   import Badge from "#lib/status/Badge.svelte"
-  import Delivery from "#lib/status/Delivery.svelte"
-  import Members from "#lib/status/Members.svelte"
   import Missing from "#lib/status/Missing.svelte"
   import { page } from "$app/state"
 
   const project = $derived(projectResource(page.params.owner!, page.params.name!))
 </script>
 
-<svelte:head><title>Status · {project.data?.name ?? "Project"} · Babblebird</title></svelte:head>
+<svelte:head><title>What’s missing · {project.data?.name ?? "Project"} · Babblebird</title></svelte:head>
 
 <Header />
 
@@ -23,10 +21,6 @@
       <Missing project={project.data} />
       <div class="space-y-14">
         <Badge project={project.data} />
-        {#if project.data.can.admin}
-          <Delivery project={project.data} onchange={() => project.refresh()} />
-          <Members project={project.data} />
-        {/if}
       </div>
     </div>
   {:else if project.error}

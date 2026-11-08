@@ -33,7 +33,7 @@ const progressOf = (row: AreaProgressRow): Progress =>
     : emptyProgress()
 const iconUrl = (icon: string | null) => (icon ? `/api/icons/${icon}` : null)
 
-function summaryOf(project: ProjectRow): Omit<ProjectSummary, "progress"> {
+export function summaryOf(project: ProjectRow): Omit<ProjectSummary, "progress"> {
   return {
     slug: project.slug,
     owner: project.owner,
@@ -42,6 +42,15 @@ function summaryOf(project: ProjectRow): Omit<ProjectSummary, "progress"> {
     strings: project.strings,
     words: project.words,
     languages: project.languages.length,
+    state: project.state,
+    importing:
+      project.state === "scanning"
+        ? {
+            total: project.importTotal,
+            done: project.importDone,
+            startedAt: project.importStartedAt?.getTime() ?? null,
+          }
+        : null,
   }
 }
 
@@ -105,7 +114,6 @@ projectRoutes.get("/:owner/:name", async (c) => {
     ...summaryOf(project),
     sourceLang: project.sourceLang,
     languages,
-    state: project.state,
     problem: project.problem,
     syncedAt: project.syncedAt?.getTime() ?? null,
     headSha: project.headSha,

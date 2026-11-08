@@ -148,7 +148,10 @@ export function detectAreas(
   const configured: Draft[] = config.areas.map((area) => {
     const claimed = files.filter((file) => area.files.some((glob) => globPattern(glob).test(file.pattern)))
     files = files.filter((file) => !claimed.includes(file))
-    return { name: area.name, qualifier: null, icon: area.icon ?? null, files: claimed }
+    const owners = new Set(claimed.map((file) => manifestOwner(file.pattern, paths)))
+    const [owner] = owners
+    const ownIcon = owners.size === 1 && owner ? (manifests.get(owner)?.icon ?? null) : null
+    return { name: area.name, qualifier: null, icon: area.icon ?? ownIcon, files: claimed }
   })
   const found = automatic(files, paths, manifests).sort((a, b) => a.name.localeCompare(b.name))
   distinctNames(found)
@@ -157,10 +160,11 @@ export function detectAreas(
     let slug = slugOf(draft.name)
     for (let index = 2; slugs.has(slug); index++) slug = `${slugOf(draft.name)}-${index}`
     slugs.add(slug)
+    const icon = draft.icon ?? config.icon ?? null
     return {
       slug,
       name: draft.name,
-      icon: draft.icon ? (byPath.get(draft.icon) ?? null) : null,
+      icon: icon ? (byPath.get(icon) ?? null) : null,
       files: draft.files.sort((a, b) => a.pattern.localeCompare(b.pattern)),
     }
   })

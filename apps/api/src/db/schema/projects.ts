@@ -35,6 +35,9 @@ export const project = sqliteTable(
     problem: text("problem"),
     headSha: text("head_sha"),
     syncedAt: integer("synced_at", { mode: "timestamp_ms" }),
+    importTotal: integer("import_total").notNull().default(0),
+    importDone: integer("import_done").notNull().default(0),
+    importStartedAt: integer("import_started_at", { mode: "timestamp_ms" }),
     strings: integer("strings").notNull().default(0),
     words: integer("words").notNull().default(0),
     createdAt: createdAt(),
@@ -78,3 +81,18 @@ export const delivery = sqliteTable("delivery", {
   mergedAt: integer("merged_at", { mode: "timestamp_ms" }),
   problem: text("problem"),
 })
+
+export const invitation = sqliteTable(
+  "invitation",
+  {
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    who: text("who").notNull(),
+    role: text("role", { enum: ROLES }).notNull(),
+    languages: text("languages", { mode: "json" }).$type<string[] | null>(),
+    areas: text("areas", { mode: "json" }).$type<string[] | null>(),
+    createdAt: createdAt(),
+  },
+  (table) => [primaryKey({ columns: [table.projectId, table.who] }), index("invitation_who").on(table.who)],
+)

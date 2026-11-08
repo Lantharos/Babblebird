@@ -12,7 +12,13 @@
 
   let { project }: { project: Project } = $props()
   const base = $derived(`${projectPath(project.owner, project.name)}/members`)
-  const members = $derived(resource<Member[]>(base))
+  interface Invitation {
+    who: string
+    role: Role
+    languages: string[] | null
+  }
+
+  const people = $derived(resource<{ members: Member[]; invitations: Invitation[] }>(base))
 
   let adding = $state(false)
   let who = $state("")
@@ -42,15 +48,22 @@
       adding = false
       who = ""
       languages = []
-      await members.refresh()
+      await people.refresh()
     } catch (error) {
       toasts.error(error)
     }
   }
 
+  async function uninvite(invite: Invitation) {
+    await api
+      .delete(`${projectPath(project.owner, project.name)}/invitations/${encodeURIComponent(invite.who)}`)
+      .catch(toasts.error)
+    await people.refresh()
+  }
+
   async function remove(member: Member) {
     await api.delete(`${base}/${member.userId}`).catch(toasts.error)
-    await members.refresh()
+    await people.refresh()
   }
 </script>
 
@@ -61,7 +74,7 @@
   </div>
   <p class="mt-1 text-[15px] text-ink-soft">People with write access to the repository are maintainers here on their own.</p>
   <ul class="mt-4 space-y-1">
-    {#each members.data ?? [] as member (member.userId)}
+    {#each people.data?.members ?? [] as member (member.userId)}
       <li class="flex items-center gap-3 py-1.5">
         {#if member.image}<img src={member.image} alt="" class="size-8 rounded-full" />{:else}<span class="grid size-8 place-items-center rounded-full bg-well text-sm font-semibold">{member.name.slice(0, 1)}</span>{/if}
         <div class="min-w-0 flex-1">
@@ -75,6 +88,16 @@
         {/if}
       </li>
     {/each}
+    {#each people.data?.invitations ?? [] as invite (invite.who)}
+      <li class="flex items-center gap-3 py-1.5">
+        <span class="grid size-8 place-items-center rounded-full bg-well text-sm font-semibold text-ink-muted">{invite.who.slice(0, 1).toUpperCase()}</span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-[15px] font-medium">{invite.who}</p>
+          <p class="truncate text-[13px] text-ink-muted">Invited as {roles.find((entry) => entry.value === invite.role)?.label.toLowerCase()}, joins when they sign in</p>
+        </div>
+        <button type="button" class="grid size-8 place-items-center rounded-full hover:bg-well" aria-label="Cancel the invitation for {invite.who}" onclick={() => uninvite(invite)}><X class="size-4" /></button>
+      </li>
+    {/each}
   </ul>
 </section>
 
@@ -84,7 +107,7 @@
     <label class="block space-y-1.5">
       <span class="text-[15px] font-medium">GitHub name or email</span>
       <input bind:value={who} required class="field" placeholder="octocat" />
-      <span class="block text-[13px] text-ink-muted">They need to have signed in to Babblebird once.</span>
+      <span class="block text-[13px] text-ink-muted">If they haven’t signed in to Babblebird yet, they join when they do.</span>
     </label>
     <div class="space-y-1.5">
       <p class="text-[15px] font-medium">Role</p>

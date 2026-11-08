@@ -9,6 +9,7 @@ const schema = z.object({
   source: z.string().default("en"),
   ignore: z.array(z.string()).default([]),
   glossary: z.string().optional(),
+  icon: z.string().optional(),
   areas: z
     .array(
       z.object({ name: z.string().min(1), files: z.array(z.string()).min(1), icon: z.string().optional() }),

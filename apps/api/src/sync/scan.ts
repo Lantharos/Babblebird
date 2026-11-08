@@ -98,7 +98,18 @@ export async function scanProject(job: ScanJob) {
           )
         : []
     })
+    const blobCount = jobs.reduce((sum, job) => sum + (job.kind === "area" ? job.blobs.length : 0), 0)
+    const importing = fresh && blobCount > 0
+    if (importing)
+      await db
+        .update(schema.project)
+        .set({ state: "scanning", importTotal: blobCount, importDone: 0, importStartedAt: new Date() })
+        .where(eq(schema.project.id, project.id))
     await sendJobs(jobs)
+    await strings
+      .prepare("INSERT INTO activity (project_id, kind, detail, at) VALUES (?, 'synced', ?, ?)")
+      .bind(project.id, JSON.stringify({ sha: job.sha, files: blobCount, areas: areas.length }), Date.now())
+      .run()
     for (const areaId of saved.recount) await recountArea(strings, project.id, areaId, null)
     const languages = [
       ...new Set(areas.flatMap((area) => area.files.flatMap((file) => [...file.langs.keys()]))),
@@ -108,7 +119,7 @@ export async function scanProject(job: ScanJob) {
     await db
       .update(schema.project)
       .set({
-        state: areas.length ? "ready" : "empty",
+        ...(!importing && { state: areas.length ? ("ready" as const) : ("empty" as const) }),
         problem: config.problem,
         headSha: job.sha,
         syncedAt: new Date(),

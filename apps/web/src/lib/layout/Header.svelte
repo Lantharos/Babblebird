@@ -16,6 +16,7 @@
       <a href="/projects" class="rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink">Projects</a>
       <a href="/docs" class="hidden rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink sm:block">Docs</a>
       {#if session.me}
+        <a href="/dashboard" class="rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink">Your projects</a>
         <a href="/settings" class="ml-2 flex items-center gap-2 rounded-full py-1 pr-3 pl-1 hover:bg-well" aria-label="Your settings">
           {#if session.me.image}
             <img src={session.me.image} alt="" class="size-7 rounded-full" />
