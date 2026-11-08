@@ -27,7 +27,7 @@
 {#if project.description}<p class="mt-4 max-w-2xl text-[17px] text-ink-soft">{project.description}</p>{/if}
 {#if project.importing}
   <a href="/p/{project.slug}/import" class="mt-6 block max-w-md"><Importing importing={project.importing} /></a>
-{:else if project.state === "failed" && project.problem}
+{:else if project.state === "failed" && project.problem && project.can.admin}
   <p class="mt-4 text-[15px] text-danger">The last sync didn’t work: {project.problem}</p>
 {/if}
 <nav class="mt-8 flex gap-1" aria-label="Project">
