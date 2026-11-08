@@ -81,26 +81,38 @@ export async function openPull(repo: Repo, base: string, languages: string) {
   })
 }
 
-export async function mergeWhenReady(repo: Repo, pull: Pull) {
+function squashed(message: string, number: number) {
+  const [title = "", ...body] = message.split("\n")
+  return { title: `${title} (#${number})`, body: body.join("\n").trim() }
+}
+
+export async function messageOf(repo: Repo, sha: string) {
+  const commit = await github<{ message: string }>(path(repo, `/git/commits/${sha}`), { token: repo.token })
+  return commit.message
+}
+
+export async function mergeWhenReady(repo: Repo, pull: Pull, message: string) {
+  const { title, body } = squashed(message, pull.number)
   const result = await github<{ errors?: { message: string }[] }>("/graphql", {
     token: repo.token,
     method: "POST",
     body: {
       query:
-        "mutation($id: ID!) { enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: SQUASH }) { clientMutationId } }",
-      variables: { id: pull.node_id },
+        "mutation($id: ID!, $title: String!, $body: String!) { enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: SQUASH, commitHeadline: $title, commitBody: $body }) { clientMutationId } }",
+      variables: { id: pull.node_id, title, body },
     },
   })
   if (!result.errors?.length) return false
-  return mergeNow(repo, pull.number)
+  return mergeNow(repo, pull.number, message)
 }
 
-export async function mergeNow(repo: Repo, number: number) {
+export async function mergeNow(repo: Repo, number: number, message: string) {
+  const { title, body } = squashed(message, number)
   try {
     await github(path(repo, `/pulls/${number}/merge`), {
       token: repo.token,
       method: "PUT",
-      body: { merge_method: "squash" },
+      body: { merge_method: "squash", commit_title: title, commit_message: body },
     })
     return true
   } catch (error) {

@@ -86,7 +86,7 @@ export async function deliver({ projectId }: DeliverJob) {
           ? "The default branch is protected, so translations go through a pull request."
           : null,
     })
-    if (await mergeWhenReady(repo, pull)) await recordDelivery(project.id, { mergedAt: new Date() })
+    if (await mergeWhenReady(repo, pull, message)) await recordDelivery(project.id, { mergedAt: new Date() })
   } catch (error) {
     console.error(error)
     await recordDelivery(project.id, { problem: explain(error) })
