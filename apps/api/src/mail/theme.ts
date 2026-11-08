@@ -1,21 +1,21 @@
 const light = {
-  canvas: "#fcf9f3",
-  well: "#ebe8e2",
-  ink: "#1d1b17",
-  inkSoft: "#4a463e",
-  inkMuted: "#6f6b62",
-  accent: "#725b2d",
+  canvas: "#f7f8f9",
+  well: "#edf0f2",
+  ink: "#12161b",
+  inkSoft: "#3c4550",
+  inkMuted: "#5c6570",
+  accent: "#b8430a",
   accentInk: "#ffffff",
 }
 
 const dark: typeof light = {
-  canvas: "#12110e",
-  well: "#2c2a25",
-  ink: "#ece9e3",
-  inkSoft: "#cbc6bd",
-  inkMuted: "#a29d93",
-  accent: "#ddc393",
-  accentInk: "#402d00",
+  canvas: "#101316",
+  well: "#22272c",
+  ink: "#e9ecef",
+  inkSoft: "#b9c0c7",
+  inkMuted: "#9aa3ad",
+  accent: "#ff8b52",
+  accentInk: "#1a0d05",
 }
 
 export const colors = light
