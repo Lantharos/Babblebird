@@ -12,10 +12,13 @@
     "check": "bun run --filter '*' check",
     "test": "bun run --filter '*' test",
     "lint": "biome check .",
-    "format": "biome check --write ."
+    "format": "biome check --write .",
+    "brand": "bun tools/brand/generate.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.6",
+    "@resvg/resvg-js": "2.6.2",
+    "fontkit": "2.0.4",
     "typescript": "7.0.2"
   }
 }

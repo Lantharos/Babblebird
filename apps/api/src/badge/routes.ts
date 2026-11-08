@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { db, schema } from "../db/core.ts"
 import { all, shard } from "../db/strings.ts"
-import { badgeSvg, colorFor } from "./svg.ts"
+import { type BrandBadge, badgeSvg, brandBadgeSvg, colorFor } from "./svg.ts"
 
 export const badgeRoutes = new Hono()
 
@@ -29,6 +29,17 @@ async function badge(owner: string, name: string, lang: string | undefined) {
   const percent = Math.floor(((rows[0]?.done ?? 0) / (project.strings * languages)) * 100)
   return badgeSvg(lang ? `translated · ${lang}` : "translated", `${percent}%`, colorFor(percent), icon)
 }
+
+badgeRoutes.get("/:kind{(?:translated|help|compact)\\.svg}", (c) =>
+  c.body(
+    brandBadgeSvg(
+      c.req.param("kind").slice(0, -4) as BrandBadge,
+      c.req.query("theme") === "dark" ? "dark" : "light",
+    ),
+    200,
+    { "content-type": "image/svg+xml", "cache-control": "public, max-age=86400" },
+  ),
+)
 
 badgeRoutes.get("/:owner/:file{.+\\.svg}", async (c) => {
   const cache = (caches as unknown as { default: Cache }).default

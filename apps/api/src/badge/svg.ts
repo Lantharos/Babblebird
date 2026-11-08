@@ -1,3 +1,5 @@
+import { BRAND_ICON, LETTERING } from "./lettering.ts"
+
 const CHAR_WIDTH = 6.6
 const PADDING = 8
 
@@ -17,4 +19,19 @@ export function colorFor(percent: number) {
   if (percent >= 90) return "#3f7d4e"
   if (percent >= 60) return "#8a5a00"
   return "#a8402b"
+}
+
+export type BrandBadge = keyof typeof LETTERING
+export type BadgeTheme = "light" | "dark"
+
+const THEMES = {
+  light: { background: "#ffffff", edge: "#12161b24", lead: "#3c4550", name: "#12161b" },
+  dark: { background: "#171b1f", edge: "#e9ecef1f", lead: "#b9c0c7", name: "#e9ecef" },
+}
+
+export function brandBadgeSvg(kind: BrandBadge, theme: BadgeTheme) {
+  const lettering = LETTERING[kind]
+  const colors = THEMES[theme]
+  const width = lettering.end + PADDING
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="20" role="img" aria-label="${lettering.label}"><title>${lettering.label}</title><rect x=".5" y=".5" width="${width - 1}" height="19" rx="5.5" fill="${colors.background}" stroke="${colors.edge}"/>${BRAND_ICON}<path d="${lettering.lead}" fill="${colors.lead}"/><path d="${lettering.name}" fill="${colors.name}"/></svg>`
 }

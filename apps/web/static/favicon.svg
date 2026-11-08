@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><title>Babblebird</title>
-  <rect width="64" height="64" rx="15" fill="#ff5f45"/>
-  <mask id="eye"><rect width="64" height="64" fill="#fff"/><circle cx="36.2" cy="27" r="2.9" fill="#000"/></mask>
-  <g transform="matrix(.86 0 0 .86 3.19 3.19)" mask="url(#eye)">
-    <path d="M41.6 22.6 54.5 26.4 45 33.4 30 32Z" fill="#ffbf9f"/>
-    <circle cx="30" cy="32" r="15" fill="#fff7f2"/>
-    <path d="M23.2 45.3 12.6 50.5 16.8 39.3 30 32Z" fill="#fff7f2"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><title>Babblebird</title><rect width="64" height="64" rx="15" fill="#ff5f45"/><mask id="eye"><rect x="0" y="0" width="64" height="64" fill="#fff"/><circle cx="37.71" cy="29.28" r="4.42" fill="#000"/></mask><g transform="matrix(.95 0 0 .95 .18 .18)" mask="url(#eye)"><path d="M41.6 22.6 54.5 26.4 45 33.4 30 32Z" fill="#fff7f2"/><circle cx="30" cy="32" r="15" fill="#fff7f2"/><path d="M23.2 45.3 12.6 50.5 16.8 39.3 30 32Z" fill="#fff7f2"/></g></svg>
