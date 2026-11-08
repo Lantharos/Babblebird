@@ -1,0 +1,32 @@
+<script lang="ts">
+  import type { Project } from "@babblebird/protocol"
+  import GitHubMark from "#lib/ui/GitHubMark.svelte"
+  import { page } from "$app/state"
+
+  let { project }: { project: Project } = $props()
+  const base = $derived(`/p/${project.slug}`)
+  const tabs = $derived([
+    { href: base, label: "Languages", active: !page.url.pathname.endsWith("/status") },
+    { href: `${base}/status`, label: "Status", active: page.url.pathname.endsWith("/status") },
+  ])
+</script>
+
+<div class="flex flex-wrap items-center gap-4">
+  <img src="https://github.com/{project.owner}.png?size=128" alt="" class="size-14 rounded-2xl bg-well" />
+  <div class="min-w-0 flex-1">
+    <h1 class="text-[30px] leading-tight font-semibold tracking-[-0.025em]">{project.name}</h1>
+    <p class="text-[15px] text-ink-muted">{project.owner}</p>
+  </div>
+  <a href="https://github.com/{project.owner}/{project.name}" class="button button-sm button-quiet"><GitHubMark class="size-4" />Repository</a>
+</div>
+{#if project.description}<p class="mt-4 max-w-2xl text-[17px] text-ink-soft">{project.description}</p>{/if}
+{#if project.state === "scanning"}
+  <p class="mt-4 text-[15px] text-ink-muted">Reading the repository for the first time. Strings show up here as each part is read.</p>
+{:else if project.state === "failed" && project.problem}
+  <p class="mt-4 text-[15px] text-danger">The last sync didn’t work: {project.problem}</p>
+{/if}
+<nav class="mt-8 flex gap-1" aria-label="Project">
+  {#each tabs as tab}
+    <a href={tab.href} aria-current={tab.active ? "page" : undefined} class="rounded-full px-4 py-1.5 text-[15px] font-medium transition-colors {tab.active ? 'bg-ink text-canvas' : 'text-ink-soft hover:bg-well'}">{tab.label}</a>
+  {/each}
+</nav>
