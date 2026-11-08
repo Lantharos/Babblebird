@@ -36,6 +36,7 @@ The API Worker needs these secrets, set with `bunx wrangler secret put <name>` i
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | The GitHub App's client ID and secret, used for signing in with GitHub and for the app's own tokens |
 | `GITHUB_APP_PRIVATE_KEY`                   | The GitHub App's private key, as downloaded                                                         |
 | `GITHUB_WEBHOOK_SECRET`                    | The GitHub App's webhook secret                                                                     |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | The Google OAuth client for "Continue with Google"; leave them unset to hide it                     |
 | `PULT_KEY`                                 | The key of the Pult environment that receives Babblebird's mail; without it mail is only stored     |
 
 `bun scripts/github-app.ts` in `apps/api` creates the GitHub App from `scripts/github-app.json` and stores its four secrets in the Worker: open the page it prints, confirm on GitHub, and it does the rest.

@@ -35,3 +35,7 @@ export function signInWithGitHub(next: string) {
 export function linkGitHub(next: string) {
   return auth.linkSocial({ provider: "github", callbackURL: next })
 }
+
+export function signInWithGoogle(next: string) {
+  return auth.signIn.social({ provider: "google", callbackURL: next })
+}

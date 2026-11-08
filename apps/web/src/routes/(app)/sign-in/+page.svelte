@@ -2,10 +2,18 @@
   import KeyRound from "@lucide/svelte/icons/key-round"
   import LoaderCircle from "@lucide/svelte/icons/loader-circle"
   import CodeField from "#lib/account/CodeField.svelte"
-  import { sendCode, signInWithCode, signInWithGitHub, signInWithPasskey } from "#lib/api/auth.ts"
+  import {
+    sendCode,
+    signInWithCode,
+    signInWithGitHub,
+    signInWithGoogle,
+    signInWithPasskey,
+  } from "#lib/api/auth.ts"
+  import { api } from "#lib/api/client.ts"
   import { session } from "#lib/api/session.svelte.ts"
   import Bird from "#lib/Bird.svelte"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
+  import GoogleMark from "#lib/ui/GoogleMark.svelte"
   import { goto, invalidateAll } from "$app/navigation"
   import { page } from "$app/state"
 
@@ -13,7 +21,8 @@
   let code = $state("")
   let sent = $state(false)
   let error = $state<string | null>(null)
-  let busy = $state<"email" | "code" | "passkey" | "github" | null>(null)
+  let busy = $state<"email" | "code" | "passkey" | "github" | "google" | null>(null)
+  let google = $state(false)
   const next = $derived(page.url.searchParams.get("next") ?? "/dashboard")
 
   async function finish() {
@@ -48,6 +57,15 @@
     if (!error) await finish()
   }
 
+  $effect(() => {
+    void api.get<{ google: boolean }>("/sign-in-options").then((options) => (google = options.google))
+  })
+
+  async function withGoogle() {
+    busy = "google"
+    await signInWithGoogle(`${location.origin}${next}`)
+  }
+
   async function github() {
     busy = "github"
     await signInWithGitHub(`${location.origin}${next}`)
@@ -80,6 +98,12 @@
         {#if busy === "github"}<LoaderCircle class="size-4 animate-spin" />{:else}<GitHubMark class="size-[18px]" />{/if}
         Continue with GitHub
       </button>
+      {#if google}
+        <button type="button" class="button button-quiet mt-2.5 w-full" disabled={busy !== null} onclick={withGoogle}>
+          {#if busy === "google"}<LoaderCircle class="size-4 animate-spin" />{:else}<GoogleMark class="size-[18px]" />{/if}
+          Continue with Google
+        </button>
+      {/if}
 
       <div class="my-6 flex items-center gap-3 text-[13px] text-ink-muted"><span class="h-px flex-1 bg-hairline"></span>or<span class="h-px flex-1 bg-hairline"></span></div>
 

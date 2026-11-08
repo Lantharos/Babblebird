@@ -1,9 +1,11 @@
 import { GITHUB_INSTALL_URL } from "@babblebird/protocol"
 import type { BetterAuthPlugin } from "better-auth"
-import { createAuthEndpoint } from "better-auth/api"
+import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api"
 import { expireCookie, setSessionCookie } from "better-auth/cookies"
 import { handleOAuthUserInfo } from "better-auth/oauth2"
+import { eq } from "drizzle-orm"
 import { z } from "zod"
+import { db, schema } from "../db/core.ts"
 
 const STATE_COOKIE = "install_state"
 const STATE_MINUTES = 30
@@ -13,6 +15,12 @@ const returned = z.object({
   state: z.string().optional(),
   installation_id: z.string().regex(/^\d+$/).optional(),
 })
+
+async function withoutGitHub(current: { user: { id: string } } | null) {
+  if (!current) return null
+  const user = await db.query.user.findFirst({ where: eq(schema.user.id, current.user.id) })
+  return user && !user.githubLogin ? user.id : null
+}
 
 const landingFor = (installation: string | undefined) =>
   installation ? `/setup?installation_id=${installation}` : "/dashboard"
@@ -48,12 +56,19 @@ export const installFlow = () =>
 
           const profile = info.data as { id: number }
           const accountId = String(profile.id)
-          const result = await handleOAuthUserInfo(c, {
+          const signIn = {
             userInfo: { ...info.user, id: accountId, email: info.user.email, name: info.user.name ?? "" },
             account: { providerId: "github", accountId, ...tokens, scope: tokens.scopes?.join(",") },
             callbackURL: landing,
-            source: { method: "oauth", oauth: { providerId: "github", profile } },
-          })
+            source: { method: "oauth" as const, oauth: { providerId: "github", profile } },
+          }
+          const linkTo = await withoutGitHub(await getSessionFromCtx(c))
+          const result = linkTo
+            ? await handleOAuthUserInfo(c, {
+                ...signIn,
+                selectedUser: { userId: linkTo, profile: "preserve" },
+              }).catch(() => handleOAuthUserInfo(c, signIn))
+            : await handleOAuthUserInfo(c, signIn)
           if (result.data) await setSessionCookie(c, result.data)
           throw c.redirect(landing)
         },

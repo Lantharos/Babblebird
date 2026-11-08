@@ -41,6 +41,7 @@ app.post("/ops", (c) => {
   if (!office) fail(404, "Not found")
   return office.handle(c.req.raw, c.executionCtx)
 })
+app.get("/sign-in-options", (c) => c.json({ google: !!env.GOOGLE_CLIENT_ID }))
 app.route("/auth", authRoutes)
 app.route("/badge", badgeRoutes)
 app.route("/github", githubRoutes)
