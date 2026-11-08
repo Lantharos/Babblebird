@@ -56,7 +56,7 @@ const server = Bun.serve({
     await putSecret("GITHUB_WEBHOOK_SECRET", app.webhook_secret)
     await putSecret("GITHUB_APP_PRIVATE_KEY", app.pem)
     console.log(
-      `Created ${app.html_url} (slug ${app.slug}). If the slug isn't "babblebird", update GITHUB_APP_URL in packages/protocol.`,
+      `Created ${app.html_url} (slug ${app.slug}). If the slug isn't "babblebird-translate", update GITHUB_APP_URL in packages/protocol.`,
     )
     setTimeout(() => server.stop(), 500)
     return new Response(
