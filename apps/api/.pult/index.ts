@@ -2,8 +2,8 @@
 import type { Manifest, Project } from "@lantharos/pult"
 import manifest from "./manifest.json" with { type: "json" }
 
-const project: Project<never> = {
-  manifest: manifest as Manifest<never>,
+const project: Project<"website" | "api" | "github" | "mail"> = {
+  manifest: manifest as Manifest<"website" | "api" | "github" | "mail">,
   modules: {
     "src/ops/define/flags.ts": () => import("../src/ops/define/flags.ts"),
     "src/ops/define/inboxes.ts": () => import("../src/ops/define/inboxes.ts"),
@@ -11,6 +11,7 @@ const project: Project<never> = {
     "src/ops/define/mail.ts": () => import("../src/ops/define/mail.ts"),
     "src/ops/define/pages.ts": () => import("../src/ops/define/pages.ts"),
     "src/ops/define/project.ts": () => import("../src/ops/define/project.ts"),
+    "src/ops/define/status.ts": () => import("../src/ops/define/status.ts"),
     "src/ops/define/user.ts": () => import("../src/ops/define/user.ts"),
   },
 }

@@ -1,6 +1,9 @@
 {
   "project": "babblebird",
-  "environments": ["dev", "prod"],
+  "environments": [
+    "dev",
+    "prod"
+  ],
   "sync": "prod",
   "delivery": {
     "mode": "webhook",
@@ -60,11 +63,21 @@
           "properties": {
             "state": {
               "type": "string",
-              "enum": ["scanning", "ready", "empty", "failed", "removed"]
+              "enum": [
+                "scanning",
+                "ready",
+                "empty",
+                "failed",
+                "removed"
+              ]
             },
             "delivery": {
               "type": "string",
-              "enum": ["off", "branch", "direct"]
+              "enum": [
+                "off",
+                "branch",
+                "direct"
+              ]
             },
             "paused": {
               "type": "boolean"
@@ -119,10 +132,16 @@
             "properties": {
               "delivery": {
                 "type": "string",
-                "enum": ["off", "branch", "direct"]
+                "enum": [
+                  "off",
+                  "branch",
+                  "direct"
+                ]
               }
             },
-            "required": ["delivery"]
+            "required": [
+              "delivery"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -144,10 +163,15 @@
             "properties": {
               "whoTranslates": {
                 "type": "string",
-                "enum": ["anyone", "members"]
+                "enum": [
+                  "anyone",
+                  "members"
+                ]
               }
             },
-            "required": ["whoTranslates"]
+            "required": [
+              "whoTranslates"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -171,7 +195,9 @@
                 "type": "string"
               }
             },
-            "required": ["person"]
+            "required": [
+              "person"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -180,7 +206,9 @@
           "background": false,
           "moves": null,
           "pick": {},
-          "choices": ["person"],
+          "choices": [
+            "person"
+          ],
           "schedule": null
         },
         "pause": {
@@ -198,7 +226,9 @@
                 "description": "For the record; the maintainers don’t see it"
               }
             },
-            "required": ["reason"]
+            "required": [
+              "reason"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -296,7 +326,9 @@
                 "description": "For the record; they don’t see it"
               }
             },
-            "required": ["reason"]
+            "required": [
+              "reason"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -352,7 +384,9 @@
                 "type": "string"
               }
             },
-            "required": ["project"]
+            "required": [
+              "project"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -361,7 +395,9 @@
           "background": false,
           "moves": null,
           "pick": {},
-          "choices": ["project"],
+          "choices": [
+            "project"
+          ],
           "schedule": null
         },
         "removeFromProject": {
@@ -376,7 +412,9 @@
                 "type": "string"
               }
             },
-            "required": ["project"]
+            "required": [
+              "project"
+            ]
           },
           "preview": false,
           "automatable": false,
@@ -385,7 +423,9 @@
           "background": false,
           "moves": null,
           "pick": {},
-          "choices": ["project"],
+          "choices": [
+            "project"
+          ],
           "schedule": null
         },
         "delete": {
@@ -415,9 +455,18 @@
       "icon": "bug",
       "resource": "project",
       "layout": "list",
-      "states": ["open", "fixed", "ignored"],
-      "closed": ["fixed", "ignored"],
-      "reopen": ["fixed"],
+      "states": [
+        "open",
+        "fixed",
+        "ignored"
+      ],
+      "closed": [
+        "fixed",
+        "ignored"
+      ],
+      "reopen": [
+        "fixed"
+      ],
       "data": {
         "type": "object",
         "properties": {
@@ -426,7 +475,10 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["sync", "delivery"]
+            "enum": [
+              "sync",
+              "delivery"
+            ]
           },
           "problem": {
             "type": "string"
@@ -435,9 +487,19 @@
             "type": "string"
           }
         },
-        "required": ["project", "kind", "problem", "detail"]
+        "required": [
+          "project",
+          "kind",
+          "problem",
+          "detail"
+        ]
       },
-      "columns": ["title", "occurrences", "tags", "lastSeen"],
+      "columns": [
+        "title",
+        "occurrences",
+        "tags",
+        "lastSeen"
+      ],
       "intake": null,
       "triage": null,
       "reply": false,
@@ -454,24 +516,41 @@
       "icon": "mail",
       "resource": null,
       "layout": "list",
-      "states": ["open", "handled", "spam"],
-      "closed": ["handled", "spam"],
+      "states": [
+        "open",
+        "handled",
+        "spam"
+      ],
+      "closed": [
+        "handled",
+        "spam"
+      ],
       "reopen": [],
       "data": {
         "type": "object",
         "properties": {
           "mailbox": {
             "type": "string",
-            "enum": ["hello", "privacy", "security"]
+            "enum": [
+              "hello",
+              "privacy",
+              "security"
+            ]
           },
           "from": {
             "type": "string"
           },
           "name": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "replyTo": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "subject": {
             "type": "string"
@@ -483,9 +562,20 @@
             "type": "string"
           }
         },
-        "required": ["mailbox", "from", "name", "replyTo", "subject", "text", "raw"]
+        "required": [
+          "mailbox",
+          "from",
+          "name",
+          "replyTo",
+          "subject",
+          "text",
+          "raw"
+        ]
       },
-      "columns": ["title", "lastSeen"],
+      "columns": [
+        "title",
+        "lastSeen"
+      ],
       "intake": null,
       "triage": {
         "instructions": "Each item is an email sent to one of babblebird.dev's addresses: hello, privacy or security. Babblebird is a translation platform for open source projects. Privacy requests and security reports matter even when they're badly written; only close what is plainly unsolicited advertising, phishing or spam.",
@@ -522,8 +612,15 @@
       "icon": "rocket",
       "resource": "project",
       "layout": "list",
-      "states": ["open", "fine", "removed"],
-      "closed": ["fine", "removed"],
+      "states": [
+        "open",
+        "fine",
+        "removed"
+      ],
+      "closed": [
+        "fine",
+        "removed"
+      ],
       "reopen": [],
       "data": {
         "type": "object",
@@ -535,15 +632,26 @@
             "type": "string"
           },
           "description": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "private": {
             "type": "boolean"
           }
         },
-        "required": ["project", "account", "description", "private"]
+        "required": [
+          "project",
+          "account",
+          "description",
+          "private"
+        ]
       },
-      "columns": ["title", "lastSeen"],
+      "columns": [
+        "title",
+        "lastSeen"
+      ],
       "intake": null,
       "triage": {
         "instructions": "Each item is a GitHub repository whose owner just added Babblebird, a translation platform for open source projects. It shows what Babblebird found in the repository: its description, languages and how many strings it has. Most are real projects. Flag only ones that plainly look like spam, advertising or content that isn't software.",
@@ -591,7 +699,9 @@
                 "type": "count",
                 "inbox": "failures",
                 "filter": {
-                  "state": ["open"]
+                  "state": [
+                    "open"
+                  ]
                 },
                 "view": null,
                 "label": "Failures"
@@ -602,7 +712,9 @@
                 "type": "count",
                 "inbox": "new-projects",
                 "filter": {
-                  "state": ["open"]
+                  "state": [
+                    "open"
+                  ]
                 },
                 "view": null,
                 "label": "New projects"
@@ -613,7 +725,9 @@
                 "type": "count",
                 "inbox": "mail",
                 "filter": {
-                  "state": ["open"]
+                  "state": [
+                    "open"
+                  ]
                 },
                 "view": null,
                 "label": "Mail"
@@ -629,7 +743,9 @@
                 "type": "items",
                 "inbox": "failures",
                 "filter": {
-                  "state": ["open"]
+                  "state": [
+                    "open"
+                  ]
                 },
                 "sort": "-lastSeen",
                 "view": null,
@@ -642,7 +758,9 @@
                 "type": "items",
                 "inbox": "new-projects",
                 "filter": {
-                  "state": ["open"]
+                  "state": [
+                    "open"
+                  ]
                 },
                 "sort": "-lastSeen",
                 "view": null,
@@ -656,7 +774,9 @@
           "type": "items",
           "inbox": "mail",
           "filter": {
-            "state": ["open"]
+            "state": [
+              "open"
+            ]
           },
           "sort": "-lastSeen",
           "view": null,
@@ -723,6 +843,44 @@
   "roles": {},
   "spaces": [],
   "notify": {},
-  "status": null,
-  "version": "b354d242ce4c"
+  "status": {
+    "source": "src/ops/define/status.ts:14",
+    "title": "Babblebird",
+    "logo": null,
+    "website": "https://babblebird.dev",
+    "css": "@font-face { font-family: \"Open Runde\"; font-weight: 400; src: url(\"https://babblebird.dev/fonts/OpenRunde-Regular.woff2\") format(\"woff2\"); }\n@font-face { font-family: \"Open Runde\"; font-weight: 500; src: url(\"https://babblebird.dev/fonts/OpenRunde-Medium.woff2\") format(\"woff2\"); }\n@font-face { font-family: \"Open Runde\"; font-weight: 600; src: url(\"https://babblebird.dev/fonts/OpenRunde-Semibold.woff2\") format(\"woff2\"); }\n:root { --bg: #f7f8f9; --panel: #ffffff; --raised: #edf0f2; --line: rgb(18 22 27 / 0.09); --text: #12161b; --muted: #3c4550; --faint: #5c6570; --signal: #23794a; --warn: #8f5c06; --danger: #b8352a; --info: #b8430a; }\n@media (prefers-color-scheme: dark) {\n  :root { --bg: #101316; --panel: #171b1f; --raised: #22272c; --line: rgb(233 236 239 / 0.09); --text: #e9ecef; --muted: #b9c0c7; --faint: #9aa3ad; --signal: #67cf95; --warn: #f0b44c; --danger: #ff8f80; --info: #ff8b52; }\n}\nbody { font-family: \"Open Runde\", system-ui, sans-serif; }",
+    "components": {
+      "website": {
+        "label": "Website and editor",
+        "description": null,
+        "monitored": false,
+        "check": "https://babblebird.dev"
+      },
+      "api": {
+        "label": "Sign-in and saving translations",
+        "description": null,
+        "monitored": true,
+        "check": null
+      },
+      "github": {
+        "label": "Reading from and sending to GitHub",
+        "description": "Syncing repositories and opening pull requests",
+        "monitored": false,
+        "check": null
+      },
+      "mail": {
+        "label": "Email",
+        "description": "Sign-in codes and notifications",
+        "monitored": false,
+        "check": null
+      }
+    },
+    "alert": [
+      {
+        "person": "kristof@lanth.me"
+      }
+    ],
+    "after": 120000
+  },
+  "version": "caafcb4e38db"
 }

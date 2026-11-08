@@ -63,6 +63,8 @@ The inboxes:
 
 The overview page has the totals and lists the projects that fail to read or send, are importing or are paused, and the suspended people. The flags: `deliveries` holds every pull request and commit while it's off, and `new-accounts` refuses new sign-ups while it's off.
 
+The public status page is at status.pult.sh/<organization>/babblebird. Pult checks the website itself and follows the Worker through its pings, and alerts the owner when either goes down. GitHub syncing and email are set by hand from Status in the Pult console, where incidents are posted too.
+
 `pult build` in `apps/api` turns the definitions into `.pult/`, which is committed. The deployed Worker publishes them to the `prod` environment by itself on its next scheduled run, within ten minutes, so deploying the Worker is enough; the `dev` environment takes them with `bunx pult deploy` and its own key.
 
 ## Email
