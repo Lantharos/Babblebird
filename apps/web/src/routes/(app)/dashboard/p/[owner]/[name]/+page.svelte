@@ -1,5 +1,6 @@
 <script lang="ts">
   import ArrowLeft from "@lucide/svelte/icons/arrow-left"
+  import { session } from "#lib/api/session.svelte.ts"
   import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import Delivery from "#lib/manage/Delivery.svelte"
@@ -7,9 +8,15 @@
   import Remove from "#lib/manage/Remove.svelte"
   import Sync from "#lib/manage/Sync.svelte"
   import { projectResource } from "#lib/projects/project.svelte.ts"
+  import { goto } from "$app/navigation"
   import { page } from "$app/state"
 
   const project = $derived(projectResource(page.params.owner!, page.params.name!))
+
+  $effect(() => {
+    if (session.loaded && !session.me)
+      void goto(`/sign-in?next=${encodeURIComponent(page.url.pathname)}`, { replaceState: true })
+  })
 </script>
 
 <svelte:head><title>Manage {project.data?.name ?? "project"} · Babblebird</title></svelte:head>
