@@ -13,10 +13,10 @@
   <div class="{wide ? 'px-4 sm:px-6' : 'page'} flex h-16 items-center gap-6">
     <a href="/" class="py-2"><Wordmark class="text-[23px]" /></a>
     <nav class="ml-auto flex items-center gap-1 text-[15px]">
-      <a href="/projects" class="rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink">Help translate</a>
+      <a href="/projects" class="hidden rounded-full px-3 py-1.5 whitespace-nowrap text-ink-soft transition-colors hover:text-ink sm:block">Help translate</a>
       <a href="/docs" class="hidden rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink sm:block">Docs</a>
       {#if session.me}
-        <a href="/dashboard" class="rounded-full px-3 py-1.5 text-ink-soft transition-colors hover:text-ink">Your projects</a>
+        <a href="/dashboard" class="rounded-full px-3 py-1.5 whitespace-nowrap text-ink-soft transition-colors hover:text-ink">Your projects</a>
         <a href="/settings" class="ml-2 flex items-center gap-2 rounded-full py-1 pr-3 pl-1 hover:bg-well" aria-label="Your settings">
           {#if session.me.image}
             <img src={session.me.image} alt="" class="size-7 rounded-full" />
