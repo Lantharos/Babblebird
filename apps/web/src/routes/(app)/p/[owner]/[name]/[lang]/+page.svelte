@@ -27,7 +27,7 @@
 
 <Header />
 
-<main class="page pt-10">
+<main class="page pt-10 pb-24">
   <a href="/p/{owner.toLowerCase()}/{name.toLowerCase()}" class="inline-flex items-center gap-1.5 text-[15px] text-ink-muted hover:text-ink">
     <ArrowLeft class="size-4" />{project.data?.name ?? name}
   </a>

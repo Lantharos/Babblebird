@@ -1,9 +1,11 @@
 <script lang="ts">
   import type { ProjectSummary } from "@babblebird/protocol"
+  import { linkGitHub, signInWithGitHub } from "#lib/api/auth.ts"
   import { ApiError, api } from "#lib/api/client.ts"
   import { session } from "#lib/api/session.svelte.ts"
   import Header from "#lib/layout/Header.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
+  import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { goto } from "$app/navigation"
   import { page } from "$app/state"
 
@@ -22,24 +24,24 @@
     }
   }
 
+  const here = () => `${location.origin}${page.url.pathname}${page.url.search}`
+  const unlinked = $derived(session.loaded && !!session.me && !session.me.githubLogin)
+
   $effect(() => {
     if (!session.loaded) return
     if (!installation) void goto("/dashboard", { replaceState: true })
-    else if (!session.me)
-      void goto(`/sign-in?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, {
-        replaceState: true,
-      })
-    else void load()
+    else if (!session.me) void signInWithGitHub(here())
+    else if (session.me.githubLogin) void load()
   })
 
-  poll(load, 2000, () => !projects?.length)
+  poll(load, 2000, () => !unlinked && !!session.me && !projects?.length)
 </script>
 
 <svelte:head><title>Setting up · Babblebird</title></svelte:head>
 
 <Header />
 
-<main class="page max-w-2xl pt-20">
+<main class="page max-w-2xl pt-20 pb-24">
   {#if projects?.length}
     <h1 class="text-[34px] font-semibold tracking-[-0.03em]">Reading your repositories</h1>
     <ul class="mt-8 space-y-2">
@@ -47,6 +49,14 @@
         <li><a href="/p/{project.slug}/import" class="link text-[17px]">{project.owner}/{project.name}</a></li>
       {/each}
     </ul>
+  {:else if unlinked}
+    <h1 class="text-[34px] font-semibold tracking-[-0.03em]">Link your GitHub account</h1>
+    <p class="mt-3 text-[17px] leading-relaxed text-ink-soft">
+      You're signed in as {session.me?.email}. Link the GitHub account that added Babblebird so it can check the repository is yours.
+    </p>
+    <button type="button" class="button button-lg button-ink mt-8" onclick={() => linkGitHub(here())}>
+      <GitHubMark class="size-5" />Link GitHub
+    </button>
   {:else}
     <h1 class="text-[34px] font-semibold tracking-[-0.03em]">Waiting for GitHub</h1>
     <p class="mt-3 text-[17px] leading-relaxed text-ink-soft">

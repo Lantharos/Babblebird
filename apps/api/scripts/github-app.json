@@ -7,10 +7,13 @@
     "url": "https://babblebird.dev/api/github/webhook",
     "active": true
   },
-  "callback_urls": ["https://babblebird.dev/api/auth/callback/github"],
-  "setup_url": "https://babblebird.dev/projects",
+  "callback_urls": [
+    "https://babblebird.dev/api/auth/github/installed",
+    "https://babblebird.dev/api/auth/callback/github"
+  ],
+  "setup_url": "https://babblebird.dev/setup",
   "setup_on_update": true,
-  "request_oauth_on_install": false,
+  "request_oauth_on_install": true,
   "default_permissions": {
     "contents": "write",
     "metadata": "read",

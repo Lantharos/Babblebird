@@ -55,7 +55,7 @@
 
 <Header />
 
-<main class="page pt-14">
+<main class="page pt-14 pb-24">
   <p class="font-mono text-[15px] text-ink-muted">{owner}/{name}</p>
   <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
     <h1 class="text-[40px] font-semibold tracking-[-0.03em] sm:text-[52px]">{finished ? "All read in" : "Reading your translations"}</h1>

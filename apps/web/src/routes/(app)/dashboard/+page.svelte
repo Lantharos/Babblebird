@@ -57,7 +57,7 @@
 
 <Header />
 
-<main class="page pt-12">
+<main class="page pt-12 pb-24">
   <div class="flex flex-wrap items-end justify-between gap-6">
     <h1 class="text-[36px] font-semibold tracking-[-0.03em]">Your projects</h1>
     <a href={INSTALL_URL} class="button button-ink"><Plus class="size-4" />Add a repository</a>

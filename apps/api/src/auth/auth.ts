@@ -8,6 +8,7 @@ import { db, schema } from "../db/core.ts"
 import { CODE_MINUTES, signInCode } from "../mail/codes.ts"
 import { queueNotice } from "../mail/send.ts"
 import { claimInvitations } from "../projects/invitations.ts"
+import { installFlow } from "./install.ts"
 
 const publicUrl = new URL(env.PUBLIC_URL)
 const SESSION_CACHE_SECONDS = 5 * 60
@@ -33,7 +34,7 @@ export const auth = betterAuth({
   trustedOrigins: [publicUrl.origin],
   database: drizzleAdapter(db, { provider: "sqlite", schema }),
   session: { cookieCache: { enabled: true, maxAge: SESSION_CACHE_SECONDS } },
-  account: { accountLinking: { enabled: true, trustedProviders: ["github"] } },
+  account: { accountLinking: { enabled: true, trustedProviders: ["github"], allowDifferentEmails: true } },
   user: { deleteUser: { enabled: true } },
   databaseHooks: {
     user: { create: { after: (user) => claimInvitations(user.id, [user.email]) } },
@@ -46,6 +47,7 @@ export const auth = betterAuth({
     github: { clientId: env.GITHUB_CLIENT_ID, clientSecret: env.GITHUB_CLIENT_SECRET },
   },
   plugins: [
+    installFlow(),
     passkey({ rpID: publicUrl.hostname, rpName: "Babblebird", origin: publicUrl.origin }),
     emailOTP({
       expiresIn: CODE_MINUTES * 60,

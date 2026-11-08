@@ -13,7 +13,7 @@
 
 <Header />
 
-<main class="page pt-10">
+<main class="page pt-10 pb-24">
   {#if project.data}
     <ProjectHeader project={project.data} />
     <div class="mt-10 grid gap-16 lg:grid-cols-[minmax(0,1fr)_22rem]">

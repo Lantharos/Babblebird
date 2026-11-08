@@ -24,7 +24,7 @@
 
 <Header />
 
-<main class="page pt-10">
+<main class="page pt-10 pb-24">
   {#if project.error}
     <p class="text-danger">{project.error.message}</p>
   {:else if project.data}

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { INSTALL_URL } from "@babblebird/protocol"
+  import ArrowRight from "@lucide/svelte/icons/arrow-right"
   import Bubble from "#lib/landing/Bubble.svelte"
   import Diff from "#lib/landing/Diff.svelte"
   import Journey from "#lib/landing/Journey.svelte"
@@ -8,8 +9,10 @@
   import Plurals from "#lib/landing/Plurals.svelte"
   import Puff from "#lib/landing/Puff.svelte"
   import Said from "#lib/landing/Said.svelte"
+  import Thanks from "#lib/landing/Thanks.svelte"
   import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
+  import GitHubMark from "#lib/ui/GitHubMark.svelte"
 </script>
 
 <svelte:head>
@@ -71,6 +74,24 @@
       How a string gets around
     </h2>
     <div class="mt-16"><Journey /></div>
+  </section>
+
+  <section class="page mt-28 mb-8 sm:mt-36">
+    <div class="grid items-center gap-12 rounded-[40px] bg-well px-8 py-14 sm:px-14 sm:py-20 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <div class="max-w-xl">
+        <h2 class="text-[36px] leading-[1.05] font-semibold tracking-[-0.03em] sm:text-[52px]">Let everyone use what you made</h2>
+        <p class="mt-5 text-[18px] leading-relaxed text-ink-soft">
+          Add Babblebird to a repository and the people who speak your users’ languages can start today. Their work comes back to you as commits, with their names on it.
+        </p>
+        <div class="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <a href={INSTALL_URL} class="button button-lg button-ink"><GitHubMark class="size-5" />Add to a repository</a>
+          <a href="/projects" class="group inline-flex items-center gap-1.5 text-[17px] font-medium text-ink-soft hover:text-ink">
+            Or help translate<ArrowRight class="size-4 transition-transform group-hover:translate-x-0.5" />
+          </a>
+        </div>
+      </div>
+      <Thanks />
+    </div>
   </section>
 </main>
 

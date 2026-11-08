@@ -26,7 +26,7 @@
 
 <Header />
 
-<main class="page max-w-5xl pt-10 pb-8">
+<main class="page max-w-5xl pt-10 pb-24">
   <a href="/dashboard" class="inline-flex items-center gap-1.5 text-[15px] text-ink-muted hover:text-ink"><ArrowLeft class="size-4" />Your projects</a>
   {#if project.error}
     <p class="mt-8 text-danger">{project.error.message}</p>

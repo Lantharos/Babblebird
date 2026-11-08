@@ -34,20 +34,24 @@ export const sections: { name: string; slugs: string[] }[] = [
   { name: "Running Babblebird", slugs: ["self-hosting"] },
 ]
 
-const pages = new Map(
-  Object.entries(files).map(([path, text]) => {
-    const slug = path.split("/").pop()!.replace(/\.md$/, "")
-    const [heading, ...rest] = text.trim().split("\n")
-    return [
-      slug,
-      {
+export function readPages(found: Record<string, string>) {
+  return new Map(
+    Object.entries(found).map(([path, text]) => {
+      const slug = path.split("/").pop()!.replace(/\.md$/, "")
+      const [heading, ...rest] = text.trim().split("\n")
+      return [
         slug,
-        title: heading!.replace(/^#\s+/, ""),
-        html: markdown.render(rest.join("\n")),
-      } satisfies DocPage,
-    ]
-  }),
-)
+        {
+          slug,
+          title: heading!.replace(/^#\s+/, ""),
+          html: markdown.render(rest.join("\n")),
+        } satisfies DocPage,
+      ]
+    }),
+  )
+}
+
+const pages = readPages(files)
 
 export const docPage = (slug: string) => pages.get(slug) ?? null
 

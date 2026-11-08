@@ -2,10 +2,11 @@
   import KeyRound from "@lucide/svelte/icons/key-round"
   import LogOut from "@lucide/svelte/icons/log-out"
   import Languages from "#lib/account/Languages.svelte"
-  import { auth } from "#lib/api/auth.ts"
+  import { auth, linkGitHub } from "#lib/api/auth.ts"
   import { session } from "#lib/api/session.svelte.ts"
   import Header from "#lib/layout/Header.svelte"
   import SchemeSwitch from "#lib/theme/SchemeSwitch.svelte"
+  import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
   import { goto } from "$app/navigation"
@@ -48,7 +49,7 @@
 
 <Header />
 
-<main class="page max-w-2xl pt-10">
+<main class="page max-w-2xl pt-10 pb-24">
   <h1 class="text-[34px] font-semibold tracking-[-0.025em]">Settings</h1>
   {#if session.me}
     <form class="mt-8 space-y-2" onsubmit={rename}>
@@ -63,7 +64,12 @@
     <section class="mt-10 space-y-3">
       <h2 class="text-[20px] font-semibold">Signing in</h2>
       <p class="text-[15px] text-ink-soft">You sign in as {session.me.email}{session.me.githubLogin ? ` and with GitHub as ${session.me.githubLogin}` : ""}.</p>
-      <button type="button" class="button button-quiet" onclick={addPasskey}><KeyRound class="size-4" />Add a passkey</button>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" class="button button-quiet" onclick={addPasskey}><KeyRound class="size-4" />Add a passkey</button>
+        {#if !session.me.githubLogin}
+          <button type="button" class="button button-quiet" onclick={() => linkGitHub(`${location.origin}/settings`)}><GitHubMark class="size-4" />Link GitHub</button>
+        {/if}
+      </div>
     </section>
     <section class="mt-10 space-y-3">
       <h2 class="text-[20px] font-semibold">Appearance</h2>

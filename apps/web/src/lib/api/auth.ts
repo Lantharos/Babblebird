@@ -31,3 +31,7 @@ export async function signInWithPasskey() {
 export function signInWithGitHub(next: string) {
   return auth.signIn.social({ provider: "github", callbackURL: next })
 }
+
+export function linkGitHub(next: string) {
+  return auth.linkSocial({ provider: "github", callbackURL: next })
+}
