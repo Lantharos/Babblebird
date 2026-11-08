@@ -23,6 +23,7 @@
     { href: "/projects", label: "Help translate" },
     { href: "/docs", label: "Docs" },
     { href: "/brand", label: "Brand" },
+    { href: "https://status.babblebird.dev", label: "Status" },
     { href: "/privacy", label: "Privacy" },
     { href: "/terms", label: "Terms" },
     { href: "https://github.com/Lantharos/Babblebird", label: "Source code" },

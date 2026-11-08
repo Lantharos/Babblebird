@@ -846,7 +846,10 @@
   "status": {
     "source": "src/ops/define/status.ts:14",
     "title": "Babblebird",
-    "logo": null,
+    "logo": {
+      "light": "https://babblebird.dev/brand/babblebird-wordmark-light.svg",
+      "dark": "https://babblebird.dev/brand/babblebird-wordmark-dark.svg"
+    },
     "website": "https://babblebird.dev",
     "css": "@font-face { font-family: \"Open Runde\"; font-weight: 400; src: url(\"https://babblebird.dev/fonts/OpenRunde-Regular.woff2\") format(\"woff2\"); }\n@font-face { font-family: \"Open Runde\"; font-weight: 500; src: url(\"https://babblebird.dev/fonts/OpenRunde-Medium.woff2\") format(\"woff2\"); }\n@font-face { font-family: \"Open Runde\"; font-weight: 600; src: url(\"https://babblebird.dev/fonts/OpenRunde-Semibold.woff2\") format(\"woff2\"); }\n:root { --bg: #f7f8f9; --panel: #ffffff; --raised: #edf0f2; --line: rgb(18 22 27 / 0.09); --text: #12161b; --muted: #3c4550; --faint: #5c6570; --signal: #23794a; --warn: #8f5c06; --danger: #b8352a; --info: #bc3f17; }\n@media (prefers-color-scheme: dark) {\n  :root { --bg: #101316; --panel: #171b1f; --raised: #22272c; --line: rgb(233 236 239 / 0.09); --text: #e9ecef; --muted: #b9c0c7; --faint: #9aa3ad; --signal: #67cf95; --warn: #f0b44c; --danger: #ff8f80; --info: #ff865a; }\n}\nbody { font-family: \"Open Runde\", system-ui, sans-serif; }",
     "components": {
@@ -882,5 +885,5 @@
     ],
     "after": 120000
   },
-  "version": "ae15d4ecec80"
+  "version": "a46364ad5414"
 }

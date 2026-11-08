@@ -13,6 +13,10 @@ body { font-family: "Open Runde", system-ui, sans-serif; }
 
 export const statusPage = status({
   title: "Babblebird",
+  logo: {
+    light: "https://babblebird.dev/brand/babblebird-wordmark-light.svg",
+    dark: "https://babblebird.dev/brand/babblebird-wordmark-dark.svg",
+  },
   website: "https://babblebird.dev",
   css,
   components: {
