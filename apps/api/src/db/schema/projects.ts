@@ -24,6 +24,8 @@ export const project = sqliteTable(
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     description: text("description"),
+    icon: text("icon"),
+    layoutVersion: integer("layout_version").notNull().default(0),
     private: integer("private", { mode: "boolean" }).notNull(),
     defaultBranch: text("default_branch").notNull(),
     sourceLang: text("source_lang").notNull().default("en"),

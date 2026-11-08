@@ -8,6 +8,7 @@
   import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import Importing from "#lib/projects/Importing.svelte"
+  import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { goto } from "$app/navigation"
@@ -63,7 +64,7 @@
         {#each owned as project (project.slug)}
           <li>
             <a href={project.state === "removed" ? INSTALL_URL : target(project)} class="-mx-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl px-4 py-5 hover:bg-well/60">
-              <img src="https://github.com/{project.owner}.png?size=96" alt="" class="size-11 rounded-xl bg-well" />
+              <ProjectIcon {project} />
               <div class="min-w-0 flex-1">
                 <p class="truncate text-[17px] font-semibold">{project.owner}/{project.name}</p>
                 {#if project.state === "removed"}

@@ -39,6 +39,7 @@ export function summaryOf(project: ProjectRow): Omit<ProjectSummary, "progress">
     owner: project.owner,
     name: project.name,
     description: project.description,
+    icon: project.icon ? `/api/icons/${project.icon}` : null,
     strings: project.strings,
     words: project.words,
     languages: project.languages.length,

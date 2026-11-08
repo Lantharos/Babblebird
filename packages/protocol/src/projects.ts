@@ -25,6 +25,7 @@ export interface ProjectSummary {
   owner: string
   name: string
   description: string | null
+  icon: string | null
   strings: number
   words: number
   languages: number

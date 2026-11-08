@@ -32,7 +32,7 @@ icon = "kestrel/ui/icons/desktop.svg"
 
 `files` takes patterns with `{lang}` where the language folder is, and `*` and `**` as usual. Areas listed here come first, in this order; files they don't claim are grouped as above.
 
-An area's icon is its own `icon`, then the icon of the app or extension all its files belong to, then the top-level `icon`. Icons are SVG, PNG or WebP files in the repository.
+An area's icon is its own `icon`, or the icon of the app or extension all its files belong to; areas without one get a coloured shape. The top-level `icon` is the project's own icon, shown with its name, in lists and on its badge. Without it, Babblebird looks for a logo at the usual places, such as `logo.svg`, `.github/logo.svg` or `public/favicon.svg`, and otherwise uses the owner's GitHub picture. Icons are SVG, PNG or WebP files in the repository.
 
 ## What gets written
 

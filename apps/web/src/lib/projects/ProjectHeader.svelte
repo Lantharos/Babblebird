@@ -4,6 +4,7 @@
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { page } from "$app/state"
   import Importing from "./Importing.svelte"
+  import ProjectIcon from "./ProjectIcon.svelte"
 
   let { project }: { project: Project } = $props()
   const base = $derived(`/p/${project.slug}`)
@@ -14,7 +15,7 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-4">
-  <img src="https://github.com/{project.owner}.png?size=128" alt="" class="size-14 rounded-2xl bg-well" />
+  <ProjectIcon {project} class="size-14 rounded-2xl" />
   <div class="min-w-0 flex-1">
     <h1 class="text-[30px] leading-tight font-semibold tracking-[-0.025em]">{project.name}</h1>
     <p class="text-[15px] text-ink-muted">{project.owner}</p>

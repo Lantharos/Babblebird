@@ -7,6 +7,7 @@
   import Importing from "#lib/projects/Importing.svelte"
   import LanguageSelect from "#lib/projects/LanguageSelect.svelte"
   import ProgressBar from "#lib/projects/ProgressBar.svelte"
+  import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
   import { donePercent } from "#lib/projects/progress.ts"
 
@@ -65,7 +66,7 @@
         <li class="enter" style:--order={index}>
           <a href="/p/{project.slug}{lang ? `/${lang}` : ''}" class="group block">
             <div class="flex items-center gap-3">
-              <img src="https://github.com/{project.owner}.png?size=96" alt="" class="size-11 rounded-xl bg-well" loading="lazy" />
+              <ProjectIcon {project} />
               <div class="min-w-0">
                 <p class="truncate text-[17px] font-semibold group-hover:text-accent">{project.name}</p>
                 <p class="truncate text-sm text-ink-muted">{project.owner}</p>

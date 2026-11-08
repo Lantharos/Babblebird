@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers"
 import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { db, schema } from "../db/core.ts"
@@ -21,8 +22,12 @@ async function badge(owner: string, name: string, lang: string | undefined) {
       .bind(...(lang ? [project.id, lang] : [project.id])),
   )
   const languages = lang ? 1 : project.languages.length
+  const stored = project.icon ? await env.FILES.get(`icons/${project.icon}`) : null
+  const icon = stored
+    ? `data:${stored.httpMetadata?.contentType};base64,${new Uint8Array(await stored.arrayBuffer()).toBase64()}`
+    : null
   const percent = Math.floor(((rows[0]?.done ?? 0) / (project.strings * languages)) * 100)
-  return badgeSvg(lang ? `translated · ${lang}` : "translated", `${percent}%`, colorFor(percent))
+  return badgeSvg(lang ? `translated · ${lang}` : "translated", `${percent}%`, colorFor(percent), icon)
 }
 
 badgeRoutes.get("/:owner/:file{.+\\.svg}", async (c) => {

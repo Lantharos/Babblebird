@@ -7,6 +7,7 @@
   import Members from "#lib/manage/Members.svelte"
   import Remove from "#lib/manage/Remove.svelte"
   import Sync from "#lib/manage/Sync.svelte"
+  import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
   import { projectResource } from "#lib/projects/project.svelte.ts"
   import { goto } from "$app/navigation"
   import { page } from "$app/state"
@@ -33,7 +34,7 @@
     <a href="/p/{project.data.slug}" class="button button-quiet mt-6">Open the project</a>
   {:else if project.data}
     <div class="mt-6 flex flex-wrap items-center gap-4">
-      <img src="https://github.com/{project.data.owner}.png?size=128" alt="" class="size-14 rounded-2xl bg-well" />
+      <ProjectIcon project={project.data} class="size-14 rounded-2xl" />
       <div class="min-w-0 flex-1">
         <h1 class="text-[30px] leading-tight font-semibold tracking-[-0.025em]">{project.data.owner}/{project.data.name}</h1>
         <p class="text-[15px] text-ink-muted">{project.data.strings.toLocaleString()} strings · {project.data.languages.length} languages</p>

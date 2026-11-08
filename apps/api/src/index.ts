@@ -16,7 +16,7 @@ import { projectRoutes } from "./projects/routes.ts"
 import { screenshotRoutes } from "./screenshots/routes.ts"
 import { consumeSync } from "./sync/consumer.ts"
 import type { SyncJob } from "./sync/jobs.ts"
-import { retryFailed } from "./sync/retry.ts"
+import { rescanStale } from "./sync/retry.ts"
 
 const app = new Hono().basePath("/api")
 
@@ -53,6 +53,6 @@ export default {
     else for (const message of (batch as MessageBatch<DeliverJob>).messages) await deliver(message.body)
   },
   async scheduled() {
-    await Promise.all([queueDeliveries(), retryFailed()])
+    await Promise.all([queueDeliveries(), rescanStale()])
   },
 } satisfies ExportedHandler<Env, SyncJob | DeliverJob>

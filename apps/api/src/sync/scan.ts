@@ -5,10 +5,17 @@ import { readBlobs, readTree, type TreeEntry } from "../github/repo.ts"
 import { recountArea } from "./apply/progress.ts"
 import { repoOf } from "./area.ts"
 import { importGlossaries } from "./import/glossary.ts"
-import { storeIcons } from "./import/icons.ts"
+import { storeIcon, storeIcons } from "./import/icons.ts"
 import { type AreaBlob, areaJobs, type SyncJob, sendJobs } from "./jobs.ts"
 import { CONFIG_PATH, readConfig } from "./layout/config.ts"
-import { type DetectedArea, detectAreas, localeFiles, manifestOwner } from "./layout/detect.ts"
+import {
+  type DetectedArea,
+  detectAreas,
+  LAYOUT_VERSION,
+  localeFiles,
+  manifestOwner,
+  projectIcon,
+} from "./layout/detect.ts"
 import { type Manifest, readManifest } from "./layout/manifests.ts"
 import { saveLayout } from "./layout/save.ts"
 
@@ -61,6 +68,8 @@ export async function scanProject(job: ScanJob) {
     const { config, areas } = await readLayout(tree, repo)
     const saved = await saveLayout(strings, project.id, areas)
     await storeIcons(strings, repo, saved.icons)
+    const iconEntry = projectIcon(tree, config)
+    const icon = iconEntry ? await storeIcon(repo, iconEntry) : null
     const known = new Map(
       (
         await all<{ file_id: number; lang: string; sha: string }>(
@@ -125,6 +134,8 @@ export async function scanProject(job: ScanJob) {
         syncedAt: new Date(),
         sourceLang: config.source,
         languages,
+        icon,
+        layoutVersion: LAYOUT_VERSION,
       })
       .where(eq(schema.project.id, project.id))
   } catch (error) {

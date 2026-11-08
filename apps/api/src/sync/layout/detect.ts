@@ -137,6 +137,27 @@ function distinctNames(drafts: Draft[]) {
       draft.name = titled(`${draft.qualifier} ${draft.name.toLowerCase()}`)
 }
 
+export const LAYOUT_VERSION = 2
+
+const PROJECT_ICONS = [
+  ".github/logo.svg",
+  "logo.svg",
+  "icon.svg",
+  "assets/logo.svg",
+  "docs/logo.svg",
+  "public/favicon.svg",
+  "static/favicon.svg",
+  ".github/logo.png",
+  "logo.png",
+  "icon.png",
+]
+
+export function projectIcon(tree: TreeEntry[], config: Config) {
+  const byPath = new Map(tree.map((entry) => [entry.path, entry]))
+  const path = config.icon ?? PROJECT_ICONS.find((candidate) => byPath.has(candidate))
+  return path ? (byPath.get(path) ?? null) : null
+}
+
 export function detectAreas(
   tree: TreeEntry[],
   config: Config,
@@ -160,7 +181,7 @@ export function detectAreas(
     let slug = slugOf(draft.name)
     for (let index = 2; slugs.has(slug); index++) slug = `${slugOf(draft.name)}-${index}`
     slugs.add(slug)
-    const icon = draft.icon ?? config.icon ?? null
+    const icon = draft.icon
     return {
       slug,
       name: draft.name,
