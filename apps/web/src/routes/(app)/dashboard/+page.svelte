@@ -1,11 +1,11 @@
 <script lang="ts">
   import { INSTALL_URL, type ProjectSummary, type Role } from "@babblebird/protocol"
   import Plus from "@lucide/svelte/icons/plus"
+  import Search from "@lucide/svelte/icons/search"
   import { api } from "#lib/api/client.ts"
   import { session } from "#lib/api/session.svelte.ts"
   import { when } from "#lib/editor/time.ts"
   import { nativeName } from "#lib/languages.ts"
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import Importing from "#lib/projects/Importing.svelte"
   import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
@@ -40,8 +40,15 @@
 
   poll(load, 3000, () => !!projects?.some((project) => project.importing))
 
-  const owned = $derived(projects?.filter((project) => project.role === "admin") ?? [])
-  const translating = $derived(projects?.filter((project) => project.role !== "admin") ?? [])
+  let search = $state("")
+  const matches = (project: Mine) =>
+    `${project.owner}/${project.name} ${project.description ?? ""}`
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
+  const owned = $derived(projects?.filter((project) => project.role === "admin" && matches(project)) ?? [])
+  const translating = $derived(
+    projects?.filter((project) => project.role !== "admin" && matches(project)) ?? [],
+  )
   const target = (project: Mine) =>
     project.importing ? `/p/${project.slug}/import` : `/dashboard/p/${project.slug}`
 </script>
@@ -55,6 +62,13 @@
     <h1 class="text-[36px] font-semibold tracking-[-0.03em]">Your projects</h1>
     <a href={INSTALL_URL} class="button button-ink"><Plus class="size-4" />Add a repository</a>
   </div>
+
+  {#if (projects?.length ?? 0) > 5}
+    <label class="relative mt-8 block max-w-sm">
+      <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-muted" />
+      <input bind:value={search} placeholder="Search your projects" aria-label="Search your projects" class="field pl-10" />
+    </label>
+  {/if}
 
   {#if projects === null}
     <div class="placeholder mt-12 h-32"></div>
@@ -126,5 +140,3 @@
     {/if}
   {/if}
 </main>
-
-<Footer />

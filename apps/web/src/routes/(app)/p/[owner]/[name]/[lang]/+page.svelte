@@ -4,7 +4,6 @@
   import { resource } from "#lib/api/resource.svelte.ts"
   import { session } from "#lib/api/session.svelte.ts"
   import { englishName, nativeName } from "#lib/languages.ts"
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import AreaIcon from "#lib/projects/AreaIcon.svelte"
   import ProgressBar from "#lib/projects/ProgressBar.svelte"
@@ -69,5 +68,3 @@
     <div class="placeholder mt-10 h-40"></div>
   {/if}
 </main>
-
-<Footer />

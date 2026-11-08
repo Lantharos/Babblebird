@@ -1,5 +1,5 @@
 import type { AreaSummary, MissingRow, Progress, Project, ProjectSummary } from "@babblebird/protocol"
-import { and, desc, eq, inArray, or, sql } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { z } from "zod"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
@@ -13,13 +13,10 @@ import {
   areasWithProgress,
   emptyProgress,
   languagesProgress,
-  projectsProgress,
 } from "./progress.ts"
 
 export const projectRoutes = new Hono<ViewerVars>()
 projectRoutes.use(maybeSignedIn)
-
-const PAGE = 24
 
 const progressOf = (row: AreaProgressRow): Progress =>
   row.lang
@@ -54,58 +51,6 @@ export function summaryOf(project: ProjectRow): Omit<ProjectSummary, "progress">
         : null,
   }
 }
-
-projectRoutes.get("/", async (c) => {
-  const { lang, page } = readQuery(
-    c,
-    z.object({ lang: z.string().optional(), page: z.coerce.number().int().min(0).default(0) }),
-  )
-  const viewer = c.get("viewer")
-  const mine = viewer
-    ? db
-        .select({ id: schema.member.projectId })
-        .from(schema.member)
-        .where(eq(schema.member.userId, viewer.id))
-    : null
-  const rows = await db
-    .select()
-    .from(schema.project)
-    .where(
-      and(
-        inArray(schema.project.state, ["ready", "scanning"]),
-        mine
-          ? or(eq(schema.project.private, false), inArray(schema.project.id, mine))
-          : eq(schema.project.private, false),
-      ),
-    )
-    .orderBy(
-      desc(sql`${schema.project.owner} = 'Lantharos'`),
-      desc(schema.project.strings),
-      schema.project.slug,
-    )
-    .limit(PAGE + 1)
-    .offset(page * PAGE)
-  const shown = rows.slice(0, PAGE)
-  const progress = new Map<string, ProjectSummary["progress"]>()
-  if (lang)
-    for (const [index, group] of Map.groupBy(shown, (project) => project.shard)) {
-      const found = await projectsProgress(
-        shard({ shard: index }),
-        group.map((project) => project.id),
-        lang,
-      )
-      for (const project of group) progress.set(project.id, found.get(project.id) ?? emptyProgress())
-    }
-  const offered = await db
-    .selectDistinct({ lang: sql<string>`j.value` })
-    .from(sql`${schema.project}, json_each(${schema.project.languages}) j`)
-    .where(and(eq(schema.project.private, false), eq(schema.project.state, "ready")))
-  return c.json({
-    languages: offered.map((row) => row.lang),
-    projects: shown.map((project) => ({ ...summaryOf(project), progress: progress.get(project.id) ?? null })),
-    more: rows.length > PAGE,
-  })
-})
 
 projectRoutes.get("/:owner/:name", async (c) => {
   const viewer = c.get("viewer")

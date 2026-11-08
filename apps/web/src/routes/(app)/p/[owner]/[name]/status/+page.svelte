@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import ProjectHeader from "#lib/projects/ProjectHeader.svelte"
   import { projectResource } from "#lib/projects/project.svelte.ts"
@@ -27,5 +26,3 @@
     <p class="text-danger">{project.error.message}</p>
   {/if}
 </main>
-
-<Footer />

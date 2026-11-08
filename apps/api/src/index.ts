@@ -9,6 +9,7 @@ import { githubRoutes } from "./github/routes.ts"
 import { errorResponse, fail } from "./lib/http.ts"
 import { meRoutes } from "./me/routes.ts"
 import { glossaryRoutes } from "./projects/glossary.ts"
+import { listRoutes } from "./projects/list.ts"
 import { manageRoutes } from "./projects/manage.ts"
 import { memberRoutes } from "./projects/members.ts"
 import { mineRoutes } from "./projects/mine.ts"
@@ -37,6 +38,7 @@ app.route("/badge", badgeRoutes)
 app.route("/github", githubRoutes)
 app.route("/me", meRoutes)
 app.route("/", mineRoutes)
+app.route("/projects", listRoutes)
 app.route("/projects", projectRoutes)
 app.route("/projects", editorRoutes)
 app.route("/projects", memberRoutes)

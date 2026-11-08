@@ -1,7 +1,6 @@
 <script lang="ts">
   import ArrowLeft from "@lucide/svelte/icons/arrow-left"
   import { session } from "#lib/api/session.svelte.ts"
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import AccessSection from "#lib/manage/AccessSection.svelte"
   import DangerSection from "#lib/manage/DangerSection.svelte"
@@ -54,5 +53,3 @@
     <div class="placeholder mt-8 h-40"></div>
   {/if}
 </main>
-
-<Footer />

@@ -4,7 +4,6 @@
   import Languages from "#lib/account/Languages.svelte"
   import { auth } from "#lib/api/auth.ts"
   import { session } from "#lib/api/session.svelte.ts"
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import SchemeSwitch from "#lib/theme/SchemeSwitch.svelte"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
@@ -89,5 +88,3 @@
     </div>
   </div>
 </Dialog>
-
-<Footer />

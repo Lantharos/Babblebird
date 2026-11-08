@@ -1,7 +1,6 @@
 <script lang="ts">
   import { session } from "#lib/api/session.svelte.ts"
   import { englishName, nativeName } from "#lib/languages.ts"
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import ProgressBar from "#lib/projects/ProgressBar.svelte"
   import ProjectHeader from "#lib/projects/ProjectHeader.svelte"
@@ -50,5 +49,3 @@
     <div class="placeholder h-40"></div>
   {/if}
 </main>
-
-<Footer />

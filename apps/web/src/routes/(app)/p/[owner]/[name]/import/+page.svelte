@@ -2,7 +2,6 @@
   import type { ImportStatus } from "@babblebird/protocol"
   import { api } from "#lib/api/client.ts"
   import { percent } from "#lib/languages.ts"
-  import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
   import AreaIcon from "#lib/projects/AreaIcon.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
@@ -98,8 +97,6 @@
     </ul>
   {/if}
 </main>
-
-<Footer />
 
 <style>
   @media (prefers-reduced-motion: no-preference) {

@@ -31,7 +31,7 @@ export interface ProjectSummary {
   languages: number
   state: ProjectState
   importing: ImportProgress | null
-  progress: Progress | null
+  progress: LanguageProgress[] | null
 }
 
 export interface ImportStatus {

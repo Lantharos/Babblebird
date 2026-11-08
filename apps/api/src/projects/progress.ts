@@ -12,17 +12,20 @@ export const emptyProgress = (): Progress => ({
   suggested: 0,
 })
 
-export async function projectsProgress(db: D1Database, ids: string[], lang: string) {
-  if (!ids.length) return new Map<string, Progress>()
-  const rows = await all<Progress & { project_id: string }>(
+export async function projectsProgress(db: D1Database, ids: string[], langs: string[]) {
+  if (!ids.length || !langs.length) return new Map<string, LanguageProgress[]>()
+  const rows = await all<LanguageProgress & { project_id: string }>(
     db
       .prepare(
-        `SELECT project_id, ${SUMS} FROM progress WHERE lang = ?1
-         AND project_id IN (SELECT value FROM json_each(?2)) GROUP BY project_id`,
+        `SELECT project_id, lang, ${SUMS} FROM progress WHERE project_id IN (SELECT value FROM json_each(?1))
+         AND lang IN (SELECT value FROM json_each(?2)) GROUP BY project_id, lang`,
       )
-      .bind(lang, JSON.stringify(ids)),
+      .bind(JSON.stringify(ids), JSON.stringify(langs)),
   )
-  return new Map(rows.map(({ project_id, ...progress }) => [project_id, progress]))
+  const found = new Map<string, LanguageProgress[]>()
+  for (const { project_id, ...progress } of rows)
+    found.set(project_id, [...(found.get(project_id) ?? []), progress])
+  return found
 }
 
 export async function languagesProgress(
