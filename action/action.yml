@@ -1,0 +1,15 @@
+name: Babblebird screenshots
+description: Send screenshots and the strings shown in them to Babblebird, so translators see where each string appears.
+branding:
+  icon: message-circle
+  color: orange
+inputs:
+  manifest:
+    description: Path to a JSON file that lists the screenshots and the Fluent keys on each.
+    required: true
+  url:
+    description: Where Babblebird runs.
+    default: https://babblebird.dev
+runs:
+  using: node24
+  main: upload.mjs
