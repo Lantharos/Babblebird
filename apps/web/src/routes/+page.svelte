@@ -51,12 +51,12 @@
 
   <div class="page space-y-28 py-20 sm:space-y-36 sm:py-28">
     <section class="grid items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-20">
-      <Said>Translating into Russian? You get the four forms Russian has, not the two English needs, and a preview with real numbers.</Said>
+      <Said>Translating into Croatian? You get the three forms Croatian has, not the two English needs, and a preview with real numbers.</Said>
       <Plurals />
     </section>
 
     <section class="grid items-center gap-10 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-20">
-      <div class="lg:order-2"><Said>Maintainers see how far each language has come and what’s still missing. This is Luft, right now.</Said></div>
+      <div class="lg:order-2"><Said side="right">Maintainers see how far each language has come and what’s still missing. This is Luft, right now.</Said></div>
       <LiveProgress />
     </section>
 

@@ -5,7 +5,7 @@
   import { englishName, nativeName } from "../languages.ts"
   import { donePercent } from "../projects/progress.ts"
 
-  const SHOWN = 8
+  const FEATURED = ["sq", "de", "hr", "fr", "it", "es", "nl", "pl"]
   let project = $state<Project | null>(null)
 
   onMount(() => {
@@ -17,10 +17,10 @@
 
   const languages = $derived(
     project
-      ? [...project.languages]
-          .map((language) => ({ lang: language.lang, done: donePercent(language, project!.strings) }))
-          .sort((a, b) => b.done - a.done)
-          .slice(0, SHOWN)
+      ? FEATURED.flatMap((lang) => {
+          const language = project!.languages.find((candidate) => candidate.lang === lang)
+          return language ? [{ lang, done: donePercent(language, project!.strings) }] : []
+        })
       : [],
   )
 </script>
@@ -36,7 +36,7 @@
         <span class="text-right text-ink-muted tabular">{language.done}%</span>
       </li>
     {:else}
-      {#each { length: SHOWN } as _}<li class="placeholder h-5"></li>{/each}
+      {#each FEATURED as _}<li class="placeholder h-5"></li>{/each}
     {/each}
   </ul>
 </a>
