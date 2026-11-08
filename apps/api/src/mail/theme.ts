@@ -33,8 +33,6 @@ const darkRules = (scope: string) =>
     `${scope} .rule { border-color: ${dark.well} !important; }`,
     `${scope} .button { background-color: ${dark.accent} !important; }`,
     `${scope} .button a { color: ${dark.accentInk} !important; }`,
-    `${scope} .mark-light { display: none !important; }`,
-    `${scope} .mark-dark { display: inline-block !important; max-height: none !important; overflow: visible !important; }`,
   ].join("\n")
 
 const fontFace = (origin: string, file: string, weight: number) =>

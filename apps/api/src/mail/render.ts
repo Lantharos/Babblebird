@@ -13,14 +13,11 @@ export interface Mail {
 const WIDTH = 520
 const PREVIEW_PADDING = "&#847;&zwnj;&nbsp;".repeat(60)
 
-function mark(scheme: "light" | "dark") {
-  const hidden =
-    scheme === "dark" ? "display:none;max-height:0;overflow:hidden;mso-hide:all;" : "display:inline-block;"
-  return `<img class="mark-${scheme}" src="${env.PUBLIC_URL}/mail/mark-${scheme}.png" width="32" height="32" alt="" style="${hidden}width:32px;height:32px;border:0;vertical-align:middle;">`
-}
+const mark = () =>
+  `<img src="${env.PUBLIC_URL}/mail/mark.png" width="32" height="32" alt="" style="display:inline-block;width:32px;height:32px;border:0;vertical-align:middle;">`
 
 function header() {
-  return `<a href="${env.PUBLIC_URL}" style="text-decoration:none;">${mark("light")}${mark("dark")}<span class="ink" style="padding-left:10px;font-family:${FONT};font-size:17px;font-weight:600;color:${colors.ink};vertical-align:middle;">Babblebird</span></a>`
+  return `<a href="${env.PUBLIC_URL}" style="text-decoration:none;">${mark()}<span class="ink" style="padding-left:10px;font-family:${FONT};font-size:17px;font-weight:600;color:${colors.ink};vertical-align:middle;">Babblebird</span></a>`
 }
 
 function footer(reason: string) {
