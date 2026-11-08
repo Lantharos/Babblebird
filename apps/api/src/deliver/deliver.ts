@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers"
+import { englishName } from "@babblebird/protocol"
 import { eq } from "drizzle-orm"
 import { db, type ProjectRow, schema } from "../db/core.ts"
 import { all, shard } from "../db/strings.ts"
@@ -11,8 +12,6 @@ import { commitMessage } from "./message.ts"
 export interface DeliverJob {
   projectId: string
 }
-
-const names = new Intl.DisplayNames(["en"], { type: "language" })
 
 async function clearPending(project: ProjectRow, upTo: number) {
   await shard(project)
@@ -61,7 +60,7 @@ export async function deliver({ projectId }: DeliverJob) {
     return clearPending(project, started)
   }
   await moveBranch(repo, BRANCH, commit, true)
-  const languages = [...new Set(files.map((file) => names.of(file.lang) ?? file.lang))]
+  const languages = [...new Set(files.map((file) => englishName(file.lang)))]
   const pull = await openPull(
     repo,
     project.defaultBranch,

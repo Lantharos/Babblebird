@@ -1,14 +1,13 @@
+import { englishName } from "@babblebird/protocol"
 import { inArray } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
-
-const names = new Intl.DisplayNames(["en"], { type: "language" })
 
 function list(items: string[]) {
   return new Intl.ListFormat("en", { type: "conjunction" }).format(items)
 }
 
 export async function commitMessage(langs: string[], userIds: string[]) {
-  const languages = [...new Set(langs)].map((lang) => names.of(lang) ?? lang).sort()
+  const languages = [...new Set(langs)].map((lang) => englishName(lang)).sort()
   const title =
     languages.length > 3
       ? `Update translations for ${languages.length} languages`
