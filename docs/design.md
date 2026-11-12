@@ -47,7 +47,7 @@ Each project has a manage page for its maintainers: syncing and its history, how
 
 Anyone signed in can translate public projects unless the project limits it to members; everyone else can suggest. Maintainers are whoever has write access to the repository, checked through the app and remembered for six hours. Maintainers add translators and reviewers, each for some or all languages and areas.
 
-A translation is `translated`, `review` (its English changed, or it was imported from a changed source) or `approved`. Saving runs the checks: broken syntax, variables or terms the source doesn't have and missing attributes are errors and block the save; missing variables, missing plural forms, punctuation, spacing, glossary terms and untranslated copies are warnings.
+A translation is `translated`, `review` (its English changed, or it was imported from a changed source) or `approved`. Saving runs the checks: broken syntax, variables or terms the source doesn't have, missing attributes and tags that differ from the source are errors and block the save; missing variables, missing plural forms or ones the language doesn't use, punctuation, spacing, glossary terms and untranslated copies are warnings.
 
 Earlier translations come from the same text anywhere in the strings database (an indexed hash lookup) and from similar text (MinHash bands, compared by trigram similarity). Only public projects share them.
 

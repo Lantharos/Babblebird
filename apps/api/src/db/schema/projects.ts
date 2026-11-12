@@ -87,6 +87,7 @@ export const delivery = sqliteTable("delivery", {
   sentAt: integer("sent_at", { mode: "timestamp_ms" }),
   mergedAt: integer("merged_at", { mode: "timestamp_ms" }),
   problem: text("problem"),
+  sentPaths: text("sent_paths", { mode: "json" }).$type<string[]>().notNull().default([]),
 })
 
 export const invitation = sqliteTable(

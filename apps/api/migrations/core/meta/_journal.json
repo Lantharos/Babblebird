@@ -50,6 +50,13 @@
       "when": 1794174689624,
       "tag": "0006_operator_controls",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794504252678,
+      "tag": "0007_delivery_paths",
+      "breakpoints": true
     }
   ]
 }

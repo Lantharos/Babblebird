@@ -1,0 +1,1 @@
+ALTER TABLE `delivery` ADD `sent_paths` text DEFAULT '[]' NOT NULL;

@@ -41,11 +41,17 @@ async function withdraw(projectId: string, repo: Repo, pullNumber: number) {
     await recordDelivery(projectId, { pullNumber: null, branchSha: null, problem: null })
 }
 
-async function sameAsSent(repo: Repo, branchSha: string | null, built: { path: string; content: string }[]) {
-  if (!branchSha) return false
+async function sameAsSent(
+  repo: Repo,
+  previous: typeof schema.delivery.$inferSelect | undefined,
+  built: { path: string; content: string }[],
+) {
+  if (!previous?.branchSha) return false
+  const paths = new Set(previous.sentPaths)
+  if (paths.size !== built.length || !built.every((file) => paths.has(file.path))) return false
   const sent = await readPaths(
     repo,
-    branchSha,
+    previous.branchSha,
     built.map((file) => file.path),
   )
   return built.every((file) => sent.get(file.path) === file.content)
@@ -79,7 +85,7 @@ export async function deliver({ projectId }: DeliverJob) {
       if (open) await withdraw(project.id, repo, open)
       return
     }
-    if (open && newest <= sentAt && (await sameAsSent(repo, previous?.branchSha ?? null, built)))
+    if (open && newest <= sentAt && (await sameAsSent(repo, previous, built)))
       return recordDelivery(project.id, { baseSha: head })
     const since = Math.min(...files.map((file) => file.changed))
     const message = await commitMessage(
@@ -90,6 +96,7 @@ export async function deliver({ projectId }: DeliverJob) {
     if (!commit) return
     const sent = {
       branchSha: commit,
+      sentPaths: built.map((file) => file.path),
       baseSha: head,
       sentAt: new Date(),
       mergedAt: null,
