@@ -1,7 +1,15 @@
+import { transformNames } from "@babblebird/fluent"
 import { parse } from "smol-toml"
 import { z } from "zod"
+import { canonical } from "./lang.ts"
 
 export const CONFIG_PATH = "babblebird.toml"
+
+const languageTag = z.string().transform((tag, context) => {
+  const found = canonical(tag)
+  if (!found) context.addIssue({ code: "custom", message: `${tag} isn't a language tag` })
+  return found ?? tag
+})
 
 const DEFAULT_IGNORE = ["**/node_modules/**", "**/fixtures/**", "**/dist/**", "**/build/**", "**/vendor/**"]
 
@@ -13,6 +21,19 @@ const schema = z.object({
   areas: z
     .array(
       z.object({ name: z.string().min(1), files: z.array(z.string()).min(1), icon: z.string().optional() }),
+    )
+    .default([]),
+  generated: z
+    .array(
+      z
+        .object({
+          lang: languageTag,
+          from: languageTag,
+          transform: z.enum(transformNames, {
+            message: `transform must be one of ${transformNames.join(", ")}`,
+          }),
+        })
+        .refine((language) => language.lang !== language.from, "a language can't be generated from itself"),
     )
     .default([]),
 })
@@ -29,7 +50,7 @@ export function readConfig(text: string | undefined): Config {
     return {
       ...fallback,
       ignore: DEFAULT_IGNORE,
-      problem: `${CONFIG_PATH} couldn't be read: ${(error as Error).message}`,
+      problem: `${CONFIG_PATH} couldn't be read: ${error instanceof z.ZodError ? z.prettifyError(error) : (error as Error).message}`,
     }
   }
 }

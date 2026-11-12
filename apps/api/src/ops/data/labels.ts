@@ -12,7 +12,8 @@ export const PROJECT_STATE: Record<ProjectRow["state"], string> = {
 
 export const DELIVERY: Record<Delivery, string> = {
   off: "Not sent back",
-  branch: "Pull requests",
+  pull: "Pull requests merged by hand",
+  branch: "Pull requests merged after the checks",
   direct: "Straight to the default branch",
 }
 

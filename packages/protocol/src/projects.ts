@@ -108,5 +108,6 @@ export interface DeliveryStatus {
   sentAt: number | null
   mergedAt: number | null
   closedAt: number | null
+  checks: "passed" | "failed" | null
   problem: string | null
 }

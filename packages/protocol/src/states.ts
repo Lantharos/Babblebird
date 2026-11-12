@@ -15,5 +15,5 @@ export const FILTERS = ["all", "untranslated", "review", "problems", "suggested"
 export type Filter = (typeof FILTERS)[number]
 
 export type Role = "translator" | "reviewer" | "admin"
-export type Delivery = "off" | "branch" | "direct"
+export type Delivery = "off" | "pull" | "branch" | "direct"
 export type WhoTranslates = "anyone" | "members"

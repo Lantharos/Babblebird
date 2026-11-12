@@ -75,6 +75,7 @@
               "type": "string",
               "enum": [
                 "off",
+                "pull",
                 "branch",
                 "direct"
               ]
@@ -134,6 +135,7 @@
                 "type": "string",
                 "enum": [
                   "off",
+                  "pull",
                   "branch",
                   "direct"
                 ]
@@ -885,5 +887,5 @@
     ],
     "after": 120000
   },
-  "version": "a46364ad5414"
+  "version": "2cd5cf134944"
 }

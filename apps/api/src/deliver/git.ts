@@ -64,7 +64,7 @@ interface Pull {
   node_id: string
 }
 
-export async function openPull(repo: Repo, base: string, title: string) {
+export async function openPull(repo: Repo, base: string, title: string, mergesItself: boolean) {
   const open = await github<Pull[]>(path(repo, `/pulls?state=open&head=${repo.owner}:${BRANCH}`), {
     token: repo.token,
   })
@@ -76,7 +76,9 @@ export async function openPull(repo: Repo, base: string, title: string) {
       title,
       head: BRANCH,
       base,
-      body: "Translations from Babblebird. This merges itself once the checks pass.",
+      body: mergesItself
+        ? "Translations from Babblebird. This merges itself once the checks pass."
+        : "Translations from Babblebird. Babblebird keeps this up to date until you merge it.",
     },
   })
 }

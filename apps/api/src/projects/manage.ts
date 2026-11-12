@@ -56,6 +56,7 @@ manageRoutes.get("/:owner/:name/delivery", async (c) => {
     sentAt: delivery?.sentAt?.getTime() ?? null,
     mergedAt: delivery?.mergedAt?.getTime() ?? null,
     closedAt: delivery?.closedAt?.getTime() ?? null,
+    checks: delivery?.checks ?? null,
     problem: delivery?.problem ?? null,
   })
 })

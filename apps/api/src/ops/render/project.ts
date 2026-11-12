@@ -35,6 +35,7 @@ function deliveryFields(project: ProjectView, waitingFiles: number) {
     "last sent": sent?.sentAt ?? undefined,
     "last merged": sent?.mergedAt ?? undefined,
     "closed unmerged": sent?.closedAt ?? undefined,
+    checks: sent?.checks ?? undefined,
     "delivery problem": sent?.problem ?? undefined,
   }
 }

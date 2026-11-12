@@ -1,10 +1,17 @@
-import { mergeMessage, messagesOf, patchMessages } from "@babblebird/fluent"
+import {
+  applyTransform,
+  type GeneratedLanguage,
+  mergeMessage,
+  messagesOf,
+  patchMessages,
+} from "@babblebird/fluent"
 import { all } from "../db/strings.ts"
 
 export interface PendingFile {
   file_id: number
   lang: string
   pattern: string
+  since: number
   changed: number
 }
 
@@ -12,7 +19,7 @@ export function pendingFiles(db: D1Database, projectId: string) {
   return all<PendingFile>(
     db
       .prepare(
-        "SELECT p.file_id, p.lang, f.pattern, p.changed FROM pending p JOIN file f ON f.id = p.file_id WHERE p.project_id = ?",
+        "SELECT p.file_id, p.lang, f.pattern, p.since, p.changed FROM pending p JOIN file f ON f.id = p.file_id WHERE p.project_id = ?",
       )
       .bind(projectId),
   )
@@ -36,6 +43,8 @@ export async function buildFile(db: D1Database, file: PendingFile, existing: str
       changes.set(row.key, row.body)
   if (!changes.size) return null
   return {
+    pattern: file.pattern,
+    lang: file.lang,
     path: pathOf(file),
     content: patchMessages(
       existing,
@@ -43,6 +52,22 @@ export async function buildFile(db: D1Database, file: PendingFile, existing: str
       changes,
     ),
   }
+}
+
+export type BuiltFile = NonNullable<Awaited<ReturnType<typeof buildFile>>>
+
+export function withGenerated(built: BuiltFile[], generated: GeneratedLanguage[]) {
+  return built.flatMap((file) => [
+    file,
+    ...generated
+      .filter((language) => language.from === file.lang)
+      .map((language) => ({
+        pattern: file.pattern,
+        lang: language.lang,
+        path: file.pattern.replace("{lang}", language.lang),
+        content: applyTransform(language.transform, file.content),
+      })),
+  ])
 }
 
 export async function translators(db: D1Database, projectId: string, files: PendingFile[], since: number) {

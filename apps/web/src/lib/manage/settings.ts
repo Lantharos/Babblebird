@@ -9,6 +9,11 @@ export const deliveries: { value: Delivery; label: string; text: string }[] = [
     text: "Babblebird reads the repository but never writes to it. Translations made here wait until sending is on.",
   },
   {
+    value: "pull",
+    label: "A pull request you merge",
+    text: "Small batches go to a babblebird/translations branch with one pull request that stays open until you merge it.",
+  },
+  {
     value: "branch",
     label: "After the checks pass",
     text: "Small batches go to a babblebird/translations branch with a pull request that merges itself once the repository’s checks pass.",

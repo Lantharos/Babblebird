@@ -153,6 +153,7 @@ export async function scanProject(job: ScanJob) {
         syncedAt: new Date(),
         sourceLang: config.source,
         languages,
+        generated: config.generated,
         icon,
         layoutVersion: LAYOUT_VERSION,
       })

@@ -3,10 +3,11 @@
 Choose how translations reach the repository on the project's manage page, under **Sending translations back**:
 
 - **Don't send**: Babblebird reads the repository but never writes to it. Use this while another tool still owns the translation files. Translations made here wait and go out in the first batch once you turn sending on.
+- **A pull request you merge**: changes go to a `babblebird/translations` branch with one pull request that stays open until you merge it. Babblebird keeps it up to date and shows on the manage page whether the repository's checks passed. Once it's merged, the next translations open a new one.
 - **After the checks pass**: changes go to a `babblebird/translations` branch with a pull request that merges itself once the repository's required checks pass (with GitHub's auto-merge), or right away if there are none.
 - **Straight to the default branch**: changes are committed to the default branch. If it's protected, they go through the pull request instead.
 
-Batches go out every ten minutes. Each is one commit that changes only the messages translated here, leaving comments, layout and everything else in the files as they were. Everyone who translated something in it with a GitHub account is a co-author, and stays one when the pull request is squashed.
+Babblebird waits until nobody has translated anything in the project for twenty minutes, so a long session goes out as one batch instead of a new one every few minutes. Work still goes out at least every six hours while people keep translating. Each batch is one commit that changes only the messages translated here, leaving comments, layout and everything else in the files as they were. Everyone who translated something in it with a GitHub account is a co-author, and stays one when the pull request is squashed.
 
 If you turn off auto-merge on a translations pull request, Babblebird leaves it for you to merge however you like.
 
@@ -30,6 +31,6 @@ Messages deleted from the English disappear with their translations. Messages re
 The manage page says what happened and Babblebird carries on:
 
 - **A pull request was closed without merging**: nothing new is sent until there are new translations, then a fresh pull request opens.
-- **Checks failed**: the pull request stays as it is; the next batch replaces it with a fresh one built on the default branch.
+- **Checks failed**: the manage page says so and links the pull request. It stays as it is until the next batch replaces it with a fresh one built on the default branch.
 - **The default branch is protected**: translations go through a pull request instead.
 - **GitHub refused the write or couldn't be reached**: Babblebird tries again on its next run, ten minutes later.

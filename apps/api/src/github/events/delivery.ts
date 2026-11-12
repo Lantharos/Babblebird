@@ -34,21 +34,22 @@ async function mergesItself(repo: Repo) {
   return details.allow_auto_merge === true
 }
 
+const FAILED = new Set(["failure", "timed_out"])
+
 export async function handleCheckSuite(payload: Record<string, any>) {
   const suite = payload.check_suite
   if (payload.action !== "completed" || suite.head_branch !== BRANCH) return
   const found = await deliveryOf(payload.repository.id)
-  if (!found?.delivery.pullNumber || found.delivery.mergedAt || found.delivery.branchSha !== suite.head_sha)
-    return
-  if (suite.conclusion === "success") {
-    const repo = await repoOf(found.project)
-    if (await mergesItself(repo)) return
-    const message = await messageOf(repo, suite.head_sha)
-    if (await mergeNow(repo, found.delivery.pullNumber, message))
-      await recordDelivery(found.project.id, { mergedAt: new Date(), problem: null })
-  } else if (suite.conclusion === "failure")
-    await recordDelivery(found.project.id, {
-      problem:
-        "The repository’s checks failed on the translations pull request. Babblebird sends a fresh one with the next translations.",
-    })
+  if (!found) return
+  const { project, delivery } = found
+  if (!delivery.pullNumber || delivery.mergedAt || delivery.branchSha !== suite.head_sha) return
+  if (FAILED.has(suite.conclusion)) return recordDelivery(project.id, { checks: "failed" })
+  if (suite.conclusion !== "success" || delivery.checks === "failed") return
+  await recordDelivery(project.id, { checks: "passed" })
+  if (project.delivery === "pull") return
+  const repo = await repoOf(project)
+  if (await mergesItself(repo)) return
+  const message = await messageOf(repo, suite.head_sha)
+  if (await mergeNow(repo, delivery.pullNumber, message))
+    await recordDelivery(project.id, { mergedAt: new Date(), problem: null })
 }

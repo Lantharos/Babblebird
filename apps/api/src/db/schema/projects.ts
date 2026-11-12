@@ -1,8 +1,10 @@
+import type { GeneratedLanguage } from "@babblebird/fluent"
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 import { user } from "./auth.ts"
 import { createdAt, updatedAt } from "./columns.ts"
 
-export const DELIVERIES = ["off", "branch", "direct"] as const
+export const DELIVERIES = ["off", "pull", "branch", "direct"] as const
+export const CHECKS = ["passed", "failed"] as const
 export const PROJECT_STATES = ["scanning", "ready", "empty", "failed", "removed"] as const
 export const ROLES = ["translator", "reviewer", "admin"] as const
 export const WHO_TRANSLATES = ["anyone", "members"] as const
@@ -30,6 +32,7 @@ export const project = sqliteTable(
     defaultBranch: text("default_branch").notNull(),
     sourceLang: text("source_lang").notNull().default("en"),
     languages: text("languages", { mode: "json" }).$type<string[]>().notNull().default([]),
+    generated: text("generated", { mode: "json" }).$type<GeneratedLanguage[]>().notNull().default([]),
     delivery: text("delivery", { enum: DELIVERIES }).notNull().default("off"),
     whoTranslates: text("who_translates", { enum: WHO_TRANSLATES }).notNull().default("anyone"),
     shard: integer("shard").notNull().default(0),
@@ -88,6 +91,7 @@ export const delivery = sqliteTable("delivery", {
   mergedAt: integer("merged_at", { mode: "timestamp_ms" }),
   problem: text("problem"),
   sentPaths: text("sent_paths", { mode: "json" }).$type<string[]>().notNull().default([]),
+  checks: text("checks", { enum: CHECKS }),
 })
 
 export const invitation = sqliteTable(

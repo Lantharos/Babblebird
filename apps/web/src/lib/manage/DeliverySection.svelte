@@ -15,6 +15,12 @@
   const current = $derived(deliveries.find((option) => option.value === project.delivery)!)
   const startsSending = $derived(project.delivery === "off" && chosen !== "off")
 
+  function pullState(checks: DeliveryStatus["checks"]) {
+    if (checks === "failed") return "failed the repository’s checks"
+    if (project.delivery !== "pull") return "is waiting for the checks"
+    return checks === "passed" ? "passed the checks and is ready to merge" : "is open for you to merge"
+  }
+
   function edit() {
     chosen = project.delivery
     open = true
@@ -39,12 +45,13 @@
     {#if state.problem}
       <p class="mt-3 max-w-md text-[15px] leading-relaxed text-caution">{state.problem}</p>
     {:else if project.delivery !== "off" && state.pullNumber && !state.mergedAt}
-      <p class="mt-3 text-[15px] text-ink-soft">
-        <a href="https://github.com/{project.owner}/{project.name}/pull/{state.pullNumber}" class="link">Pull request #{state.pullNumber}</a> is waiting for the checks
+      <p class="mt-3 text-[15px] {state.checks === 'failed' ? 'text-caution' : 'text-ink-soft'}">
+        <a href="https://github.com/{project.owner}/{project.name}/pull/{state.pullNumber}" class="link">Pull request #{state.pullNumber}</a>
+        {pullState(state.checks)}
       </p>
     {:else if state.waitingFiles}
       <p class="mt-3 text-[15px] text-ink-soft">
-        {state.waitingFiles === 1 ? "1 file has" : `${state.waitingFiles} files have`} translations that aren’t in the repository yet{project.delivery !== "off" ? ". They go out within ten minutes." : "."}
+        {state.waitingFiles === 1 ? "1 file has" : `${state.waitingFiles} files have`} translations that aren’t in the repository yet{project.delivery !== "off" ? ". They go out after a pause in translating." : "."}
       </p>
     {:else if state.mergedAt}
       <p class="mt-3 text-[15px] text-ink-soft">Everything translated here is in the repository.</p>

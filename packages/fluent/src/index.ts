@@ -16,4 +16,10 @@ export { type Preview, previews } from "./preview.ts"
 export { composeBody } from "./shape/compose.ts"
 export { fitShape, isEmpty, isPlural, pluralCategories } from "./shape/plural.ts"
 export { type Field, type Part, parseBody, type Shape, shapeOf, type Variant } from "./shape/read.ts"
+export {
+  applyTransform,
+  type GeneratedLanguage,
+  type Transform,
+  transformNames,
+} from "./transliterate/index.ts"
 export { messagesOf, patchMessages, type ReadFile, readFile, type Unit } from "./units.ts"

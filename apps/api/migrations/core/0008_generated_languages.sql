@@ -1,0 +1,1 @@
+ALTER TABLE `project` ADD `generated` text DEFAULT '[]' NOT NULL;

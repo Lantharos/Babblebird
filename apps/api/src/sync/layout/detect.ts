@@ -1,6 +1,7 @@
 import type { TreeEntry } from "../../github/repo.ts"
 import type { Config } from "./config.ts"
 import { globPattern, matchesAny } from "./glob.ts"
+import { canonical } from "./lang.ts"
 import { MANIFESTS, type Manifest } from "./manifests.ts"
 
 export interface DetectedFile {
@@ -17,21 +18,14 @@ export interface DetectedArea {
 
 const LOCALE_FILE = /^(?:(.*)\/)?locales\/([A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})*)\/([^/]+\.ftl)$/
 
-function canonical(tag: string) {
-  try {
-    return Intl.getCanonicalLocales(tag.replace("_", "-"))[0] ?? null
-  } catch {
-    return null
-  }
-}
-
 export function localeFiles(tree: TreeEntry[], config: Config) {
+  const generated = new Set(config.generated.map((language) => language.lang))
   const files = new Map<string, DetectedFile>()
   for (const entry of tree) {
     const match = LOCALE_FILE.exec(entry.path)
     if (!match || matchesAny(entry.path, config.ignore)) continue
     const lang = canonical(match[2]!)
-    if (!lang) continue
+    if (!lang || generated.has(lang)) continue
     const pattern = `${match[1] ? `${match[1]}/` : ""}locales/{lang}/${match[3]}`
     const file = files.get(pattern) ?? { pattern, langs: new Map() }
     file.langs.set(lang, entry)
