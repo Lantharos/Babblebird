@@ -11,7 +11,7 @@
     ["alt+↑", "Back to the previous string"],
     ["alt+1", "Use the first match from earlier translations"],
     ["alt+I", "Start from the source text"],
-    ["/", "Search the strings"],
+    ["mod+K", "Search the strings"],
   ]
 </script>
 

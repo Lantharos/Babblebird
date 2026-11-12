@@ -11,7 +11,7 @@ The filter at the top picks what you see:
 - **Problems**: translations a check is unhappy with.
 - **All**: everything in the area.
 
-The dot in front of each string says where it stands: empty for missing, green for translated, amber for needs review, red for a problem. Search with <kbd>/</kbd>; it looks at keys, English and translations.
+The dot in front of each string says where it stands: empty for missing, green for translated, amber for needs review, red for a problem. Search with <kbd>Ctrl</kbd> <kbd>K</kbd>; it looks at keys, English and translations.
 
 ## Translating a string
 
@@ -30,7 +30,7 @@ Under the fields you see what's wrong while you type, and a preview of the finis
 | <kbd>Alt</kbd> <kbd>↓</kbd> / <kbd>Alt</kbd> <kbd>↑</kbd> | Next or previous string without saving                 |
 | <kbd>Alt</kbd> <kbd>1</kbd>…<kbd>5</kbd>                  | Use one of the earlier translations shown on the right |
 | <kbd>Alt</kbd> <kbd>I</kbd>                               | Start from the English                                 |
-| <kbd>/</kbd>                                              | Search                                                 |
+| <kbd>Ctrl</kbd> <kbd>K</kbd>                              | Search                                                 |
 | <kbd>?</kbd>                                              | Show these keys                                        |
 
 On a Mac, <kbd>Cmd</kbd> works in place of <kbd>Ctrl</kbd>.

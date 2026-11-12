@@ -8,6 +8,8 @@ Anything in curly braces, such as `{ $count }` or `{ $name }`, is filled in by t
 
 The checks tell you when a placeable from the English is missing, and stop you from saving one the English doesn't have, since the app has no value for it.
 
+Tags such as `<a href="{ $docs }">` and `</a>` work the same way: keep every tag the English has around the words they belong to. A translation with different tags can't be saved.
+
 ## Plural forms
 
 When a message depends on a number, you get one field for every form your language has, not just the ones English needs. English has two forms; Croatian has three:

@@ -62,7 +62,7 @@
       event.preventDefault()
       void editor.step(event.key === "ArrowDown" ? 1 : -1)
     } else if (!typing && event.key === "?") shortcuts = true
-    else if (!typing && event.key === "/") {
+    else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
       event.preventDefault()
       searchField?.focus()
     }
@@ -125,8 +125,13 @@
         <div class="mx-auto max-w-2xl space-y-4 pt-4"><div class="placeholder h-8 w-1/2"></div><div class="placeholder h-24"></div></div>
       {:else if !editor.loading}
         <div class="mx-auto max-w-md pt-24 text-center">
-          <p class="text-[20px] font-semibold">Nothing left here</p>
-          <p class="mt-2 text-ink-soft">Every string in this view is done. Pick another filter or another area.</p>
+          {#if editor.search.trim()}
+            <p class="text-[20px] font-semibold">Nothing matches</p>
+            <p class="mt-2 text-ink-soft">Try other words or another filter.</p>
+          {:else}
+            <p class="text-[20px] font-semibold">Nothing left here</p>
+            <p class="mt-2 text-ink-soft">Every string in this view is done. Pick another filter or another area.</p>
+          {/if}
         </div>
       {/if}
     </main>
