@@ -6,12 +6,16 @@ export interface GlossaryTerm {
 
 const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 
-export function termPattern(term: string, exact = false) {
-  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped(term)}(?![\\p{L}\\p{N}])`, exact ? "u" : "iu")
+export function termPattern(term: string, name = false) {
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped(term)}(?![\\p{L}\\p{N}])`, name ? "u" : "iu")
+}
+
+export function keepsTerm(text: string, term: string) {
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped(term)}`, "u").test(text)
 }
 
 export function termsIn(text: string, glossary: GlossaryTerm[]) {
-  return glossary.filter((entry) => termPattern(entry.term).test(text))
+  return glossary.filter((entry) => termPattern(entry.term, entry.translation === null).test(text))
 }
 
 const STEM = 4

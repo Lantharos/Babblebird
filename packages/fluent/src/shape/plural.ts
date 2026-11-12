@@ -8,13 +8,13 @@ export function pluralCategories(lang: string): string[] {
   return CATEGORIES.filter((category) => found.has(category))
 }
 
+export const isPluralCategory = (key: string) => (CATEGORIES as readonly string[]).includes(key)
+
 export function isPlural(part: Part) {
   return (
     part.kind === "select" &&
-    part.variants.some((variant) => (CATEGORIES as readonly string[]).includes(variant.key)) &&
-    part.variants.every(
-      (variant) => NUMBER.test(variant.key) || (CATEGORIES as readonly string[]).includes(variant.key),
-    )
+    part.variants.some((variant) => isPluralCategory(variant.key)) &&
+    part.variants.every((variant) => NUMBER.test(variant.key) || isPluralCategory(variant.key))
   )
 }
 

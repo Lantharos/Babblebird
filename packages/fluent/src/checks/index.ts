@@ -1,7 +1,8 @@
 import { patternText } from "../plain.ts"
-import { isPlural, pluralCategories } from "../shape/plural.ts"
+import { isPlural, isPluralCategory, pluralCategories } from "../shape/plural.ts"
 import { type Field, parseBody, type Shape, shapeOf } from "../shape/read.ts"
-import { type GlossaryTerm, termPattern, termsIn, usesTranslation } from "./glossary.ts"
+import { type GlossaryTerm, keepsTerm, termPattern, termsIn, usesTranslation } from "./glossary.ts"
+import { sameTags, tagsIn } from "./markup.ts"
 import { edgeSpaces, endingOf } from "./punctuation.ts"
 import { referencesOf } from "./references.ts"
 
@@ -16,6 +17,8 @@ export type ProblemCode =
   | "extra-attribute"
   | "empty"
   | "missing-plural"
+  | "extra-plural"
+  | "markup"
   | "punctuation"
   | "spaces"
   | "kept-term"
@@ -43,6 +46,8 @@ export const PROBLEM_BITS: Record<ProblemCode, number> = {
   "kept-term": 1024,
   glossary: 2048,
   unchanged: 4096,
+  "extra-plural": 8192,
+  markup: 16384,
 }
 
 export const problemFlags = (problems: Problem[]) =>
@@ -75,7 +80,8 @@ function compareFields(source: Shape, translation: Shape, lang: string, problems
     }
     if (isPlural(field.part) && other.part.kind === "select") {
       const keys = new Set(other.part.variants.map((variant) => variant.key))
-      const missing = pluralCategories(lang).filter((category) => !keys.has(category))
+      const categories = pluralCategories(lang)
+      const missing = categories.filter((category) => !keys.has(category))
       if (missing.length)
         problems.push({
           code: "missing-plural",
@@ -83,7 +89,22 @@ function compareFields(source: Shape, translation: Shape, lang: string, problems
           field: field.name,
           text: `No form for ${missing.join(", ")}`,
         })
+      const unused = [...keys].filter((key) => isPluralCategory(key) && !categories.includes(key))
+      if (unused.length)
+        problems.push({
+          code: "extra-plural",
+          severity: "warning",
+          field: field.name,
+          text: `This language never uses ${unused.map((key) => `[${key}]`).join(", ")}`,
+        })
     }
+    if (!sameTags(tagsIn(texts(field)), tagsIn(texts(other))))
+      problems.push({
+        code: "markup",
+        severity: "error",
+        field: field.name,
+        text: `${fieldLabel(field.name)} needs the same tags as the source`,
+      })
     const sourceText = primaryText(field)
     const sourceEnding = endingOf(sourceText)
     const sourceEdges = edgeSpaces(sourceText)
@@ -164,7 +185,7 @@ function compareGlossary(
 ) {
   for (const entry of termsIn(sourcePlain, glossary)) {
     if (entry.translation === null) {
-      if (!termPattern(entry.term, true).test(translationPlain))
+      if (!keepsTerm(translationPlain, entry.term))
         problems.push({
           code: "kept-term",
           severity: "warning",
@@ -209,7 +230,7 @@ export function runChecks(
   const translationPlain = plainOfBody(translationBody)
   compareGlossary(sourcePlain, translationPlain, glossary, problems)
   const kept = termsIn(sourcePlain, glossary).filter((entry) => entry.translation === null)
-  const onlyKept = kept.reduce((text, entry) => text.replace(termPattern(entry.term), ""), sourcePlain)
+  const onlyKept = kept.reduce((text, entry) => text.replace(termPattern(entry.term, true), ""), sourcePlain)
   if (translationPlain === sourcePlain && /\p{L}{3}/u.test(onlyKept))
     problems.push({
       code: "unchanged",
