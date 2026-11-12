@@ -2,6 +2,7 @@
   import {
     composeBody,
     fitShape,
+    glossaryHints,
     isEmpty,
     placeablesOf,
     previews,
@@ -37,6 +38,7 @@
   const body = $derived(composeBody(shape))
   const empty = $derived(isEmpty(shape))
   const problems = $derived(empty ? [] : runChecks(detail.row.body, body, lang, detail.glossary))
+  const hints = $derived(empty ? [] : glossaryHints(detail.row.body, body, detail.glossary))
   const blocked = $derived(empty || problems.some((problem) => problem.severity === "error"))
   const shown = $derived(empty ? [] : previews(body, lang))
   const unchanged = $derived(detail.row.translation?.body === body)
@@ -120,7 +122,7 @@
     </div>
   {/if}
 
-  <Problems {problems} />
+  <Problems {problems} {hints} />
   {#if refused}<p class="text-[15px] text-danger" role="alert">{refused}</p>{/if}
 
   {#if shown.length}

@@ -1,6 +1,7 @@
 export { termsIn } from "./checks/glossary.ts"
 export {
   type GlossaryTerm,
+  glossaryHints,
   PROBLEM_BITS,
   type Problem,
   type ProblemCode,

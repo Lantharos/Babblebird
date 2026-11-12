@@ -11,7 +11,6 @@ import { errorResponse, fail } from "./lib/http.ts"
 import { meRoutes } from "./me/routes.ts"
 import { deliverPending } from "./ops/pending.ts"
 import { backOffice, publishDefinitions } from "./ops/pult.ts"
-import { glossaryRoutes } from "./projects/glossary.ts"
 import { listRoutes } from "./projects/list.ts"
 import { manageRoutes } from "./projects/manage.ts"
 import { memberRoutes } from "./projects/members.ts"
@@ -52,7 +51,6 @@ app.route("/projects", projectRoutes)
 app.route("/projects", editorRoutes)
 app.route("/projects", memberRoutes)
 app.route("/projects", manageRoutes)
-app.route("/projects", glossaryRoutes)
 app.route("/projects", screenshotRoutes)
 app.route("/", fileRoutes)
 app.all("*", (c) => c.json({ error: "Not found" }, 404))

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { runChecks } from "../src/index.ts"
+import { glossaryHints, runChecks } from "../src/index.ts"
 
 const codes = (source: string, translation: string, lang = "de", glossary = []) =>
   runChecks(source, translation, lang, glossary).map((problem) => problem.code)
@@ -48,4 +48,17 @@ test("endings and spacing follow the source", () => {
   expect(codes("= Print…", "= Drucken")).toContain("punctuation")
   expect(codes("= Delete it?", "= Löschen?")).toEqual([])
   expect(codes("= Delete it?", "= Διαγραφή;", "el")).toEqual([])
+})
+
+test("glossary terms are hints, not problems", () => {
+  const glossary = [{ term: "open", translation: "avama", note: null }]
+  expect(codes("= Open the file", "= Ava fail", "et", glossary as never)).toEqual([])
+  expect(glossaryHints("= Open the file", "= Käivita fail", glossary)).toEqual(["“open” is usually “avama”"])
+})
+
+test("a copy of the source is only flagged when there are words to translate", () => {
+  expect(codes("= { $width } × { $height }", "= { $width } × { $height }")).toEqual([])
+  const glossary = [{ term: "Start", translation: "Start", note: null }]
+  expect(codes("= Start", "= Start", "et", glossary as never)).toEqual([])
+  expect(codes("= Printer", "= Printer", "et")).toEqual(["unchanged"])
 })

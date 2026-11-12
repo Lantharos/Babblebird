@@ -22,7 +22,6 @@ export type ProblemCode =
   | "punctuation"
   | "spaces"
   | "kept-term"
-  | "glossary"
   | "unchanged"
 
 export interface Problem {
@@ -44,7 +43,6 @@ export const PROBLEM_BITS: Record<ProblemCode, number> = {
   punctuation: 256,
   spaces: 512,
   "kept-term": 1024,
-  glossary: 2048,
   unchanged: 4096,
   "extra-plural": 8192,
   markup: 16384,
@@ -177,29 +175,20 @@ function compareReferences(sourceBody: string, translationBody: string, problems
       })
 }
 
-function compareGlossary(
+function compareKeptTerms(
   sourcePlain: string,
   translationPlain: string,
   glossary: GlossaryTerm[],
   problems: Problem[],
 ) {
-  for (const entry of termsIn(sourcePlain, glossary)) {
-    if (entry.translation === null) {
-      if (!keepsTerm(translationPlain, entry.term))
-        problems.push({
-          code: "kept-term",
-          severity: "warning",
-          field: null,
-          text: `Keep “${entry.term}” as it is`,
-        })
-    } else if (!usesTranslation(translationPlain, entry.translation))
+  for (const entry of termsIn(sourcePlain, glossary))
+    if (entry.translation === null && !keepsTerm(translationPlain, entry.term))
       problems.push({
-        code: "glossary",
+        code: "kept-term",
         severity: "warning",
         field: null,
-        text: `“${entry.term}” is usually “${entry.translation}”`,
+        text: `Keep “${entry.term}” as it is`,
       })
-  }
 }
 
 function plainOfBody(body: string) {
@@ -228,10 +217,14 @@ export function runChecks(
   compareReferences(sourceBody, translationBody, problems)
   const sourcePlain = plainOfBody(sourceBody)
   const translationPlain = plainOfBody(translationBody)
-  compareGlossary(sourcePlain, translationPlain, glossary, problems)
-  const kept = termsIn(sourcePlain, glossary).filter((entry) => entry.translation === null)
-  const onlyKept = kept.reduce((text, entry) => text.replace(termPattern(entry.term, true), ""), sourcePlain)
-  if (translationPlain === sourcePlain && /\p{L}{3}/u.test(onlyKept))
+  compareKeptTerms(sourcePlain, translationPlain, glossary, problems)
+  const kept = termsIn(sourcePlain, glossary).filter(
+    (entry) => entry.translation === null || entry.translation === entry.term,
+  )
+  const translatable = kept
+    .reduce((text, entry) => text.replace(termPattern(entry.term, true), ""), sourcePlain)
+    .replace(/\{[^}]*\}/g, "")
+  if (translationPlain === sourcePlain && /\p{L}{3}/u.test(translatable))
     problems.push({
       code: "unchanged",
       severity: "warning",
@@ -239,4 +232,12 @@ export function runChecks(
       text: "It's the same as the source",
     })
   return problems
+}
+
+export function glossaryHints(sourceBody: string, translationBody: string, glossary: GlossaryTerm[]) {
+  if (!parseBody(translationBody)) return []
+  const translationPlain = plainOfBody(translationBody)
+  return termsIn(plainOfBody(sourceBody), glossary)
+    .filter((entry) => entry.translation !== null && !usesTranslation(translationPlain, entry.translation))
+    .map((entry) => `“${entry.term}” is usually “${entry.translation}”`)
 }
