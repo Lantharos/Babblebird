@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
-import { all, eachRow, runAll, shard } from "../db/strings.ts"
 import { readBlobs, readTree, type TreeEntry } from "../github/repo.ts"
 import { reportFailure } from "../ops/events.ts"
-import { recountArea } from "./apply/progress.ts"
+import { all, eachRow, runAll, stringsOf } from "../strings/client.ts"
+import { publishTotals, recountStatements } from "./apply/progress.ts"
 import { repoOf } from "./area.ts"
 import { importGlossaries } from "./import/glossary.ts"
 import { storeIcon, storeIcons } from "./import/icons.ts"
@@ -62,27 +62,25 @@ function changedBlobs(
 export async function scanProject(job: ScanJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, job.projectId) })
   if (!project || project.state === "removed" || project.pausedAt) return
-  const strings = shard(project)
+  const strings = stringsOf(project)
   const repo = await repoOf(project)
   try {
     const tree = await readTree(repo, job.sha)
     const { config, areas } = await readLayout(tree, repo)
-    const saved = await saveLayout(strings, project.id, areas, config.source)
+    const saved = await saveLayout(strings, areas, config.source)
     await storeIcons(strings, repo, saved.icons)
     const iconEntry = projectIcon(tree, config)
     const icon = iconEntry ? await storeIcon(repo, iconEntry) : null
     const known = new Map(
       (
         await all<{ file_id: number; lang: string; sha: string }>(
-          strings
-            .prepare(
-              "SELECT b.file_id, b.lang, b.sha FROM blob b JOIN file f ON f.id = b.file_id WHERE f.project_id = ? AND f.area_id > 0",
-            )
-            .bind(project.id),
+          strings.prepare(
+            "SELECT b.file_id, b.lang, b.sha FROM blob b JOIN file f ON f.id = b.file_id WHERE f.area_id > 0",
+          ),
         )
       ).map((row) => [`${row.file_id}:${row.lang}`, row.sha]),
     )
-    await importGlossaries(strings, repo, project.id, tree, config)
+    await importGlossaries(strings, repo, tree, config)
     const vanished = [...known.keys()].filter((key) => !saved.present.has(key)).map((key) => key.split(":"))
     await runAll(strings, [
       ...eachRow(
@@ -121,24 +119,23 @@ export async function scanProject(job: ScanJob) {
     const translationLangs = [
       ...new Set(allBlobs.filter((blob) => blob.lang !== config.source).map((blob) => blob.lang)),
     ]
-    await strings
-      .prepare("INSERT INTO activity (project_id, kind, detail, at) VALUES (?, 'synced', ?, ?)")
-      .bind(
-        project.id,
-        JSON.stringify({
-          sha: job.sha,
-          reason: job.reason,
-          message: job.message,
-          by: job.by,
-          sourceFiles,
-          translationFiles: allBlobs.length - sourceFiles,
-          languages: translationLangs,
-          areas: areas.length,
-        }),
-        Date.now(),
-      )
-      .run()
-    for (const areaId of saved.recount) await recountArea(strings, project.id, areaId, null)
+    const synced = strings.prepare("INSERT INTO activity (kind, detail, at) VALUES ('synced', ?, ?)").bind(
+      JSON.stringify({
+        sha: job.sha,
+        reason: job.reason,
+        message: job.message,
+        by: job.by,
+        sourceFiles,
+        translationFiles: allBlobs.length - sourceFiles,
+        languages: translationLangs,
+        areas: areas.length,
+      }),
+      Date.now(),
+    )
+    await publishTotals(strings, project.id, [
+      synced,
+      ...[...saved.recount].flatMap((areaId) => recountStatements(strings, areaId, null)),
+    ])
     const languages = [
       ...new Set(areas.flatMap((area) => area.files.flatMap((file) => [...file.langs.keys()]))),
     ]

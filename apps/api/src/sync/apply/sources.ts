@@ -1,6 +1,6 @@
 import { type Unit, wordCount } from "@babblebird/fluent"
 import { STATE } from "@babblebird/protocol"
-import { all, eachRow, runAll } from "../../db/strings.ts"
+import { all, eachRow, runAll, type Strings } from "../../strings/client.ts"
 import { bandsOf, textHash } from "../../tm/minhash.ts"
 
 interface Existing {
@@ -14,13 +14,7 @@ interface Existing {
   plain: string
 }
 
-export async function applySources(
-  db: D1Database,
-  projectId: string,
-  open: boolean,
-  fileId: number,
-  units: Unit[],
-) {
+export async function applySources(db: Strings, fileId: number, units: Unit[]) {
   const existing = new Map(
     (
       await all<Existing>(
@@ -38,7 +32,7 @@ export async function applySources(
   const bands: [string | number, number][] = []
   const oldBands: unknown[][] = []
   const forget = (row: Existing) => {
-    if (open) for (const band of bandsOf(row.plain)) oldBands.push([band, row.id])
+    for (const band of bandsOf(row.plain)) oldBands.push([band, row.id])
   }
   const stale: number[] = []
   const renamed: unknown[][] = []
@@ -67,12 +61,12 @@ export async function applySources(
     ]
     if (!before) {
       added.push([unit.key, position, ...row])
-      if (open) for (const band of bandsOf(unit.plain)) bands.push([unit.key, band])
+      for (const band of bandsOf(unit.plain)) bands.push([unit.key, band])
     } else if (before.hash !== unit.hash) {
       edited.push([before.id, position, ...row, before.body])
       stale.push(before.id)
       forget(before)
-      if (open) for (const band of bandsOf(unit.plain)) bands.push([before.id, band])
+      for (const band of bandsOf(unit.plain)) bands.push([before.id, band])
     } else if (
       before.position !== position ||
       before.comment !== unit.comment ||
@@ -85,13 +79,11 @@ export async function applySources(
   const insertedIds = new Map<string, number>()
   for (const statement of eachRow(
     db,
-    `INSERT INTO source (project_id, file_id, open, key, position, body, hash, text_hash, plain, words, comment, section)
-     SELECT ?1, ?2, ?3, j.value->>0, j.value->>1, j.value->>2, j.value->>3, j.value->>4, j.value->>5, j.value->>6, j.value->>7, j.value->>8
-     FROM json_each(?4) j RETURNING id, key`,
+    `INSERT INTO source (file_id, key, position, body, hash, text_hash, plain, words, comment, section)
+     SELECT ?1, j.value->>0, j.value->>1, j.value->>2, j.value->>3, j.value->>4, j.value->>5, j.value->>6, j.value->>7, j.value->>8
+     FROM json_each(?2) j RETURNING id, key`,
     added,
-    projectId,
     fileId,
-    open ? 1 : 0,
   ))
     for (const row of await all<{ id: number; key: string }>(statement)) insertedIds.set(row.key, row.id)
   await runAll(db, [

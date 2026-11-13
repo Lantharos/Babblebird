@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers"
-import { runAll } from "../../db/strings.ts"
 import { type Repo, readRawBlob, type TreeEntry } from "../../github/repo.ts"
 import { putOnce } from "../../lib/files.ts"
+import { runAll, type Statement, type Strings } from "../../strings/client.ts"
 
 const TYPES: Record<string, string> = { svg: "image/svg+xml", png: "image/png", webp: "image/webp" }
 
@@ -15,9 +15,9 @@ export async function storeIcon(repo: Repo, entry: TreeEntry) {
   return name
 }
 
-export async function storeIcons(db: D1Database, repo: Repo, icons: { areaId: number; entry: TreeEntry }[]) {
+export async function storeIcons(db: Strings, repo: Repo, icons: { areaId: number; entry: TreeEntry }[]) {
   const stored = new Map<string, string | null>()
-  const updates: D1PreparedStatement[] = []
+  const updates: Statement[] = []
   for (const { areaId, entry } of icons) {
     if (!stored.has(entry.sha)) stored.set(entry.sha, await storeIcon(repo, entry))
     const name = stored.get(entry.sha)

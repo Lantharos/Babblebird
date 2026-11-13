@@ -3,9 +3,9 @@ import { and, eq, ne } from "drizzle-orm"
 import { Hono } from "hono"
 import { z } from "zod"
 import { db, schema } from "../db/core.ts"
-import { all, eachRow, first, runAll, shard } from "../db/strings.ts"
 import { putOnce } from "../lib/files.ts"
 import { fail } from "../lib/http.ts"
+import { all, eachRow, first, runAll, stringsOf } from "../strings/client.ts"
 import { imageSize } from "./images.ts"
 import { verifyWorkflow } from "./oidc.ts"
 
@@ -59,15 +59,15 @@ screenshotRoutes.post("/:owner/:name/screenshots", async (c) => {
     fail(403, "This workflow doesn't belong to that project")
   const form = await c.req.formData()
   const parsed = manifest.parse(JSON.parse(String(form.get("manifest") ?? "null")))
-  const strings = shard(project)
+  const strings = stringsOf(project)
   const keys = [...new Set(parsed.screenshots.flatMap((shot) => shot.strings.map((entry) => entry.key)))]
   const sources = await all<{ id: number; key: string; pattern: string }>(
     strings
       .prepare(
         `SELECT s.id, s.key, f.pattern FROM source s JOIN file f ON f.id = s.file_id
-         WHERE s.project_id = ?1 AND s.key IN (SELECT value FROM json_each(?2))`,
+         WHERE s.key IN (SELECT value FROM json_each(?1))`,
       )
-      .bind(project.id, JSON.stringify(keys)),
+      .bind(JSON.stringify(keys)),
   )
   const byKey = Map.groupBy(sources, (source) => source.key)
   const unknown = new Set<string>()
@@ -85,20 +85,11 @@ screenshotRoutes.post("/:owner/:name/screenshots", async (c) => {
     const row = await first<{ id: number }>(
       strings
         .prepare(
-          `INSERT INTO screenshot (project_id, name, image, width, height, lang, commit_sha, at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-           ON CONFLICT (project_id, name, lang) DO UPDATE SET image = excluded.image, width = excluded.width,
+          `INSERT INTO screenshot (name, image, width, height, lang, commit_sha, at) VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT (name, lang) DO UPDATE SET image = excluded.image, width = excluded.width,
              height = excluded.height, commit_sha = excluded.commit_sha, at = excluded.at RETURNING id`,
         )
-        .bind(
-          project.id,
-          shot.name,
-          image,
-          size.width,
-          size.height,
-          shot.lang,
-          parsed.commit ?? claims.sha,
-          Date.now(),
-        ),
+        .bind(shot.name, image, size.width, size.height, shot.lang, parsed.commit ?? claims.sha, Date.now()),
     )
     const shots = shot.strings.flatMap((entry) => {
       const matches = (byKey.get(entry.key) ?? []).filter(

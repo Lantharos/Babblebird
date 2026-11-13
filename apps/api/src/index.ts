@@ -21,6 +21,9 @@ import { consumeSync } from "./sync/consumer.ts"
 import type { SyncJob } from "./sync/jobs.ts"
 import { rescanStale } from "./sync/retry.ts"
 
+export { ProjectStrings } from "./strings/object.ts"
+export { Memory } from "./tm/memory.ts"
+
 const app = new Hono().basePath("/api")
 
 app.onError((error, c) => {

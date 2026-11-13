@@ -1,18 +1,13 @@
-import { and, asc, eq, gte, isNotNull, isNull, ne } from "drizzle-orm"
+import { and, asc, eq, gte, isNotNull, isNull, ne, sql } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
-import { all, shard, shardsInUse } from "../../db/strings.ts"
 
 const WEEK_MS = 7 * 86_400_000
 
 async function translations() {
-  const sums = await Promise.all(
-    (await shardsInUse()).map((index) =>
-      all<{ total: number }>(
-        shard({ shard: index }).prepare("SELECT coalesce(sum(translated), 0) total FROM progress"),
-      ),
-    ),
-  )
-  return sums.reduce((sum, rows) => sum + (rows[0]?.total ?? 0), 0)
+  const [row] = await db
+    .select({ total: sql<number>`coalesce(sum(j.value->>'translated'), 0)` })
+    .from(sql`${schema.project}, json_each(${schema.project.progress}) j`)
+  return row?.total ?? 0
 }
 
 export async function serviceTotals() {

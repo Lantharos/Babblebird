@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, like, or, type SQL } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
-import { all, first, shard } from "../../db/strings.ts"
 import { languagesProgress } from "../../projects/progress.ts"
+import { all, first, stringsOf } from "../../strings/client.ts"
 
 const TRANSLATORS = 50
 const READS = 10
@@ -107,38 +107,30 @@ export const projects = {
       .orderBy(schema.member.createdAt)
   },
   languages(project: ProjectView) {
-    return languagesProgress(shard(project), project.id, project.languages)
+    return languagesProgress(project, project.languages)
   },
   translators(project: ProjectView) {
     return all<{ user_id: string; edits: number; last: number }>(
-      shard(project)
-        .prepare(
-          `SELECT user_id, count(*) edits, max(at) last FROM activity WHERE project_id = ? AND user_id IS NOT NULL
-           GROUP BY user_id ORDER BY edits DESC LIMIT ${TRANSLATORS}`,
-        )
-        .bind(project.id),
+      stringsOf(project).prepare(
+        `SELECT user_id, count(*) edits, max(at) last FROM activity WHERE user_id IS NOT NULL
+         GROUP BY user_id ORDER BY edits DESC LIMIT ${TRANSLATORS}`,
+      ),
     )
   },
   async reads(project: ProjectView) {
     const rows = await all<{ detail: string; at: number }>(
-      shard(project)
-        .prepare(
-          `SELECT detail, at FROM activity WHERE project_id = ? AND kind = 'synced' ORDER BY id DESC LIMIT ${READS}`,
-        )
-        .bind(project.id),
+      stringsOf(project).prepare(
+        `SELECT detail, at FROM activity WHERE kind = 'synced' ORDER BY id DESC LIMIT ${READS}`,
+      ),
     )
     return rows.map((row): ReadEntry => ({ at: row.at, ...JSON.parse(row.detail) }))
   },
   async counts(project: ProjectView) {
-    const strings = shard(project)
-    const [waiting, glossary] = await Promise.all([
-      first<{ count: number }>(
-        strings.prepare("SELECT count(*) count FROM pending WHERE project_id = ?").bind(project.id),
+    const counts = await first<{ waiting: number; glossary: number }>(
+      stringsOf(project).prepare(
+        "SELECT (SELECT count(*) FROM pending) waiting, (SELECT count(*) FROM glossary) glossary",
       ),
-      first<{ count: number }>(
-        strings.prepare("SELECT count(*) count FROM glossary WHERE project_id = ?").bind(project.id),
-      ),
-    ])
-    return { waitingFiles: waiting?.count ?? 0, glossaryTerms: glossary?.count ?? 0 }
+    )
+    return { waitingFiles: counts?.waiting ?? 0, glossaryTerms: counts?.glossary ?? 0 }
   },
 }

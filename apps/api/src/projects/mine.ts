@@ -3,11 +3,14 @@ import { and, eq, inArray, ne, or } from "drizzle-orm"
 import { Hono } from "hono"
 import { type SignedInVars, signedIn } from "../auth/session.ts"
 import { db, schema } from "../db/core.ts"
-import { all, shard, shardsInUse } from "../db/strings.ts"
 import { userInstallations } from "../github/user.ts"
 import { fail } from "../lib/http.ts"
+import { all, stringsOf } from "../strings/client.ts"
 import { visibleProject } from "./access.ts"
 import { summaryOf } from "./routes.ts"
+import { recentWork } from "./work.ts"
+
+const RECENT = 20
 
 export const mineRoutes = new Hono<SignedInVars>()
 
@@ -56,42 +59,23 @@ mineRoutes.get("/me/projects", signedIn, async (c) => {
 })
 
 mineRoutes.get("/me/work", signedIn, async (c) => {
-  const viewer = c.get("viewer")
-  const rows = (
-    await Promise.all(
-      (
-        await shardsInUse()
-      ).map((index) =>
-        all<{ project_id: string; lang: string; key: string | null; kind: string; at: number }>(
-          shard({ shard: index })
-            .prepare(
-              `SELECT a.project_id, a.lang, s.key, a.kind, a.at FROM activity a LEFT JOIN source s ON s.id = a.source_id
-               WHERE a.user_id = ? ORDER BY a.id DESC LIMIT 20`,
-            )
-            .bind(viewer.id),
-        ),
-      ),
-    )
-  ).flat()
+  const rows = await recentWork(c.get("viewer").id, RECENT)
   const slugs = new Map(
     (
       await db
         .select({ id: schema.project.id, slug: schema.project.slug })
         .from(schema.project)
-        .where(inArray(schema.project.id, [...new Set(rows.map((row) => row.project_id)), ""]))
+        .where(inArray(schema.project.id, [...new Set(rows.map((row) => row.projectId)), ""]))
     ).map((row) => [row.id, row.slug]),
   )
   return c.json(
-    rows
-      .sort((a, b) => b.at - a.at)
-      .slice(0, 20)
-      .map((row) => ({
-        project: slugs.get(row.project_id) ?? "",
-        lang: row.lang,
-        key: row.key,
-        kind: row.kind,
-        at: row.at,
-      })),
+    rows.map((row) => ({
+      project: slugs.get(row.projectId) ?? "",
+      lang: row.lang,
+      key: row.key,
+      kind: row.kind,
+      at: row.at,
+    })),
   )
 })
 
@@ -104,19 +88,9 @@ mineRoutes.get("/installations/:id{\\d+}", signedIn, async (c) => {
 
 mineRoutes.get("/projects/:owner/:name/import", async (c) => {
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), null)
-  const strings = shard(project)
-  const [areas, translated] = await Promise.all([
-    all<{ slug: string; name: string; icon: string | null; strings: number }>(
-      strings
-        .prepare("SELECT slug, name, icon, strings FROM area WHERE project_id = ? ORDER BY position")
-        .bind(project.id),
-    ),
-    all<{ count: number }>(
-      strings
-        .prepare("SELECT coalesce(sum(translated), 0) count FROM progress WHERE project_id = ?")
-        .bind(project.id),
-    ),
-  ])
+  const areas = await all<{ slug: string; name: string; icon: string | null; strings: number }>(
+    stringsOf(project).prepare("SELECT slug, name, icon, strings FROM area ORDER BY position"),
+  )
   const summary = summaryOf(project)
   return c.json({
     state: project.state,
@@ -124,7 +98,7 @@ mineRoutes.get("/projects/:owner/:name/import", async (c) => {
     importing: summary.importing,
     areas: areas.map((area) => ({ ...area, icon: area.icon ? `/api/icons/${area.icon}` : null })),
     strings: project.strings,
-    translations: translated[0]?.count ?? 0,
+    translations: Object.values(project.progress).reduce((sum, progress) => sum + progress.translated, 0),
     languages: project.languages.length,
   } satisfies ImportStatus)
 })

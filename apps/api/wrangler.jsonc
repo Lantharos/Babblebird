@@ -20,14 +20,18 @@
       "database_name": "babblebird",
       "database_id": "e0edca1e-a134-4137-80bb-882342a05945",
       "migrations_dir": "migrations/core"
-    },
-    {
-      "binding": "STRINGS_0",
-      "database_name": "babblebird-strings-0",
-      "database_id": "886d1cf0-1e49-410b-a821-0884d5198445",
-      "migrations_dir": "migrations/strings"
     }
   ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "STRINGS", "class_name": "ProjectStrings" },
+      { "name": "MEMORY", "class_name": "Memory" }
+    ]
+  },
+  "exports": {
+    "ProjectStrings": { "type": "durable-object", "storage": "sqlite" },
+    "Memory": { "type": "durable-object", "storage": "sqlite" }
+  },
   "r2_buckets": [{ "binding": "FILES", "bucket_name": "babblebird" }],
   "queues": {
     "producers": [

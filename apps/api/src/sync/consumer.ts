@@ -1,4 +1,4 @@
-import { usage } from "../db/strings.ts"
+import { usage } from "../strings/client.ts"
 import { syncArea } from "./area.ts"
 import type { SyncJob } from "./jobs.ts"
 import { scanProject } from "./scan.ts"

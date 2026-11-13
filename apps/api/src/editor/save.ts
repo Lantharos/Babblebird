@@ -1,16 +1,16 @@
 import { type GlossaryTerm, type Problem, problemFlags, runChecks, termsIn } from "@babblebird/fluent"
 import { STATE } from "@babblebird/protocol"
 import { sql } from "drizzle-orm"
-import { db as core, type ProjectRow } from "../db/core.ts"
-import { all, runAll } from "../db/strings.ts"
-import { recountArea } from "../sync/apply/progress.ts"
+import { db as core, type ProjectRow, schema } from "../db/core.ts"
+import { all, type Statement, type Strings } from "../strings/client.ts"
+import { publishTotals, recountStatements } from "../sync/apply/progress.ts"
 import type { StringRecord } from "./queries.ts"
 
-export async function glossaryFor(db: D1Database, projectId: string, lang: string, plain: string) {
+const REPOSITORY_VALUE = "iif(translation.unsent, translation.base, translation.body)"
+
+export async function glossaryFor(db: Strings, lang: string, plain: string) {
   const terms = await all<GlossaryTerm & { id: number; lang: string }>(
-    db
-      .prepare("SELECT id, lang, term, translation, note FROM glossary WHERE project_id = ? AND lang = ?")
-      .bind(projectId, lang),
+    db.prepare("SELECT id, lang, term, translation, note FROM glossary WHERE lang = ?").bind(lang),
   )
   return termsIn(plain, terms)
 }
@@ -25,38 +25,55 @@ export interface SaveInput {
   kind: string
 }
 
-export async function checkTranslation(
-  db: D1Database,
-  input: Pick<SaveInput, "project" | "record" | "lang" | "body">,
-) {
-  const glossary = await glossaryFor(db, input.project.id, input.lang, input.record.plain)
+export async function checkTranslation(db: Strings, input: Pick<SaveInput, "record" | "lang" | "body">) {
+  const glossary = await glossaryFor(db, input.lang, input.record.plain)
   return runChecks(input.record.body, input.body, input.lang, glossary)
 }
 
-export async function saveTranslation(db: D1Database, input: SaveInput, problems: Problem[]) {
+export async function saveTranslation(
+  db: Strings,
+  input: SaveInput,
+  problems: Problem[],
+  before: Statement[] = [],
+) {
   const { project, record, lang, body, state, userId } = input
   const now = Date.now()
-  await runAll(db, [
+  await publishTotals(db, project.id, [
+    ...before,
     db
       .prepare(
-        `INSERT INTO translation (source_id, lang, body, state, source_hash, flags, by, credit, at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, NULL, ?8)
-         ON CONFLICT (source_id, lang) DO UPDATE SET body = excluded.body, state = excluded.state, source_hash = excluded.source_hash,
-           flags = excluded.flags, by = excluded.by, credit = NULL, at = excluded.at`,
+        `INSERT INTO translation (source_id, lang, body, base, unsent, state, source_hash, flags, by, credit_id, at)
+         VALUES (?1, ?2, ?3, NULL, 1, ?4, ?5, ?6, ?7, NULL, ?8)
+         ON CONFLICT (source_id, lang) DO UPDATE SET
+           base = iif(excluded.body IS ${REPOSITORY_VALUE}, NULL, ${REPOSITORY_VALUE}),
+           unsent = excluded.body IS NOT ${REPOSITORY_VALUE},
+           body = excluded.body, state = excluded.state, source_hash = excluded.source_hash,
+           flags = excluded.flags, by = excluded.by, credit_id = NULL, at = excluded.at`,
       )
       .bind(record.id, lang, body, state, record.hash, problemFlags(problems), userId, now),
     db
-      .prepare(
-        "INSERT INTO activity (project_id, lang, source_id, user_id, kind, detail, at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      )
-      .bind(project.id, lang, record.id, userId, input.kind, body, now),
+      .prepare("INSERT INTO activity (lang, source_id, user_id, kind, detail, at) VALUES (?, ?, ?, ?, ?, ?)")
+      .bind(lang, record.id, userId, input.kind, body, now),
     db
       .prepare(
-        `INSERT INTO pending (project_id, file_id, lang, since, changed) VALUES (?1, ?2, ?3, ?4, ?4)
-         ON CONFLICT (project_id, file_id, lang) DO UPDATE SET changed = excluded.changed`,
+        `INSERT INTO pending (file_id, lang, since, changed) VALUES (?1, ?2, ?3, ?3)
+         ON CONFLICT (file_id, lang) DO UPDATE SET changed = excluded.changed`,
       )
-      .bind(project.id, record.file_id, lang, now),
+      .bind(record.file_id, lang, now),
+    ...recountStatements(db, record.area_id, [lang]),
   ])
-  await recountArea(db, project.id, record.area_id, [lang])
+  await noteContribution(userId, project.id, 1)
+}
+
+export async function noteContribution(userId: string, projectId: string, edits: number) {
+  const now = Date.now()
+  await core
+    .insert(schema.contribution)
+    .values({ userId, projectId, edits, lastAt: now })
+    .onConflictDoUpdate({
+      target: [schema.contribution.userId, schema.contribution.projectId],
+      set: { edits: sql`${schema.contribution.edits} + ${edits}`, lastAt: now },
+    })
 }
 
 export const stateFor = (approve: boolean) => (approve ? STATE.approved : STATE.translated)

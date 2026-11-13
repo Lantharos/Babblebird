@@ -9,14 +9,14 @@ import {
 import { Hono } from "hono"
 import { z } from "zod"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
-import { all, first, shard } from "../db/strings.ts"
 import { fail, readBody, readQuery } from "../lib/http.ts"
 import { abilitiesOf, PAUSED, visibleProject } from "../projects/access.ts"
-import { recountArea } from "../sync/apply/progress.ts"
+import { all, first, type Strings, stringsOf } from "../strings/client.ts"
+import { publishTotals, recountStatements } from "../sync/apply/progress.ts"
 import { contextFor } from "./context.ts"
 import { peopleById, personOf } from "./people.ts"
 import { type StringRecord, stringById, stringPage } from "./queries.ts"
-import { checkTranslation, rememberLanguage, saveTranslation, stateFor } from "./save.ts"
+import { checkTranslation, noteContribution, rememberLanguage, saveTranslation, stateFor } from "./save.ts"
 
 export const editorRoutes = new Hono<ViewerVars>()
 editorRoutes.use(maybeSignedIn)
@@ -50,9 +50,9 @@ async function rowsOf(records: StringRecord[]): Promise<StringRow[]> {
   }))
 }
 
-async function areaOf(db: D1Database, projectId: string, slug: string) {
+async function areaOf(db: Strings, slug: string) {
   const area = await first<{ id: number; slug: string }>(
-    db.prepare("SELECT id, slug FROM area WHERE project_id = ? AND slug = ?").bind(projectId, slug),
+    db.prepare("SELECT id, slug FROM area WHERE slug = ?").bind(slug),
   )
   if (!area) fail(404, "There's no such area")
   return area
@@ -72,8 +72,8 @@ editorRoutes.get("/:owner/:name/areas/:area/strings", async (c) => {
     }),
   )
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const db = shard(project)
-  const area = await areaOf(db, project.id, c.req.param("area"))
+  const db = stringsOf(project)
+  const area = await areaOf(db, c.req.param("area"))
   const records = await stringPage(db, {
     areaId: area.id,
     lang: query.lang,
@@ -96,13 +96,16 @@ async function loadString(
   language: string,
 ) {
   const { project, member } = await visibleProject(c.req.param("owner"), c.req.param("name"), viewer)
-  const db = shard(project)
-  const record = await stringById(db, project.id, Number(c.req.param("id")), language)
+  const db = stringsOf(project)
+  const record = await stringById(db, Number(c.req.param("id")), language)
   if (!record) fail(404, "There's no such string")
-  const area = await first<{ slug: string }>(
-    db.prepare("SELECT slug FROM area WHERE id = ?").bind(record.area_id),
-  )
-  return { project, member, db, record, can: abilitiesOf(project, viewer, member, language, area?.slug) }
+  return {
+    project,
+    member,
+    db,
+    record,
+    can: abilitiesOf(project, viewer, member, language, record.area_slug),
+  }
 }
 
 async function loadForWriting(...args: Parameters<typeof loadString>) {
@@ -131,7 +134,7 @@ editorRoutes.put("/:owner/:name/strings/:id{\\d+}/:lang", async (c) => {
   const { body, approve } = await readBody(c, saving)
   if (!can.translate) fail(403, "You can suggest a translation here, but not save one")
   if (approve && !can.review) fail(403, "Only reviewers of this language can approve")
-  const problems = await checkTranslation(db, { project, record, lang: language, body })
+  const problems = await checkTranslation(db, { record, lang: language, body })
   if (problems.some((problem) => problem.severity === "error"))
     return c.json({ error: problems[0]!.text, problems }, 422)
   await saveTranslation(
@@ -148,7 +151,7 @@ editorRoutes.put("/:owner/:name/strings/:id{\\d+}/:lang", async (c) => {
     problems,
   )
   await rememberLanguage(viewer.id, language)
-  const [row] = await rowsOf([(await stringById(db, project.id, record.id, language))!])
+  const [row] = await rowsOf([(await stringById(db, record.id, language))!])
   return c.json({ row: row!, problems })
 })
 
@@ -159,7 +162,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/approve", async (c) => 
   const { project, db, record, can } = await loadForWriting(c, viewer, language)
   if (!can.review) fail(403, "Only reviewers of this language can approve")
   if (record.t_body === null) fail(409, "There's nothing to approve yet")
-  const problems = await checkTranslation(db, { project, record, lang: language, body: record.t_body })
+  const problems = await checkTranslation(db, { record, lang: language, body: record.t_body })
   await saveTranslation(
     db,
     {
@@ -182,15 +185,16 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions", async (c)
   const language = lang.parse(c.req.param("lang"))
   const { project, db, record } = await loadForWriting(c, viewer, language)
   const { body } = await readBody(c, saving)
-  const problems = await checkTranslation(db, { project, record, lang: language, body })
+  const problems = await checkTranslation(db, { record, lang: language, body })
   if (problems.some((problem) => problem.severity === "error"))
     return c.json({ error: problems[0]!.text, problems }, 422)
-  await db
-    .prepare("INSERT INTO suggestion (source_id, lang, body, by, at) VALUES (?, ?, ?, ?, ?)")
-    .bind(record.id, language, body, viewer.id, Date.now())
-    .run()
-  await rememberLanguage(viewer.id, language)
-  await recountArea(db, project.id, record.area_id, [language])
+  await publishTotals(db, project.id, [
+    db
+      .prepare("INSERT INTO suggestion (source_id, lang, body, by, at) VALUES (?, ?, ?, ?, ?)")
+      .bind(record.id, language, body, viewer.id, Date.now()),
+    ...recountStatements(db, record.area_id, [language]),
+  ])
+  await Promise.all([rememberLanguage(viewer.id, language), noteContribution(viewer.id, project.id, 0)])
   return c.body(null, 204)
 })
 
@@ -206,8 +210,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions/:suggestion
       .bind(c.req.param("suggestion"), record.id, language),
   )
   if (!suggestion) fail(404, "That suggestion is gone")
-  const problems = await checkTranslation(db, { project, record, lang: language, body: suggestion.body })
-  await db.prepare("DELETE FROM suggestion WHERE source_id = ? AND lang = ?").bind(record.id, language).run()
+  const problems = await checkTranslation(db, { record, lang: language, body: suggestion.body })
   await saveTranslation(
     db,
     {
@@ -220,6 +223,7 @@ editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions/:suggestion
       kind: "accepted",
     },
     problems,
+    [db.prepare("DELETE FROM suggestion WHERE source_id = ? AND lang = ?").bind(record.id, language)],
   )
   return c.body(null, 204)
 })
@@ -230,11 +234,12 @@ editorRoutes.delete("/:owner/:name/strings/:id{\\d+}/:lang/suggestions/:suggesti
   const language = lang.parse(c.req.param("lang"))
   const { project, db, record, can } = await loadString(c, viewer, language)
   const owner = can.translate ? "" : "AND by = ?4"
-  await db
-    .prepare(`DELETE FROM suggestion WHERE id = ?1 AND source_id = ?2 AND lang = ?3 ${owner}`)
-    .bind(c.req.param("suggestion"), record.id, language, ...(can.translate ? [] : [viewer.id]))
-    .run()
-  await recountArea(db, project.id, record.area_id, [language])
+  await publishTotals(db, project.id, [
+    db
+      .prepare(`DELETE FROM suggestion WHERE id = ?1 AND source_id = ?2 AND lang = ?3 ${owner}`)
+      .bind(c.req.param("suggestion"), record.id, language, ...(can.translate ? [] : [viewer.id])),
+    ...recountStatements(db, record.area_id, [language]),
+  ])
   return c.body(null, 204)
 })
 
@@ -251,12 +256,12 @@ editorRoutes.get("/:owner/:name/activity", async (c) => {
     detail: string | null
     at: number
   }>(
-    shard(project)
+    stringsOf(project)
       .prepare(
         `SELECT a.id, a.kind, a.lang, a.source_id, s.key, a.user_id, a.detail, a.at FROM activity a LEFT JOIN source s ON s.id = a.source_id
-         WHERE a.project_id = ?1 AND a.id < ?2 ${query.lang ? "AND a.lang = ?3" : ""} ORDER BY a.id DESC LIMIT ${PAGE}`,
+         WHERE a.id < ?1 ${query.lang ? "AND a.lang = ?2" : ""} ORDER BY a.id DESC LIMIT ${PAGE}`,
       )
-      .bind(project.id, query.before ?? Number.MAX_SAFE_INTEGER, ...(query.lang ? [query.lang] : [])),
+      .bind(query.before ?? Number.MAX_SAFE_INTEGER, ...(query.lang ? [query.lang] : [])),
   )
   const people = await peopleById(rows.map((row) => row.user_id))
   return c.json(

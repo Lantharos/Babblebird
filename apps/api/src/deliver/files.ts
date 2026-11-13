@@ -5,7 +5,7 @@ import {
   messagesOf,
   patchMessages,
 } from "@babblebird/fluent"
-import { all } from "../db/strings.ts"
+import { all, type Strings } from "../strings/client.ts"
 
 export interface PendingFile {
   file_id: number
@@ -15,23 +15,21 @@ export interface PendingFile {
   changed: number
 }
 
-export function pendingFiles(db: D1Database, projectId: string) {
+export function pendingFiles(db: Strings) {
   return all<PendingFile>(
-    db
-      .prepare(
-        "SELECT p.file_id, p.lang, f.pattern, p.since, p.changed FROM pending p JOIN file f ON f.id = p.file_id WHERE p.project_id = ?",
-      )
-      .bind(projectId),
+    db.prepare(
+      "SELECT p.file_id, p.lang, f.pattern, p.since, p.changed FROM pending p JOIN file f ON f.id = p.file_id",
+    ),
   )
 }
 
 export const pathOf = (file: PendingFile) => file.pattern.replace("{lang}", file.lang)
 
-export async function buildFile(db: D1Database, file: PendingFile, existing: string) {
+export async function buildFile(db: Strings, file: PendingFile, existing: string) {
   const rows = await all<{ key: string; body: string | null; base: string | null }>(
     db
       .prepare(
-        `SELECT s.key, t.body, t.base FROM source s LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
+        `SELECT s.key, t.body, iif(t.unsent, t.base, t.body) base FROM source s LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
          WHERE s.file_id = ?1 ORDER BY s.position`,
       )
       .bind(file.file_id, file.lang),
@@ -70,14 +68,14 @@ export function withGenerated(built: BuiltFile[], generated: GeneratedLanguage[]
   ])
 }
 
-export async function translators(db: D1Database, projectId: string, files: PendingFile[], since: number) {
+export async function translators(db: Strings, files: PendingFile[], since: number) {
   const rows = await all<{ user_id: string }>(
     db
       .prepare(
-        `SELECT DISTINCT a.user_id FROM activity a WHERE a.project_id = ?1 AND a.at >= ?2 AND a.user_id IS NOT NULL
-         AND a.lang IN (SELECT value FROM json_each(?3))`,
+        `SELECT DISTINCT a.user_id FROM activity a WHERE a.at >= ?1 AND a.user_id IS NOT NULL
+         AND a.lang IN (SELECT value FROM json_each(?2))`,
       )
-      .bind(projectId, since, JSON.stringify([...new Set(files.map((file) => file.lang))])),
+      .bind(since, JSON.stringify([...new Set(files.map((file) => file.lang))])),
   )
   return rows.map((row) => row.user_id)
 }

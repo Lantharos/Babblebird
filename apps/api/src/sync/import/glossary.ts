@@ -1,5 +1,5 @@
-import { all, eachRow, first, runAll } from "../../db/strings.ts"
 import { type Repo, readBlobs, type TreeEntry } from "../../github/repo.ts"
+import { all, eachRow, first, runAll, type Strings } from "../../strings/client.ts"
 import type { Config } from "../layout/config.ts"
 import { globPattern } from "../layout/glob.ts"
 import { readTbx } from "./tbx.ts"
@@ -19,13 +19,7 @@ export function glossaryPattern(tree: TreeEntry[], config: Config) {
   return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 }
 
-export async function importGlossaries(
-  db: D1Database,
-  repo: Repo,
-  projectId: string,
-  tree: TreeEntry[],
-  config: Config,
-) {
+export async function importGlossaries(db: Strings, repo: Repo, tree: TreeEntry[], config: Config) {
   const pattern = glossaryPattern(tree, config)
   if (!pattern) return
   const matcher = globPattern(pattern.replace("{lang}", "*"))
@@ -34,10 +28,10 @@ export async function importGlossaries(
   const file = await first<{ id: number }>(
     db
       .prepare(
-        `INSERT INTO file (project_id, area_id, pattern, position) VALUES (?1, 0, ?2, 0)
-         ON CONFLICT (project_id, pattern) DO UPDATE SET area_id = 0 RETURNING id`,
+        `INSERT INTO file (area_id, pattern, position) VALUES (0, ?, 0)
+         ON CONFLICT (pattern) DO UPDATE SET area_id = 0 RETURNING id`,
       )
-      .bind(projectId, pattern),
+      .bind(pattern),
   )
   const fileId = file!.id
   const known = new Map(
@@ -59,13 +53,12 @@ export async function importGlossaries(
   const statements = changed.flatMap(({ entry, lang }) => {
     const terms = readTbx(texts.get(entry.sha)!, config.source, lang)
     return [
-      db.prepare("DELETE FROM glossary WHERE project_id = ? AND lang = ?").bind(projectId, lang),
+      db.prepare("DELETE FROM glossary WHERE lang = ?").bind(lang),
       ...eachRow(
         db,
-        `INSERT OR REPLACE INTO glossary (project_id, lang, term, translation, note)
-         SELECT ?1, ?2, j.value->>0, j.value->>1, j.value->>2 FROM json_each(?3) j`,
+        `INSERT OR REPLACE INTO glossary (lang, term, translation, note)
+         SELECT ?1, j.value->>0, j.value->>1, j.value->>2 FROM json_each(?2) j`,
         terms.map((term) => [term.term, term.translation, term.note]),
-        projectId,
         lang,
       ),
       db

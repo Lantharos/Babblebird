@@ -4,9 +4,8 @@ import { Hono } from "hono"
 import { z } from "zod"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { db, type ProjectRow, schema } from "../db/core.ts"
-import { shard } from "../db/strings.ts"
 import { readQuery } from "../lib/http.ts"
-import { projectsProgress } from "./progress.ts"
+import { languagesProgress } from "./progress.ts"
 import { summaryOf } from "./routes.ts"
 
 export const listRoutes = new Hono<ViewerVars>()
@@ -30,35 +29,16 @@ const escaped = (text: string) => `%${text.replace(/[\\%_]/g, "\\$&")}%`
 const missingIn = (project: ProjectRow, progress: LanguageProgress[]) =>
   progress.reduce((sum, language) => sum + project.strings - language.translated + language.review, 0)
 
-async function withProgress(rows: ProjectRow[], langs: string[]) {
-  const progress = new Map<string, LanguageProgress[]>()
-  for (const [index, group] of Map.groupBy(rows, (project) => project.shard)) {
-    const found = await projectsProgress(
-      shard({ shard: index }),
-      group.map((project) => project.id),
-      langs,
-    )
-    for (const project of group) {
-      const known = found.get(project.id) ?? []
-      progress.set(
-        project.id,
-        langs
-          .filter((lang) => project.languages.includes(lang))
-          .map(
-            (lang) =>
-              known.find((entry) => entry.lang === lang) ?? {
-                lang,
-                translated: 0,
-                review: 0,
-                approved: 0,
-                problems: 0,
-                suggested: 0,
-              },
-          ),
-      )
-    }
-  }
-  return progress
+function withProgress(rows: ProjectRow[], langs: string[]) {
+  return new Map(
+    rows.map((project) => [
+      project.id,
+      languagesProgress(
+        project,
+        langs.filter((lang) => project.languages.includes(lang)),
+      ),
+    ]),
+  )
 }
 
 listRoutes.get("/", async (c) => {
@@ -96,7 +76,7 @@ listRoutes.get("/", async (c) => {
     const candidates = (await ordered.limit(NEEDY_LIMIT)).filter((project) =>
       langs.some((lang) => project.languages.includes(lang)),
     )
-    progress = await withProgress(candidates, langs)
+    progress = withProgress(candidates, langs)
     const needy = candidates
       .map((project) => ({ project, missing: missingIn(project, progress.get(project.id) ?? []) }))
       .filter((entry) => entry.missing > 0)
@@ -107,7 +87,7 @@ listRoutes.get("/", async (c) => {
     const rows = await ordered.limit(PAGE + 1).offset(page * PAGE)
     shown = rows.slice(0, PAGE)
     more = rows.length > PAGE
-    progress = langs.length ? await withProgress(shown, langs) : new Map()
+    progress = langs.length ? withProgress(shown, langs) : new Map()
   }
   const offered = await db
     .selectDistinct({ lang: sql<string>`j.value` })

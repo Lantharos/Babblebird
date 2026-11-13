@@ -4,8 +4,8 @@ import { Hono } from "hono"
 import { z } from "zod"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { db, type ProjectRow, schema } from "../db/core.ts"
-import { shard } from "../db/strings.ts"
 import { fail, readBody, readQuery } from "../lib/http.ts"
+import { stringsOf } from "../strings/client.ts"
 import { abilitiesOf, visibleProject } from "./access.ts"
 import {
   type AreaProgressRow,
@@ -55,7 +55,7 @@ export function summaryOf(project: ProjectRow): Omit<ProjectSummary, "progress">
 projectRoutes.get("/:owner/:name", async (c) => {
   const viewer = c.get("viewer")
   const { project, member } = await visibleProject(c.req.param("owner"), c.req.param("name"), viewer)
-  const languages = await languagesProgress(shard(project), project.id, project.languages)
+  const languages = languagesProgress(project, project.languages)
   return c.json({
     ...summaryOf(project),
     sourceLang: project.sourceLang,
@@ -74,7 +74,7 @@ projectRoutes.get("/:owner/:name", async (c) => {
 projectRoutes.get("/:owner/:name/areas", async (c) => {
   const { lang } = readQuery(c, z.object({ lang: z.string().optional() }))
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const rows = await areasWithProgress(shard(project), project.id, lang ?? null)
+  const rows = await areasWithProgress(stringsOf(project), lang ?? null)
   return c.json(
     rows.map(
       (row): AreaSummary => ({
@@ -92,11 +92,8 @@ projectRoutes.get("/:owner/:name/areas", async (c) => {
 
 projectRoutes.get("/:owner/:name/missing", async (c) => {
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const db = shard(project)
-  const [areas, rows] = await Promise.all([
-    areasWithProgress(db, project.id, null),
-    allAreaProgress(db, project.id),
-  ])
+  const db = stringsOf(project)
+  const [areas, rows] = await Promise.all([areasWithProgress(db, null), allAreaProgress(db)])
   const byKey = new Map(rows.map((row) => [`${row.lang}:${row.id}`, row]))
   return c.json(
     project.languages.map(

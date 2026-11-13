@@ -2,9 +2,9 @@ import { eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { db, schema } from "../db/core.ts"
-import { all, shard } from "../db/strings.ts"
 import { installationToken } from "../github/app.ts"
 import { fail } from "../lib/http.ts"
+import { all, stringsOf } from "../strings/client.ts"
 import { scanHead } from "../sync/head.ts"
 import { abilitiesOf, PAUSED, visibleProject } from "./access.ts"
 
@@ -33,11 +33,9 @@ manageRoutes.post("/:owner/:name/sync", async (c) => {
 manageRoutes.get("/:owner/:name/history", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
   const rows = await all<{ id: number; detail: string; at: number }>(
-    shard(project)
-      .prepare(
-        `SELECT id, detail, at FROM activity WHERE project_id = ? AND kind = 'synced' ORDER BY id DESC LIMIT ${HISTORY}`,
-      )
-      .bind(project.id),
+    stringsOf(project).prepare(
+      `SELECT id, detail, at FROM activity WHERE kind = 'synced' ORDER BY id DESC LIMIT ${HISTORY}`,
+    ),
   )
   return c.json(rows.map((row) => ({ id: row.id, at: row.at, ...JSON.parse(row.detail) })))
 })
@@ -46,9 +44,7 @@ manageRoutes.get("/:owner/:name/delivery", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
   const [delivery, pending] = await Promise.all([
     db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) }),
-    all<{ files: number }>(
-      shard(project).prepare("SELECT count(*) files FROM pending WHERE project_id = ?").bind(project.id),
-    ),
+    all<{ files: number }>(stringsOf(project).prepare("SELECT count(*) files FROM pending")),
   ])
   return c.json({
     waitingFiles: pending[0]?.files ?? 0,
@@ -64,5 +60,6 @@ manageRoutes.get("/:owner/:name/delivery", async (c) => {
 manageRoutes.delete("/:owner/:name", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
   await db.update(schema.project).set({ state: "removed" }).where(eq(schema.project.id, project.id))
+  await stringsOf(project).republish()
   return c.body(null, 204)
 })

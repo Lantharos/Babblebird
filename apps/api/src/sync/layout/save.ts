@@ -1,5 +1,5 @@
-import { all, eachRow, first, runAll } from "../../db/strings.ts"
 import type { TreeEntry } from "../../github/repo.ts"
+import { all, eachRow, first, runAll, type Statement, type Strings } from "../../strings/client.ts"
 import { bandsOf } from "../../tm/minhash.ts"
 import type { DetectedArea } from "./detect.ts"
 
@@ -28,7 +28,7 @@ export interface SavedLayout {
 
 const SOURCE_TABLES = ["translation", "suggestion", "shot"]
 
-async function removeFiles(db: D1Database, ids: number[]) {
+async function removeFiles(db: Strings, ids: number[]) {
   const rows = ids.map((id) => [id])
   if (!rows.length) return []
   const sources = await all<{ id: number; plain: string }>(
@@ -57,7 +57,7 @@ async function removeFiles(db: D1Database, ids: number[]) {
   ]
 }
 
-async function movedFiles(db: D1Database, rows: FileRow[], detected: DetectedArea[], sourceLang: string) {
+async function movedFiles(db: Strings, rows: FileRow[], detected: DetectedArea[], sourceLang: string) {
   const patterns = new Set(rows.map((row) => row.pattern))
   const arriving = detected.flatMap((area) => area.files).filter((file) => !patterns.has(file.pattern))
   const leaving = rows.filter(
@@ -84,30 +84,22 @@ async function movedFiles(db: D1Database, rows: FileRow[], detected: DetectedAre
 }
 
 export async function saveLayout(
-  db: D1Database,
-  projectId: string,
+  db: Strings,
   detected: DetectedArea[],
   sourceLang: string,
 ): Promise<SavedLayout> {
   const areaRows = new Map(
-    (
-      await all<AreaRow>(
-        db
-          .prepare("SELECT id, slug, name, icon_sha, position FROM area WHERE project_id = ?")
-          .bind(projectId),
-      )
-    ).map((row) => [row.slug, row]),
+    (await all<AreaRow>(db.prepare("SELECT id, slug, name, icon_sha, position FROM area"))).map((row) => [
+      row.slug,
+      row,
+    ]),
   )
   const fileRows = new Map(
-    (
-      await all<FileRow>(
-        db
-          .prepare("SELECT id, pattern, area_id, position FROM file WHERE project_id = ? AND area_id > 0")
-          .bind(projectId),
-      )
-    ).map((row) => [row.pattern, row]),
+    (await all<FileRow>(db.prepare("SELECT id, pattern, area_id, position FROM file WHERE area_id > 0"))).map(
+      (row) => [row.pattern, row],
+    ),
   )
-  const updates: D1PreparedStatement[] = []
+  const updates: Statement[] = []
   const moves = await movedFiles(db, [...fileRows.values()], detected, sourceLang)
   for (const [pattern, from] of moves) {
     fileRows.delete(from.pattern)
@@ -128,8 +120,8 @@ export async function saveLayout(
     if (!row) {
       const inserted = await first<{ id: number }>(
         db
-          .prepare("INSERT INTO area (project_id, slug, name, position) VALUES (?, ?, ?, ?) RETURNING id")
-          .bind(projectId, area.slug, area.name, position),
+          .prepare("INSERT INTO area (slug, name, position) VALUES (?, ?, ?) RETURNING id")
+          .bind(area.slug, area.name, position),
       )
       row = { id: inserted!.id, slug: area.slug, name: area.name, icon_sha: null, position }
     } else if (row.name !== area.name || row.position !== position)
@@ -146,10 +138,8 @@ export async function saveLayout(
       if (!fileRow) {
         const inserted = await first<{ id: number }>(
           db
-            .prepare(
-              "INSERT INTO file (project_id, area_id, pattern, position) VALUES (?, ?, ?, ?) RETURNING id",
-            )
-            .bind(projectId, row.id, file.pattern, filePosition),
+            .prepare("INSERT INTO file (area_id, pattern, position) VALUES (?, ?, ?) RETURNING id")
+            .bind(row.id, file.pattern, filePosition),
         )
         fileRow = { id: inserted!.id, pattern: file.pattern, area_id: row.id, position: filePosition }
       } else if (fileRow.area_id !== row.id || fileRow.position !== filePosition) {
@@ -175,7 +165,7 @@ export async function saveLayout(
       [...fileRows.values()].map((row) => row.id),
     )),
     ...goneAreas.flatMap((id) => [
-      db.prepare("DELETE FROM progress WHERE project_id = ? AND area_id = ?").bind(projectId, id),
+      db.prepare("DELETE FROM progress WHERE area_id = ?").bind(id),
       db.prepare("DELETE FROM area WHERE id = ?").bind(id),
     ]),
   ])

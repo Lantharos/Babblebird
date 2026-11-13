@@ -1,6 +1,6 @@
 # Running Babblebird yourself
 
-Babblebird is open source under the AGPL. It runs on Cloudflare: two Workers, D1, R2 and Queues.
+Babblebird is open source under the AGPL. It runs on Cloudflare: two Workers, D1, Durable Objects, R2 and Queues.
 
 ## Locally
 
@@ -27,7 +27,7 @@ Open http://localhost:5180. Sign-in codes appear in the API's output. `send.ts p
 
 ## On Cloudflare
 
-Create the D1 databases, the R2 bucket and the two queues named in `apps/api/wrangler.jsonc`, then:
+Create the D1 database, the R2 bucket and the two queues named in `apps/api/wrangler.jsonc`, then:
 
 ```sh
 cd apps/api && bun run deploy

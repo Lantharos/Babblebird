@@ -2,7 +2,6 @@ import { env } from "cloudflare:workers"
 import { and, eq } from "drizzle-orm"
 import { Hono } from "hono"
 import { db, schema } from "../db/core.ts"
-import { all, shard } from "../db/strings.ts"
 import { type BrandBadge, badgeSvg, brandBadgeSvg, colorFor } from "./svg.ts"
 
 export const badgeRoutes = new Hono()
@@ -14,19 +13,15 @@ async function badge(owner: string, name: string, lang: string | undefined) {
     where: and(eq(schema.project.slug, `${owner}/${name}`.toLowerCase()), eq(schema.project.private, false)),
   })
   if (!project?.strings || !project.languages.length) return badgeSvg("translated", "not yet", "#6f6b62")
-  const rows = await all<{ done: number }>(
-    shard(project)
-      .prepare(
-        `SELECT coalesce(sum(translated - review), 0) done FROM progress WHERE project_id = ?1 ${lang ? "AND lang = ?2" : ""}`,
-      )
-      .bind(...(lang ? [project.id, lang] : [project.id])),
-  )
+  const done = Object.entries(project.progress)
+    .filter(([code]) => !lang || code === lang)
+    .reduce((sum, [, progress]) => sum + progress.translated - progress.review, 0)
   const languages = lang ? 1 : project.languages.length
   const stored = project.icon ? await env.FILES.get(`icons/${project.icon}`) : null
   const icon = stored
     ? `data:${stored.httpMetadata?.contentType};base64,${new Uint8Array(await stored.arrayBuffer()).toBase64()}`
     : null
-  const percent = Math.floor(((rows[0]?.done ?? 0) / (project.strings * languages)) * 100)
+  const percent = Math.floor((done / (project.strings * languages)) * 100)
   return badgeSvg(lang ? `translated · ${lang}` : "translated", `${percent}%`, colorFor(percent), icon)
 }
 

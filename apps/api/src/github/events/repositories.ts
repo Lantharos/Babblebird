@@ -1,6 +1,7 @@
 import { eq, inArray, sql } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
 import { randomId } from "../../lib/ids.ts"
+import { republish } from "../../strings/client.ts"
 import { scan } from "../../sync/jobs.ts"
 import { github, maybe } from "../api.ts"
 import { installationToken } from "../app.ts"
@@ -41,6 +42,7 @@ export async function addRepositories(installationId: number, repos: { full_name
       .values({ id: randomId(), repoId: repo.id, ...values })
       .onConflictDoUpdate({ target: schema.project.repoId, set: values })
       .returning({ id: schema.project.id })
+    await republish([saved!])
     if (branch) await scan(saved!.id, branch.commit.sha, { reason: "install" })
   }
 }
@@ -73,18 +75,31 @@ export async function missingRepositories(installationId: number) {
 
 export async function removeRepositories(repoIds: number[]) {
   if (repoIds.length)
-    await db.update(schema.project).set({ state: "removed" }).where(inArray(schema.project.repoId, repoIds))
+    await republish(
+      await db
+        .update(schema.project)
+        .set({ state: "removed" })
+        .where(inArray(schema.project.repoId, repoIds))
+        .returning({ id: schema.project.id }),
+    )
 }
 
 export async function removeInstallation(installationId: number) {
-  await db
-    .update(schema.project)
-    .set({ state: "removed" })
-    .where(eq(schema.project.installationId, installationId))
+  await republish(
+    await db
+      .update(schema.project)
+      .set({ state: "removed" })
+      .where(eq(schema.project.installationId, installationId))
+      .returning({ id: schema.project.id }),
+  )
   await db.delete(schema.installation).where(eq(schema.installation.id, installationId))
 }
 
 export async function updateRepository(repo: RepoDetails) {
+  const [before] = await db
+    .select({ id: schema.project.id, private: schema.project.private })
+    .from(schema.project)
+    .where(eq(schema.project.repoId, repo.id))
   await db
     .update(schema.project)
     .set({
@@ -96,4 +111,5 @@ export async function updateRepository(repo: RepoDetails) {
       defaultBranch: repo.default_branch,
     })
     .where(eq(schema.project.repoId, repo.id))
+  if (before && before.private !== repo.private) await republish([before])
 }

@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, isNotNull, isNull, like, or, type SQL, sql } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
-import { all, shard, shardsInUse } from "../../db/strings.ts"
+import { contributedTo, recentWork } from "../../projects/work.ts"
+import { all, stringsOf } from "../../strings/client.ts"
 
 const RECENT = 20
 
@@ -44,19 +45,6 @@ export interface Work {
   projectId: string
   edits: number
   last: number
-}
-
-export interface Recent {
-  projectId: string
-  lang: string | null
-  key: string | null
-  kind: string
-  at: number
-}
-
-async function everyShard<T>(query: (strings: D1Database) => Promise<T[]>) {
-  const shards = await shardsInUse()
-  return (await Promise.all(shards.map((index) => query(shard({ shard: index }))))).flat()
 }
 
 export const users = {
@@ -111,48 +99,26 @@ export const users = {
       .where(eq(schema.member.userId, id))
       .orderBy(schema.project.slug)
   },
-  async work(id: string) {
-    const rows = await everyShard((strings) =>
-      all<{ project_id: string; edits: number; last: number }>(
-        strings
-          .prepare(
-            "SELECT project_id, count(*) edits, max(at) last FROM activity WHERE user_id = ? GROUP BY project_id",
-          )
-          .bind(id),
-      ),
-    )
-    return rows
-      .map((row): Work => ({ projectId: row.project_id, edits: row.edits, last: row.last }))
-      .sort((a, b) => b.last - a.last)
+  async work(id: string): Promise<Work[]> {
+    return (await contributedTo(id)).map((row) => ({
+      projectId: row.projectId,
+      edits: row.edits,
+      last: row.last,
+    }))
   },
-  async recent(id: string) {
-    const rows = await everyShard((strings) =>
-      all<{ project_id: string; lang: string | null; key: string | null; kind: string; at: number }>(
-        strings
-          .prepare(
-            `SELECT a.project_id, a.lang, s.key, a.kind, a.at FROM activity a LEFT JOIN source s ON s.id = a.source_id
-             WHERE a.user_id = ? ORDER BY a.id DESC LIMIT ${RECENT}`,
-          )
-          .bind(id),
-      ),
-    )
-    return rows
-      .map(
-        (row): Recent => ({
-          projectId: row.project_id,
-          lang: row.lang,
-          key: row.key,
-          kind: row.kind,
-          at: row.at,
-        }),
-      )
-      .sort((a, b) => b.at - a.at)
-      .slice(0, RECENT)
+  recent(id: string) {
+    return recentWork(id, RECENT)
   },
   async suggestions(id: string) {
-    const counts = await everyShard((strings) =>
-      all<{ count: number }>(strings.prepare("SELECT count(*) count FROM suggestion WHERE by = ?").bind(id)),
+    const counts = await Promise.all(
+      (await contributedTo(id)).map((row) =>
+        all<{ count: number }>(
+          stringsOf({ id: row.projectId })
+            .prepare("SELECT count(*) count FROM suggestion WHERE by = ?")
+            .bind(id),
+        ),
+      ),
     )
-    return counts.reduce((sum, row) => sum + row.count, 0)
+    return counts.reduce((sum, rows) => sum + (rows[0]?.count ?? 0), 0)
   },
 }

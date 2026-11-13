@@ -1,5 +1,5 @@
 import { type Filter, STATE } from "@babblebird/protocol"
-import { all, first } from "../db/strings.ts"
+import { all, first, type Strings } from "../strings/client.ts"
 
 export interface StringRecord {
   id: number
@@ -15,9 +15,9 @@ export interface StringRecord {
   words: number
   hash: number
   text_hash: number
-  project_id: string
   previous: string | null
   area_id: number
+  area_slug: string
   t_body: string | null
   t_state: number | null
   t_flags: number | null
@@ -38,8 +38,9 @@ const FILTERS: Record<Filter, string> = {
 }
 
 const COLUMNS = `s.id, s.file_id, s.key, f.pattern, f.position file_position, s.position, s.body, s.plain, s.comment, s.section, s.words,
-  s.hash, s.text_hash, s.project_id, s.previous, f.area_id,
-  t.body t_body, t.state t_state, t.flags t_flags, t.by t_by, t.credit t_credit, t.at t_at, t.source_hash t_source_hash,
+  s.hash, s.text_hash, s.previous, f.area_id, (SELECT slug FROM area WHERE id = f.area_id) area_slug,
+  t.body t_body, t.state t_state, t.flags t_flags, t.by t_by, (SELECT names FROM credit WHERE id = t.credit_id) t_credit,
+  t.at t_at, t.source_hash t_source_hash,
   (SELECT count(*) FROM suggestion g WHERE g.source_id = s.id AND g.lang = ?2) suggestions`
 
 export interface PageQuery {
@@ -51,7 +52,7 @@ export interface PageQuery {
   limit: number
 }
 
-export function stringPage(db: D1Database, query: PageQuery) {
+export function stringPage(db: Strings, query: PageQuery) {
   const search = query.search
     ? "AND (s.key LIKE ?6 ESCAPE '\\' OR s.plain LIKE ?6 ESCAPE '\\' OR t.body LIKE ?6 ESCAPE '\\')"
     : ""
@@ -75,13 +76,13 @@ export function stringPage(db: D1Database, query: PageQuery) {
   )
 }
 
-export function stringById(db: D1Database, projectId: string, id: number, lang: string) {
+export function stringById(db: Strings, id: number, lang: string) {
   return first<StringRecord>(
     db
       .prepare(
         `SELECT ${COLUMNS} FROM source s JOIN file f ON f.id = s.file_id
-         LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2 WHERE s.id = ?1 AND s.project_id = ?3`,
+         LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2 WHERE s.id = ?1`,
       )
-      .bind(id, lang, projectId),
+      .bind(id, lang),
   )
 }

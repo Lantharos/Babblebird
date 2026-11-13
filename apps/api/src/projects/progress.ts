@@ -1,8 +1,6 @@
 import type { LanguageProgress, Progress } from "@babblebird/protocol"
-import { all } from "../db/strings.ts"
-
-const SUMS =
-  "sum(translated) translated, sum(review) review, sum(approved) approved, sum(problems) problems, sum(suggested) suggested"
+import type { ProjectRow } from "../db/core.ts"
+import { all, type Strings } from "../strings/client.ts"
 
 export const emptyProgress = (): Progress => ({
   translated: 0,
@@ -12,33 +10,10 @@ export const emptyProgress = (): Progress => ({
   suggested: 0,
 })
 
-export async function projectsProgress(db: D1Database, ids: string[], langs: string[]) {
-  if (!ids.length || !langs.length) return new Map<string, LanguageProgress[]>()
-  const rows = await all<LanguageProgress & { project_id: string }>(
-    db
-      .prepare(
-        `SELECT project_id, lang, ${SUMS} FROM progress WHERE project_id IN (SELECT value FROM json_each(?1))
-         AND lang IN (SELECT value FROM json_each(?2)) GROUP BY project_id, lang`,
-      )
-      .bind(JSON.stringify(ids), JSON.stringify(langs)),
-  )
-  const found = new Map<string, LanguageProgress[]>()
-  for (const { project_id, ...progress } of rows)
-    found.set(project_id, [...(found.get(project_id) ?? []), progress])
-  return found
-}
-
-export async function languagesProgress(
-  db: D1Database,
-  projectId: string,
+export const languagesProgress = (
+  project: Pick<ProjectRow, "progress">,
   languages: string[],
-): Promise<LanguageProgress[]> {
-  const rows = await all<LanguageProgress>(
-    db.prepare(`SELECT lang, ${SUMS} FROM progress WHERE project_id = ? GROUP BY lang`).bind(projectId),
-  )
-  const byLang = new Map(rows.map((row) => [row.lang, row]))
-  return languages.map((lang) => byLang.get(lang) ?? { lang, ...emptyProgress() })
-}
+): LanguageProgress[] => languages.map((lang) => ({ lang, ...(project.progress[lang] ?? emptyProgress()) }))
 
 export interface AreaProgressRow extends Progress {
   id: number
@@ -50,26 +25,21 @@ export interface AreaProgressRow extends Progress {
   lang: string | null
 }
 
-export function areasWithProgress(db: D1Database, projectId: string, lang: string | null) {
+const AREA_COLUMNS =
+  "a.id, a.slug, a.name, a.icon, a.strings, a.words, p.lang, p.translated, p.review, p.approved, p.problems, p.suggested"
+
+export function areasWithProgress(db: Strings, lang: string | null) {
   return all<AreaProgressRow>(
     db
       .prepare(
-        `SELECT a.id, a.slug, a.name, a.icon, a.strings, a.words, p.lang, p.translated, p.review, p.approved, p.problems, p.suggested
-         FROM area a LEFT JOIN progress p ON p.project_id = a.project_id AND p.area_id = a.id AND p.lang = ?2
-         WHERE a.project_id = ?1 ORDER BY a.position`,
+        `SELECT ${AREA_COLUMNS} FROM area a LEFT JOIN progress p ON p.area_id = a.id AND p.lang = ?1 ORDER BY a.position`,
       )
-      .bind(projectId, lang ?? ""),
+      .bind(lang ?? ""),
   )
 }
 
-export function allAreaProgress(db: D1Database, projectId: string) {
+export function allAreaProgress(db: Strings) {
   return all<AreaProgressRow>(
-    db
-      .prepare(
-        `SELECT a.id, a.slug, a.name, a.icon, a.strings, a.words, p.lang, p.translated, p.review, p.approved, p.problems, p.suggested
-         FROM area a JOIN progress p ON p.project_id = a.project_id AND p.area_id = a.id
-         WHERE a.project_id = ?1 ORDER BY a.position`,
-      )
-      .bind(projectId),
+    db.prepare(`SELECT ${AREA_COLUMNS} FROM area a JOIN progress p ON p.area_id = a.id ORDER BY a.position`),
   )
 }

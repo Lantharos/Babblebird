@@ -1,10 +1,10 @@
 import { env } from "cloudflare:workers"
 import { and, eq, isNull, ne } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
-import { all, shard } from "../db/strings.ts"
 import { GitHubError } from "../github/api.ts"
 import { type Repo, readPaths } from "../github/repo.ts"
 import { deliveriesOn, reportFailure } from "../ops/events.ts"
+import { stringsOf } from "../strings/client.ts"
 import { repoOf } from "../sync/area.ts"
 import { buildFile, type PendingFile, pathOf, pendingFiles, translators, withGenerated } from "./files.ts"
 import { BRANCH, closePull, commitFiles, headOf, mergeWhenReady, moveBranch, openPull } from "./git.ts"
@@ -17,6 +17,7 @@ export interface DeliverJob {
 const CREDIT_WINDOW_MS = 7 * 86_400_000
 const QUIET_MS = 20 * 60_000
 const LONGEST_WAIT_MS = 6 * 3_600_000
+const QUEUE_BATCH = 100
 const OVERTAKEN =
   "Everything in this pull request was changed or removed in the repository in the meantime, so Babblebird closed it. Translations that differ from the repository are kept as suggestions in Babblebird."
 
@@ -69,8 +70,8 @@ export async function deliver({ projectId }: DeliverJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, projectId) })
   if (!project || project.delivery === "off" || project.state === "removed" || project.pausedAt) return
   if (!(await deliveriesOn())) return
-  const strings = shard(project)
-  const files = await pendingFiles(strings, project.id)
+  const strings = stringsOf(project)
+  const files = await pendingFiles(strings)
   const previous = await db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) })
   const open = previous?.pullNumber && !previous.mergedAt && !previous.closedAt ? previous.pullNumber : null
   if (!files.length) {
@@ -102,7 +103,7 @@ export async function deliver({ projectId }: DeliverJob) {
     const since = Math.min(...files.map((file) => file.changed))
     const message = await commitMessage(
       files.map((file) => file.lang),
-      await translators(strings, project.id, files, since - CREDIT_WINDOW_MS),
+      await translators(strings, files, since - CREDIT_WINDOW_MS),
     )
     const commit = await commitFiles(repo, head, built, message)
     if (!commit) return
@@ -142,26 +143,20 @@ export async function deliver({ projectId }: DeliverJob) {
 export async function queueDeliveries() {
   if (!(await deliveriesOn())) return
   const sending = await db
-    .select({ id: schema.project.id, shard: schema.project.shard })
+    .select({ id: schema.project.id })
     .from(schema.project)
     .where(
       and(
+        eq(schema.project.pending, true),
         ne(schema.project.delivery, "off"),
         ne(schema.project.state, "removed"),
         isNull(schema.project.pausedAt),
       ),
     )
-  for (const [index, group] of Map.groupBy(sending, (project) => project.shard)) {
-    const rows = await all<{ project_id: string }>(
-      shard({ shard: index })
-        .prepare(
-          "SELECT DISTINCT project_id FROM pending WHERE project_id IN (SELECT value FROM json_each(?))",
-        )
-        .bind(JSON.stringify(group.map((project) => project.id))),
+  for (let index = 0; index < sending.length; index += QUEUE_BATCH)
+    await env.DELIVER.sendBatch(
+      sending
+        .slice(index, index + QUEUE_BATCH)
+        .map((project) => ({ body: { projectId: project.id } satisfies DeliverJob })),
     )
-    if (rows.length)
-      await env.DELIVER.sendBatch(
-        rows.map((row) => ({ body: { projectId: row.project_id } satisfies DeliverJob })),
-      )
-  }
 }

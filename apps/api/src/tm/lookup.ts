@@ -1,51 +1,58 @@
 import type { MemoryMatch } from "@babblebird/protocol"
 import { STATE } from "@babblebird/protocol"
-import { all } from "../db/strings.ts"
+import type { ProjectRow } from "../db/core.ts"
+import { all, type Strings } from "../strings/client.ts"
+import { type Candidate, memoryOf } from "./memory.ts"
 import { bandsOf, similarity } from "./minhash.ts"
 
 interface Source {
   id: number
   plain: string
   text_hash: number
-  project_id: string
-}
-
-interface Candidate {
-  id: number
-  plain: string
-  project_id: string
-  body: string
 }
 
 const CANDIDATES = 40
 const SHOWN = 5
 const ENOUGH = 0.55
 
-export async function memoryFor(db: D1Database, source: Source, lang: string) {
-  const exact = await all<Candidate>(
-    db
-      .prepare(
-        `SELECT s.id, s.plain, s.project_id, t.body FROM source s JOIN translation t ON t.source_id = s.id AND t.lang = ?2
-         WHERE s.text_hash = ?1 AND s.id != ?3 AND (s.project_id = ?4 OR s.open = 1) AND t.state != ${STATE.review} LIMIT ${SHOWN}`,
-      )
-      .bind(source.text_hash, lang, source.id, source.project_id),
-  )
+async function ownCandidates(strings: Strings, source: Source, lang: string, bands: number[]) {
+  const [exact, near] = await Promise.all([
+    all<Omit<Candidate, "project_id">>(
+      strings
+        .prepare(
+          `SELECT s.plain, t.body FROM source s JOIN translation t ON t.source_id = s.id AND t.lang = ?2
+           WHERE s.text_hash = ?1 AND s.id != ?3 AND t.state != ${STATE.review} LIMIT ${SHOWN}`,
+        )
+        .bind(source.text_hash, lang, source.id),
+    ),
+    bands.length
+      ? all<Omit<Candidate, "project_id">>(
+          strings
+            .prepare(
+              `WITH near AS (SELECT source_id FROM tm_band WHERE band IN (SELECT value FROM json_each(?1)) AND source_id != ?2
+                 GROUP BY source_id ORDER BY count(*) DESC LIMIT ${CANDIDATES})
+               SELECT s.plain, t.body FROM near JOIN source s ON s.id = near.source_id
+               JOIN translation t ON t.source_id = s.id AND t.lang = ?3 WHERE t.state != ${STATE.review}`,
+            )
+            .bind(JSON.stringify(bands), source.id, lang),
+        )
+      : [],
+  ])
+  return [...exact, ...near]
+}
+
+export async function memoryFor(strings: Strings, project: ProjectRow, source: Source, lang: string) {
   const bands = bandsOf(source.plain)
-  const near = bands.length
-    ? await all<Candidate>(
-        db
-          .prepare(
-            `WITH near AS (SELECT source_id FROM tm_band WHERE band IN (SELECT value FROM json_each(?1)) AND source_id != ?2
-               GROUP BY source_id ORDER BY count(*) DESC LIMIT ${CANDIDATES})
-             SELECT s.id, s.plain, s.project_id, t.body FROM near JOIN source s ON s.id = near.source_id
-             JOIN translation t ON t.source_id = s.id AND t.lang = ?3 WHERE t.state != ${STATE.review}`,
-          )
-          .bind(JSON.stringify(bands), source.id, lang),
-      )
-    : []
+  const [own, shared] = await Promise.all([
+    ownCandidates(strings, source, lang, bands),
+    memoryOf(project.sourceLang, lang).lookup(project.id, source.text_hash, bands, {
+      exact: SHOWN,
+      near: CANDIDATES,
+    }),
+  ])
   const seen = new Set<string>()
   const matches: (Omit<MemoryMatch, "project"> & { projectId: string })[] = []
-  for (const candidate of [...exact, ...near]) {
+  for (const candidate of [...own.map((row) => ({ ...row, project_id: project.id })), ...shared]) {
     if (seen.has(candidate.body)) continue
     seen.add(candidate.body)
     const score = candidate.plain === source.plain ? 1 : similarity(source.plain, candidate.plain)

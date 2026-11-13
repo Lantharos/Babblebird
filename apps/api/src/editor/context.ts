@@ -1,7 +1,7 @@
 import type { StringDetail } from "@babblebird/protocol"
 import { inArray } from "drizzle-orm"
 import { db as core, type ProjectRow, schema } from "../db/core.ts"
-import { all } from "../db/strings.ts"
+import { all, type Strings } from "../strings/client.ts"
 import { memoryFor } from "../tm/lookup.ts"
 import { peopleById, personOf } from "./people.ts"
 import type { StringRecord } from "./queries.ts"
@@ -32,14 +32,14 @@ async function projectSlugs(ids: string[]) {
 }
 
 export async function contextFor(
-  db: D1Database,
+  db: Strings,
   project: ProjectRow,
   record: StringRecord,
   lang: string,
 ): Promise<StringDetail> {
   const [glossary, memory, suggestions, shots, history] = await Promise.all([
-    glossaryFor(db, project.id, lang, record.plain),
-    memoryFor(db, record, lang),
+    glossaryFor(db, lang, record.plain),
+    memoryFor(db, project, record, lang),
     all<{ id: number; body: string; by: string; at: number; note: string | null }>(
       db
         .prepare("SELECT id, body, by, at, note FROM suggestion WHERE source_id = ? AND lang = ? ORDER BY id")
@@ -56,10 +56,10 @@ export async function contextFor(
     all<{ id: number; kind: string; user_id: string | null; detail: string | null; at: number }>(
       db
         .prepare(
-          `SELECT id, kind, user_id, detail, at FROM activity WHERE source_id = ?2 AND lang = ?3 AND project_id = ?1
+          `SELECT id, kind, user_id, detail, at FROM activity WHERE source_id = ?1 AND lang = ?2
            ORDER BY id DESC LIMIT ${HISTORY}`,
         )
-        .bind(project.id, record.id, lang),
+        .bind(record.id, lang),
     ),
   ])
   const [people, slugs] = await Promise.all([

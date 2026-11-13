@@ -1,4 +1,5 @@
 import type { GeneratedLanguage } from "@babblebird/fluent"
+import type { Progress } from "@babblebird/protocol"
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 import { user } from "./auth.ts"
 import { createdAt, updatedAt } from "./columns.ts"
@@ -35,7 +36,6 @@ export const project = sqliteTable(
     generated: text("generated", { mode: "json" }).$type<GeneratedLanguage[]>().notNull().default([]),
     delivery: text("delivery", { enum: DELIVERIES }).notNull().default("off"),
     whoTranslates: text("who_translates", { enum: WHO_TRANSLATES }).notNull().default("anyone"),
-    shard: integer("shard").notNull().default(0),
     state: text("state", { enum: PROJECT_STATES }).notNull().default("scanning"),
     problem: text("problem"),
     headSha: text("head_sha"),
@@ -45,6 +45,8 @@ export const project = sqliteTable(
     importStartedAt: integer("import_started_at", { mode: "timestamp_ms" }),
     strings: integer("strings").notNull().default(0),
     words: integer("words").notNull().default(0),
+    progress: text("progress", { mode: "json" }).$type<Record<string, Progress>>().notNull().default({}),
+    pending: integer("pending", { mode: "boolean" }).notNull().default(false),
     pausedAt: integer("paused_at", { mode: "timestamp_ms" }),
     pausedReason: text("paused_reason"),
     pultItem: text("pult_item"),
@@ -107,4 +109,22 @@ export const invitation = sqliteTable(
     createdAt: createdAt(),
   },
   (table) => [primaryKey({ columns: [table.projectId, table.who] }), index("invitation_who").on(table.who)],
+)
+
+export const contribution = sqliteTable(
+  "contribution",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    edits: integer("edits").notNull().default(0),
+    lastAt: integer("last_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.projectId] }),
+    index("contribution_recent").on(table.userId, table.lastAt),
+  ],
 )

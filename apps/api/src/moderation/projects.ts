@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm"
 import { db, type ProjectRow, schema } from "../db/core.ts"
 import type { DeliverJob } from "../deliver/deliver.ts"
 import { GitHubError } from "../github/api.ts"
+import { stringsOf } from "../strings/client.ts"
 import { scanHead } from "../sync/head.ts"
 
 export async function resync(project: ProjectRow, by: string) {
@@ -36,6 +37,7 @@ export async function resume(project: ProjectRow, by: string) {
 
 async function setState(project: ProjectRow, state: ProjectRow["state"]) {
   await db.update(schema.project).set({ state }).where(eq(schema.project.id, project.id))
+  await stringsOf(project).republish()
 }
 
 export async function restore(project: ProjectRow, by: string) {
