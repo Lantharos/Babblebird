@@ -4,11 +4,15 @@
     fitShape,
     glossaryHints,
     isEmpty,
+    joinForms,
     placeablesOf,
+    pluralCategories,
     previews,
     runChecks,
     type Shape,
     shapeOf,
+    splitByNumber,
+    variablesIn,
   } from "@babblebird/fluent"
   import type { Abilities } from "@babblebird/protocol"
   import LoaderCircle from "@lucide/svelte/icons/loader-circle"
@@ -24,6 +28,7 @@
     $props()
 
   const lang = $derived(editor.lang)
+  const counted = $derived(pluralCategories(lang).length > 1)
   let shape = $state<Shape>({ fields: [] })
   let busy = $state(false)
   let refused = $state<string | null>(null)
@@ -121,6 +126,7 @@
 
 <div bind:this={form} class="space-y-5" onfocusin={(event) => (focused = event.target instanceof HTMLTextAreaElement ? event.target : focused)}>
   {#each shape.fields as field, fieldIndex}
+    {@const sourcePart = source.fields[fieldIndex]?.part}
     <div class="space-y-2">
       {#if field.name !== null}<p class="font-mono text-small text-ink-muted">.{field.name}</p>{/if}
       {#if field.part.kind === "text"}
@@ -135,6 +141,20 @@
             <PatternField bind:value={variant.text} label="{field.name ?? 'Translation'}, {label.name}" autofocus={fieldIndex === 0 && variantIndex === 0} />
           </div>
         {/each}
+      {/if}
+      {#if counted && sourcePart?.kind === "text"}
+        {@const part = field.part}
+        <div class="flex flex-wrap gap-1.5">
+          {#if part.kind === "text"}
+            {#each variablesIn(sourcePart.text) as variable}
+              <button type="button" class="button button-sm button-quiet" onclick={() => (field.part = splitByNumber(part.text, variable, lang))}>
+                Forms for <span class="font-mono text-small">{`{ $${variable} }`}</span>
+              </button>
+            {/each}
+          {:else}
+            <button type="button" class="button button-sm button-quiet" onclick={() => (field.part = joinForms(part))}>One form for every number</button>
+          {/if}
+        </div>
       {/if}
     </div>
   {/each}

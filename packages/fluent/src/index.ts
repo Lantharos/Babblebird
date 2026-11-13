@@ -14,7 +14,15 @@ export { type Merge, mergeMessage } from "./merge.ts"
 export { patternText, plainOf, wordCount } from "./plain.ts"
 export { type Preview, previews } from "./preview.ts"
 export { composeBody } from "./shape/compose.ts"
-export { fitShape, isEmpty, isPlural, pluralCategories } from "./shape/plural.ts"
+export {
+  fitShape,
+  isEmpty,
+  isPlural,
+  joinForms,
+  pluralCategories,
+  splitByNumber,
+  variablesIn,
+} from "./shape/plural.ts"
 export { type Field, type Part, parseBody, type Shape, shapeOf, type Variant } from "./shape/read.ts"
 export {
   applyTransform,

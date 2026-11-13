@@ -62,3 +62,21 @@ export function isEmpty(shape: Shape) {
       : field.part.variants.every((variant) => !variant.text.trim()),
   )
 }
+
+const VARIABLE = /\{\s*\$([A-Za-z][\w-]*)\s*\}/g
+
+export function variablesIn(text: string) {
+  return [...new Set([...text.matchAll(VARIABLE)].map((match) => match[1]!))]
+}
+
+export function splitByNumber(text: string, variable: string, lang: string): Part {
+  return {
+    kind: "select",
+    selector: `$${variable}`,
+    variants: pluralCategories(lang).map((key) => ({ key, default: key === "other", text })),
+  }
+}
+
+export function joinForms(part: Extract<Part, { kind: "select" }>): Part {
+  return { kind: "text", text: (part.variants.find((variant) => variant.default) ?? part.variants[0]!).text }
+}
