@@ -60,7 +60,7 @@ const server = Bun.serve({
     )
     setTimeout(() => server.stop(), 500)
     return new Response(
-      "Done. The app is created and its keys are stored in the babblebird-api Worker. You can close this tab.",
+      "Done. The app is created and its keys are stored in the babblebird Worker. You can close this tab.",
     )
   },
 })

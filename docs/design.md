@@ -4,8 +4,11 @@ The repository is the only source of truth. Babblebird never asks anyone to conf
 
 ## Pieces
 
-- `apps/api` is a Cloudflare Worker with Hono. It serves `/api/*`, receives GitHub webhooks, runs the sync and delivery queues and a ten-minute cron that retries failed reads.
-- `apps/web` is a SvelteKit app on Workers at babblebird.dev. It forwards `/api/*` to the API Worker through a service binding.
+- `apps/api` is the API, with Hono. It serves `/api/*`, receives GitHub webhooks, runs the sync and delivery queues and a ten-minute cron that retries failed reads.
+- `apps/web` is the SvelteKit site.
+
+Both deploy as one Worker, `babblebird`, at babblebird.dev. Its entry sends `/api/*` straight to Hono and everything else to SvelteKit, and when a page loads data on the server, SvelteKit reaches the API in the same Worker without a network hop. In development they run apart: Vite serves the site and proxies `/api` to `wrangler dev`.
+
 - `packages/fluent` reads and writes Fluent: it turns a file into units, a message into editable fields and back, runs the checks and renders previews. The API and the editor share it, so a translation is checked the same way in the browser and on save.
 - `packages/protocol` holds the types both sides speak.
 - `action` is the GitHub Action that sends screenshots.

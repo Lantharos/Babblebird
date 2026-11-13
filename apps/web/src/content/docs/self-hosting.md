@@ -1,6 +1,6 @@
 # Running Babblebird yourself
 
-Babblebird is open source under the AGPL. It runs on Cloudflare: two Workers, D1, Durable Objects, R2 and Queues.
+Babblebird is open source under the AGPL. It runs on Cloudflare as one Worker, with D1, Durable Objects, R2 and Queues.
 
 ## Locally
 
@@ -31,7 +31,6 @@ Create the D1 database, the R2 bucket and the two queues named in `apps/api/wran
 
 ```sh
 cd apps/api && bun run deploy
-cd apps/web && bun run deploy
 ```
 
 `bun scripts/github-app.ts` in `apps/api` creates a GitHub App from `scripts/github-app.json` and stores its secrets in the Worker. Set `BETTER_AUTH_SECRET` yourself with `bunx wrangler secret put BETTER_AUTH_SECRET`. Sign-in codes are sent with Cloudflare's Email Service, which needs your domain set up for sending.

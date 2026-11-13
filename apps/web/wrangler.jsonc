@@ -1,14 +1,9 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "babblebird-web",
-  "account_id": "2e3bfcbc9512a7ab1ea3a9cb9a474b30",
+  "name": "babblebird-site",
   "main": ".svelte-kit/cloudflare/_worker.js",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat"],
-  "workers_dev": false,
-  "preview_urls": false,
-  "observability": { "enabled": true },
-  "routes": [{ "pattern": "babblebird.dev", "custom_domain": true }],
   "assets": { "binding": "ASSETS", "directory": ".svelte-kit/cloudflare" },
-  "services": [{ "binding": "API", "service": "babblebird-api" }]
+  "services": [{ "binding": "API", "service": "babblebird" }]
 }

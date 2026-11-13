@@ -25,10 +25,9 @@ bun tools/local-github/send.ts install
 
 ```sh
 cd apps/api && bun run deploy
-cd apps/web && bun run deploy
 ```
 
-The API Worker needs these secrets, set with `bunx wrangler secret put <name>` in `apps/api`:
+That builds the site and deploys everything as one Worker, `babblebird`: the site, the API, the queues, the cron and the email handler. It needs these secrets, set with `bunx wrangler secret put <name>` in `apps/api`:
 
 | Secret                                     | What it is                                                                                          |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
