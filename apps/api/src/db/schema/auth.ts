@@ -10,6 +10,8 @@ export const user = sqliteTable("user", {
   githubLogin: text("github_login"),
   githubId: text("github_id"),
   languages: text("languages", { mode: "json" }).$type<string[]>().notNull().default([]),
+  creditName: text("credit_name"),
+  credited: integer("credited", { mode: "boolean" }).notNull().default(true),
   suspendedAt: integer("suspended_at", { mode: "timestamp_ms" }),
   suspendedReason: text("suspended_reason"),
   createdAt: createdAt(),

@@ -18,6 +18,7 @@ meRoutes.get("/", maybeSignedIn, async (c) => {
     image: viewer.image,
     githubLogin: user?.githubLogin ?? null,
     languages: user?.languages ?? [],
+    credit: { credited: user?.credited ?? true, name: user?.creditName ?? null },
   })
 })
 
@@ -28,6 +29,17 @@ meRoutes.put("/languages", signedIn, async (c) => {
   await db
     .update(schema.user)
     .set({ languages })
+    .where(eq(schema.user.id, c.get("viewer")!.id))
+  return c.body(null, 204)
+})
+
+const credit = z.object({ credited: z.boolean(), name: z.string().trim().min(1).max(80).nullable() })
+
+meRoutes.put("/credit", signedIn, async (c) => {
+  const { credited, name } = await readBody(c, credit)
+  await db
+    .update(schema.user)
+    .set({ credited, creditName: name })
     .where(eq(schema.user.id, c.get("viewer")!.id))
   return c.body(null, 204)
 })

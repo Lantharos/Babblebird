@@ -78,6 +78,13 @@
       "when": 1794603986178,
       "tag": "0010_contributions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1794611422293,
+      "tag": "0011_credit",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
   import KeyRound from "@lucide/svelte/icons/key-round"
   import LogOut from "@lucide/svelte/icons/log-out"
+  import Credit from "#lib/account/Credit.svelte"
   import Languages from "#lib/account/Languages.svelte"
   import { auth, linkGitHub } from "#lib/api/auth.ts"
   import { getSession } from "#lib/api/session.svelte.ts"
@@ -56,13 +57,14 @@
   {#if session.me}
     <form class="mt-8 space-y-2" onsubmit={rename}>
       <label for="name" class="text-body font-medium">Your name</label>
-      <p class="text-sm text-ink-muted">Shown next to your translations and in the commits that carry them.</p>
+      <p class="text-sm text-ink-muted">Shown next to your translations.</p>
       <div class="flex gap-2">
         <input id="name" bind:value={name} required maxlength="80" class="field" />
         <button class="button button-quiet" disabled={!name.trim() || name === session.me.name}>Save</button>
       </div>
     </form>
     <Languages />
+    <Credit />
     <section class="mt-10 space-y-3">
       <h2 class="text-[20px] font-semibold">Signing in</h2>
       <p class="text-body text-ink-soft">You sign in as {session.me.email}{session.me.githubLogin ? ` and with GitHub as ${session.me.githubLogin}` : ""}.</p>

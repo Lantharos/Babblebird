@@ -8,6 +8,7 @@ export interface Me {
   image: string | null
   githubLogin: string | null
   languages: string[]
+  credit: { credited: boolean; name: string | null }
 }
 
 export const LANGUAGE_COOKIE = "babblebird-language"
