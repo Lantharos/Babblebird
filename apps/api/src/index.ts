@@ -6,6 +6,7 @@ import { type DeliverJob, deliver } from "./deliver/deliver.ts"
 import { editorRoutes } from "./editor/routes.ts"
 import { fileRoutes } from "./files/routes.ts"
 import { githubRoutes } from "./github/routes.ts"
+import { glossaryRoutes } from "./glossary/routes.ts"
 import { receiveMail } from "./inbox/receive.ts"
 import { errorResponse, fail } from "./lib/http.ts"
 import { meRoutes } from "./me/routes.ts"
@@ -52,6 +53,7 @@ app.route("/", mineRoutes)
 app.route("/projects", listRoutes)
 app.route("/projects", projectRoutes)
 app.route("/projects", editorRoutes)
+app.route("/projects", glossaryRoutes)
 app.route("/projects", memberRoutes)
 app.route("/projects", manageRoutes)
 app.route("/projects", screenshotRoutes)

@@ -4,7 +4,7 @@
 
 A project can keep a glossary per language: terms with their agreed translation and a note, and names that are never translated, like the product's own name. Terms in the English are underlined in the editor and listed on the right. If your translation leaves out a name that should stay as it is, or uses another word for a glossary term, you see a warning.
 
-The glossary comes from the project's repository, from TBX files such as `glossary/de.tbx`, and is read again on every push that changes them.
+The glossary comes from the project's repository, from TBX files such as `glossary/de.tbx`, and is read again on every push that changes them. Translators of a language can also edit its glossary in Babblebird: open it from the language's page or with Edit next to the glossary in the editor, then add terms, change a translation or note, mark a name to keep as it is, or remove a term. Changes go back to the repository with the next batch of translations.
 
 ## Earlier translations
 

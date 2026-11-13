@@ -92,6 +92,7 @@ export async function deliver({ projectId }: DeliverJob) {
       files,
       await readPaths(repo, head, files.map(pathOf)),
       since - CREDIT_WINDOW_MS,
+      project.sourceLang,
     )
     const built = withGenerated(prepared.built, project.generated)
     if (!built.length) {

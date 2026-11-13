@@ -26,7 +26,7 @@ export function glossaryFor(db: Db, lang: string, plain: string) {
   return termsIn(
     plain,
     db.all<GlossaryTerm & { id: number; lang: string }>(
-      "SELECT id, lang, term, translation, note FROM glossary WHERE lang = ?",
+      "SELECT id, lang, term, translation, note FROM glossary WHERE lang = ? AND NOT deleted",
       lang,
     ),
   )

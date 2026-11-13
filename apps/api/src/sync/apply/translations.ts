@@ -25,7 +25,10 @@ export const CONFLICT_NOTE = "changed in the repository meanwhile"
 export const REPOSITORY_VALUE = "iif(t.unsent, t.base, t.body)"
 
 export function glossaryOf(db: Db, lang: string) {
-  return db.all<GlossaryTerm>("SELECT term, translation, note FROM glossary WHERE lang = ?", lang)
+  return db.all<GlossaryTerm>(
+    "SELECT term, translation, note FROM glossary WHERE lang = ? AND NOT deleted",
+    lang,
+  )
 }
 
 function creditId(db: Db, names: string | null) {

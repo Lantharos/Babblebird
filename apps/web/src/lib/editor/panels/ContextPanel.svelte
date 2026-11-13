@@ -50,7 +50,7 @@
 
   {#if detail.glossary.length}
     <section>
-      <h2 class="mb-2 font-semibold">Glossary</h2>
+      <h2 class="mb-2 flex items-baseline justify-between gap-3 font-semibold">Glossary<a href="/p/{editor.owner}/{editor.name}/{editor.lang}/glossary" class="link text-small font-normal">Edit</a></h2>
       <dl class="space-y-2">
         {#each detail.glossary as term (term.id)}
           <div>

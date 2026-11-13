@@ -44,6 +44,13 @@ export interface MemoryMatch {
   project: string
 }
 
+export interface GlossaryRow {
+  term: string
+  translation: string | null
+  note: string | null
+  unsent: boolean
+}
+
 export interface GlossaryEntry {
   id: number
   lang: string

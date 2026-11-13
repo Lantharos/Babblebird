@@ -68,18 +68,54 @@ export async function changedGlossaries(
   }))
 }
 
+interface Edit {
+  term: string
+  translation: string | null
+  note: string | null
+  deleted: number
+}
+
 export function replaceGlossaries(db: Db, fileId: number, entries: GlossaryEntry[]) {
   for (const { lang, sha, terms } of entries) {
-    db.run("DELETE FROM glossary WHERE lang = ?", lang)
-    db.each(
-      "INSERT OR REPLACE INTO glossary (lang, term, translation, note) VALUES (?, ?, ?, ?)",
-      terms.map((term) => [lang, term.term, term.translation, term.note]),
+    const edits = new Map(
+      db
+        .all<Edit>("SELECT term, translation, note, deleted FROM glossary WHERE lang = ? AND unsent", lang)
+        .map((edit) => [edit.term, edit]),
     )
+    db.run("DELETE FROM glossary WHERE lang = ? AND NOT unsent", lang)
+    for (const term of terms) {
+      const edit = edits.get(term.term)
+      edits.delete(term.term)
+      if (!edit)
+        db.run(
+          "INSERT INTO glossary (lang, term, translation, note) VALUES (?, ?, ?, ?)",
+          lang,
+          term.term,
+          term.translation,
+          term.note,
+        )
+      else
+        db.run(
+          "UPDATE glossary SET in_repo = 1, unsent = ? WHERE lang = ? AND term = ?",
+          edit.deleted || edit.translation !== term.translation || edit.note !== term.note ? 1 : 0,
+          lang,
+          term.term,
+        )
+    }
+    for (const edit of edits.values())
+      if (edit.deleted) db.run("DELETE FROM glossary WHERE lang = ? AND term = ?", lang, edit.term)
+      else db.run("UPDATE glossary SET in_repo = 0 WHERE lang = ? AND term = ?", lang, edit.term)
     db.run(
       "INSERT INTO blob (file_id, lang, sha) VALUES (?, ?, ?) ON CONFLICT (file_id, lang) DO UPDATE SET sha = excluded.sha",
       fileId,
       lang,
       sha,
+    )
+    db.run(
+      `DELETE FROM pending WHERE file_id = ?1 AND lang = ?2
+       AND NOT EXISTS (SELECT 1 FROM glossary WHERE lang = ?2 AND unsent)`,
+      fileId,
+      lang,
     )
   }
 }

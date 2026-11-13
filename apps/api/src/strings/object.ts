@@ -6,6 +6,7 @@ import { type BuiltFile, buildFile, type PendingFile, pendingFiles, translators 
 import { type PageQuery, searchStrings, stringPage } from "../editor/queries.ts"
 import { rowsOf } from "../editor/rows.ts"
 import { detailOf, dropSuggestion, type EditInput, editString } from "../editor/store.ts"
+import { buildGlossary, dropTerm, glossaryRows, saveTerm, type TermEdit } from "../glossary/store.ts"
 import { migrate } from "../lib/migrate.ts"
 import { removeWork } from "../moderation/work.ts"
 import { type StoredScreenshot, saveScreenshots } from "../screenshots/store.ts"
@@ -111,13 +112,33 @@ export class ProjectStrings extends DurableObject<Env> {
     return this.read((db) => pendingFiles(db))
   }
 
-  build(files: PendingFile[], existing: Map<string, string>, since: number) {
+  build(files: PendingFile[], existing: Map<string, string>, since: number, sourceLang: string) {
+    const contentOf = (file: PendingFile) => existing.get(file.pattern.replace("{lang}", file.lang)) ?? ""
     return this.read((db) => ({
       built: files
-        .map((file) => buildFile(db, file, existing.get(file.pattern.replace("{lang}", file.lang))!))
+        .map((file) =>
+          file.pattern.endsWith(".tbx")
+            ? buildGlossary(db, file, contentOf(file), sourceLang)
+            : buildFile(db, file, contentOf(file)),
+        )
         .filter((file): file is BuiltFile => file !== null),
       translators: translators(db, files, since),
     }))
+  }
+
+  glossary(lang: string) {
+    return this.read((db) => glossaryRows(db, lang))
+  }
+
+  async saveTerm(edit: TermEdit) {
+    this.write((db) => saveTerm(db, edit))
+    await this.schedule.delivery()
+  }
+
+  async dropTerm(lang: string, term: string, userId: string) {
+    const { result } = this.write((db) => dropTerm(db, lang, term, userId))
+    if (result) await this.schedule.delivery()
+    return result
   }
 
   async removeWork(userId: string) {

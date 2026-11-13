@@ -126,7 +126,7 @@ export const projects = {
   async counts(project: ProjectView) {
     const counts = await queryOne<{ waiting: number; glossary: number }>(
       project,
-      "SELECT (SELECT count(*) FROM pending) waiting, (SELECT count(*) FROM glossary) glossary",
+      "SELECT (SELECT count(*) FROM pending) waiting, (SELECT count(*) FROM glossary WHERE NOT deleted) glossary",
     )
     return { waitingFiles: counts?.waiting ?? 0, glossaryTerms: counts?.glossary ?? 0 }
   },

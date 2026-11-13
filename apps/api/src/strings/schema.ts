@@ -179,4 +179,7 @@ export const STRINGS_SCHEMA = [
     INSERT INTO memory_stale SELECT DISTINCT lang FROM translation
     WHERE source_id = NEW.id AND lang NOT IN (SELECT lang FROM memory_stale);
   END;`,
+  `ALTER TABLE glossary ADD COLUMN unsent INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE glossary ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE glossary ADD COLUMN in_repo INTEGER NOT NULL DEFAULT 1;`,
 ]

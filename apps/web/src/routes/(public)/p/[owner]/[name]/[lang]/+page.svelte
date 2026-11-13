@@ -40,7 +40,7 @@
   <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
     <div>
       <h1 class="title">{nativeName(lang)}</h1>
-      <p class="text-body text-ink-muted">{englishName(lang)}</p>
+      <p class="text-body text-ink-muted">{englishName(lang)} · <a href="/p/{owner}/{name}/{lang}/glossary" class="link">Glossary</a></p>
     </div>
     {#if overall}
       <div class="w-56">

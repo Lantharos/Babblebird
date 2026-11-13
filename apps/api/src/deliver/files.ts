@@ -55,7 +55,7 @@ export function withGenerated(built: BuiltFile[], generated: GeneratedLanguage[]
   return built.flatMap((file) => [
     file,
     ...generated
-      .filter((language) => language.from === file.lang)
+      .filter((language) => language.from === file.lang && file.pattern.endsWith(".ftl"))
       .map((language) => ({
         pattern: file.pattern,
         lang: language.lang,
