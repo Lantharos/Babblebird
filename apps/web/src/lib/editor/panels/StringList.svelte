@@ -70,5 +70,5 @@
 </ul>
 <div bind:this={sentinel} class="h-8"></div>
 {#if !editor.loading && !editor.rows.length}
-  <p class="px-3 text-body text-ink-muted">Nothing here.</p>
+  <p class="px-3 text-body text-ink-muted md:hidden">Nothing here.</p>
 {/if}
