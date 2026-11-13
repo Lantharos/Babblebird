@@ -74,7 +74,7 @@ projectRoutes.get("/:owner/:name", async (c) => {
 projectRoutes.get("/:owner/:name/areas", async (c) => {
   const { lang } = readQuery(c, z.object({ lang: z.string().optional() }))
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const rows = await areasWithProgress(stringsOf(project), lang ?? null)
+  const rows = await areasWithProgress(project, lang ?? null)
   return c.json(
     rows.map(
       (row): AreaSummary => ({
@@ -92,8 +92,7 @@ projectRoutes.get("/:owner/:name/areas", async (c) => {
 
 projectRoutes.get("/:owner/:name/missing", async (c) => {
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const db = stringsOf(project)
-  const [areas, rows] = await Promise.all([areasWithProgress(db, null), allAreaProgress(db)])
+  const [areas, rows] = await Promise.all([areasWithProgress(project, null), allAreaProgress(project)])
   const byKey = new Map(rows.map((row) => [`${row.lang}:${row.id}`, row]))
   return c.json(
     project.languages.map(
@@ -125,5 +124,6 @@ projectRoutes.patch("/:owner/:name/settings", async (c) => {
   if (!abilitiesOf(project, viewer, member).admin) fail(403, "Only the project's maintainers can change this")
   const changes = await readBody(c, settings)
   await db.update(schema.project).set(changes).where(eq(schema.project.id, project.id))
+  if (changes.delivery && changes.delivery !== "off") await stringsOf(project).deliverAfter(0)
   return c.body(null, 204)
 })

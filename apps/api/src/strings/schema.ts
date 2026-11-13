@@ -45,6 +45,20 @@ export const STRINGS_SCHEMA = [
   CREATE INDEX source_order ON source (file_id, position);
   CREATE INDEX source_text ON source (text_hash);
 
+  CREATE VIRTUAL TABLE source_search USING fts5 (key, plain, content = 'source', content_rowid = 'id', tokenize = 'trigram');
+
+  CREATE TRIGGER source_search_added AFTER INSERT ON source
+  BEGIN INSERT INTO source_search (rowid, key, plain) VALUES (NEW.id, NEW.key, NEW.plain); END;
+
+  CREATE TRIGGER source_search_removed AFTER DELETE ON source
+  BEGIN INSERT INTO source_search (source_search, rowid, key, plain) VALUES ('delete', OLD.id, OLD.key, OLD.plain); END;
+
+  CREATE TRIGGER source_search_changed AFTER UPDATE OF key, plain ON source
+  BEGIN
+    INSERT INTO source_search (source_search, rowid, key, plain) VALUES ('delete', OLD.id, OLD.key, OLD.plain);
+    INSERT INTO source_search (rowid, key, plain) VALUES (NEW.id, NEW.key, NEW.plain);
+  END;
+
   CREATE TABLE credit (
     id INTEGER PRIMARY KEY,
     names TEXT NOT NULL UNIQUE

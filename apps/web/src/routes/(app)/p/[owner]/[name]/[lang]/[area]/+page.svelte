@@ -8,6 +8,7 @@
   import { tick, untrack } from "svelte"
   import { MediaQuery } from "svelte/reactivity"
   import { resource } from "#lib/api/resource.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import { Editor } from "#lib/editor/editor.svelte.ts"
   import TranslationForm from "#lib/editor/form/TranslationForm.svelte"
   import ContextPanel from "#lib/editor/panels/ContextPanel.svelte"
@@ -29,9 +30,21 @@
     lang: string
     area: string
   }
-  const editor = new Editor(owner, name, area, lang)
+  const session = getSession()
+  const areas = resource<AreaSummary[]>(`${projectPath(owner, name)}/areas?lang=${lang}`)
+  const editor = new Editor(
+    owner,
+    name,
+    area,
+    lang,
+    () => session.me?.id ?? null,
+    (slug, progress) => {
+      const entry = areas.data?.find((candidate) => candidate.slug === slug)
+      if (entry) entry.progress = progress
+    },
+  )
   const project = projectResource(owner, name)
-  const areas = $derived(resource<AreaSummary[]>(`${projectPath(owner, name)}/areas?lang=${lang}`))
+  const areaNames = $derived(new Map(areas.data?.map((entry) => [entry.slug, entry.name])))
   const current = $derived(areas.data?.find((entry) => entry.slug === area) ?? null)
   const can = $derived(project.data?.can ?? { translate: false, review: false, admin: false })
   const source = $derived<Shape | null>(editor.detail ? shapeOf(editor.detail.row.body) : null)
@@ -52,6 +65,11 @@
     { value: "problems", label: "Problems" },
     { value: "all", label: "All" },
   ]
+
+  $effect(() => {
+    editor.live.open()
+    return () => editor.live.close()
+  })
 
   $effect(() => {
     void editor.filter
@@ -130,7 +148,7 @@
   </header>
 
   <div class="grid min-h-0 grid-cols-1 md:grid-cols-[18rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)_24rem]">
-    <aside class="{listing ? '' : 'hidden'} min-h-0 overflow-y-auto px-3 pb-6 md:block"><StringList {editor} onselect={() => (listing = false)} /></aside>
+    <aside class="{listing ? '' : 'hidden'} min-h-0 overflow-y-auto px-3 pb-6 md:block"><StringList {editor} {areaNames} onselect={() => (listing = false)} /></aside>
 
     <main class="{listing ? 'hidden' : ''} min-h-0 overflow-y-auto px-4 pb-16 sm:px-8 md:block">
       {#if editor.detail && source}
@@ -162,7 +180,7 @@
         <div class="mx-auto max-w-md pt-24 text-center">
           {#if editor.search.trim()}
             <p class="text-[20px] font-semibold">Nothing matches</p>
-            <p class="mt-2 text-ink-soft">Try other words or another filter.</p>
+            <p class="mt-2 text-ink-soft">Try other words.</p>
           {:else}
             <p class="text-[20px] font-semibold">Nothing left here</p>
             <p class="mt-2 text-ink-soft">Every string in this view is done. Pick another filter or another area.</p>

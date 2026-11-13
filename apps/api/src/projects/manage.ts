@@ -4,7 +4,7 @@ import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { db, schema } from "../db/core.ts"
 import { installationToken } from "../github/app.ts"
 import { fail } from "../lib/http.ts"
-import { all, stringsOf } from "../strings/client.ts"
+import { query, queryOne, stringsOf } from "../strings/client.ts"
 import { scanHead } from "../sync/head.ts"
 import { abilitiesOf, PAUSED, visibleProject } from "./access.ts"
 
@@ -32,10 +32,9 @@ manageRoutes.post("/:owner/:name/sync", async (c) => {
 
 manageRoutes.get("/:owner/:name/history", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const rows = await all<{ id: number; detail: string; at: number }>(
-    stringsOf(project).prepare(
-      `SELECT id, detail, at FROM activity WHERE kind = 'synced' ORDER BY id DESC LIMIT ${HISTORY}`,
-    ),
+  const rows = await query<{ id: number; detail: string; at: number }>(
+    project,
+    `SELECT id, detail, at FROM activity WHERE kind = 'synced' ORDER BY id DESC LIMIT ${HISTORY}`,
   )
   return c.json(rows.map((row) => ({ id: row.id, at: row.at, ...JSON.parse(row.detail) })))
 })
@@ -44,10 +43,10 @@ manageRoutes.get("/:owner/:name/delivery", async (c) => {
   const project = await asAdmin(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
   const [delivery, pending] = await Promise.all([
     db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) }),
-    all<{ files: number }>(stringsOf(project).prepare("SELECT count(*) files FROM pending")),
+    queryOne<{ files: number }>(project, "SELECT count(*) files FROM pending"),
   ])
   return c.json({
-    waitingFiles: pending[0]?.files ?? 0,
+    waitingFiles: pending?.files ?? 0,
     pullNumber: delivery?.pullNumber ?? null,
     sentAt: delivery?.sentAt?.getTime() ?? null,
     mergedAt: delivery?.mergedAt?.getTime() ?? null,

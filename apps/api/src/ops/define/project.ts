@@ -5,6 +5,7 @@ import { db, schema } from "../../db/core.ts"
 import { peopleById } from "../../editor/people.ts"
 import { removeContributions } from "../../moderation/contributions.ts"
 import { pause, remove, restore, resume, resync, sendNow } from "../../moderation/projects.ts"
+import { stringsOf } from "../../strings/client.ts"
 import { counted, DELIVERY, WHO_TRANSLATES } from "../data/labels.ts"
 import { projectPage } from "../data/links.ts"
 import { type ProjectView, projects } from "../data/projects.ts"
@@ -81,6 +82,7 @@ export const project = resource("project", {
           .update(schema.project)
           .set({ delivery: input.delivery })
           .where(eq(schema.project.id, record.id))
+        if (input.delivery !== "off") await stringsOf(record).deliverAfter(0)
         return `${record.slug}: ${DELIVERY[input.delivery].toLowerCase()}`
       },
     }),

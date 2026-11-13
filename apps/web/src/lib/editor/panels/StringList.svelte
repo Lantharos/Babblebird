@@ -1,8 +1,16 @@
 <script lang="ts">
-  import type { StringRow } from "@babblebird/protocol"
+  import type { FoundString, StringRow } from "@babblebird/protocol"
   import type { Editor } from "#lib/editor/editor.svelte.ts"
+  import Avatar from "#lib/ui/Avatar.svelte"
 
-  let { editor, onselect }: { editor: Editor; onselect?: () => void } = $props()
+  let {
+    editor,
+    areaNames,
+    onselect,
+  }: { editor: Editor; areaNames: Map<string, string>; onselect?: () => void } = $props()
+
+  const elsewhere = (row: StringRow | FoundString) =>
+    "area" in row && row.area !== editor.area ? (areaNames.get(row.area) ?? row.area) : null
   let sentinel = $state<HTMLElement>()
 
   const DOTS: Record<string, string> = {
@@ -48,10 +56,14 @@
         class="flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left transition-colors {row.id === editor.selected ? 'bg-well' : 'hover:bg-well/60'}"
       >
         <span class="mt-2 size-2 shrink-0 rounded-full {dot(row)}"></span>
-        <span class="min-w-0">
+        <span class="min-w-0 flex-1">
           <span class="block truncate font-mono text-[12px] text-ink-muted">{row.key}</span>
           <span class="block truncate text-body {row.translation ? '' : 'text-ink-soft'}">{preview(row)}</span>
+          {#if elsewhere(row)}<span class="block truncate text-small text-ink-muted">{elsewhere(row)}</span>{/if}
         </span>
+        {#each editor.others(row.id).slice(0, 2) as viewer (viewer.id)}
+          <span class="mt-1 -ml-2 first:ml-0" role="img" aria-label={viewer.name}><Avatar name={viewer.name} image={viewer.image} /></span>
+        {/each}
       </button>
     </li>
   {/each}

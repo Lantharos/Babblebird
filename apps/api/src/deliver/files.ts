@@ -5,7 +5,8 @@ import {
   messagesOf,
   patchMessages,
 } from "@babblebird/fluent"
-import { all, type Strings } from "../strings/client.ts"
+import type { Db } from "../strings/db.ts"
+import { REPOSITORY_VALUE } from "../sync/apply/translations.ts"
 
 export interface PendingFile {
   file_id: number
@@ -15,24 +16,20 @@ export interface PendingFile {
   changed: number
 }
 
-export function pendingFiles(db: Strings) {
-  return all<PendingFile>(
-    db.prepare(
-      "SELECT p.file_id, p.lang, f.pattern, p.since, p.changed FROM pending p JOIN file f ON f.id = p.file_id",
-    ),
+export function pendingFiles(db: Db) {
+  return db.all<PendingFile>(
+    "SELECT p.file_id, p.lang, f.pattern, p.since, p.changed FROM pending p JOIN file f ON f.id = p.file_id",
   )
 }
 
 export const pathOf = (file: PendingFile) => file.pattern.replace("{lang}", file.lang)
 
-export async function buildFile(db: Strings, file: PendingFile, existing: string) {
-  const rows = await all<{ key: string; body: string | null; base: string | null }>(
-    db
-      .prepare(
-        `SELECT s.key, t.body, iif(t.unsent, t.base, t.body) base FROM source s LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
-         WHERE s.file_id = ?1 ORDER BY s.position`,
-      )
-      .bind(file.file_id, file.lang),
+export function buildFile(db: Db, file: PendingFile, existing: string) {
+  const rows = db.all<{ key: string; body: string | null; base: string | null }>(
+    `SELECT s.key, t.body, ${REPOSITORY_VALUE} base FROM source s LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
+     WHERE s.file_id = ?1 ORDER BY s.position`,
+    file.file_id,
+    file.lang,
   )
   const theirs = messagesOf(existing)
   const changes = new Map<string, string>()
@@ -68,14 +65,13 @@ export function withGenerated(built: BuiltFile[], generated: GeneratedLanguage[]
   ])
 }
 
-export async function translators(db: Strings, files: PendingFile[], since: number) {
-  const rows = await all<{ user_id: string }>(
-    db
-      .prepare(
-        `SELECT DISTINCT a.user_id FROM activity a WHERE a.at >= ?1 AND a.user_id IS NOT NULL
-         AND a.lang IN (SELECT value FROM json_each(?2))`,
-      )
-      .bind(since, JSON.stringify([...new Set(files.map((file) => file.lang))])),
-  )
-  return rows.map((row) => row.user_id)
+export function translators(db: Db, files: PendingFile[], since: number) {
+  return db
+    .all<{ user_id: string }>(
+      `SELECT DISTINCT a.user_id FROM activity a WHERE a.at >= ?1 AND a.user_id IS NOT NULL
+       AND a.lang IN (SELECT value FROM json_each(?2))`,
+      since,
+      JSON.stringify([...new Set(files.map((file) => file.lang))]),
+    )
+    .map((row) => row.user_id)
 }

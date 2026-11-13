@@ -1,5 +1,5 @@
 import { type Filter, STATE } from "@babblebird/protocol"
-import { all, first, type Strings } from "../strings/client.ts"
+import type { Db } from "../strings/db.ts"
 
 export interface StringRecord {
   id: number
@@ -44,45 +44,52 @@ const COLUMNS = `s.id, s.file_id, s.key, f.pattern, f.position file_position, s.
   (SELECT count(*) FROM suggestion g WHERE g.source_id = s.id AND g.lang = ?2) suggestions`
 
 export interface PageQuery {
-  areaId: number
+  area: string
   lang: string
   filter: Filter
   after: [number, number] | null
-  search: string | null
   limit: number
 }
 
-export function stringPage(db: Strings, query: PageQuery) {
-  const search = query.search
-    ? "AND (s.key LIKE ?6 ESCAPE '\\' OR s.plain LIKE ?6 ESCAPE '\\' OR t.body LIKE ?6 ESCAPE '\\')"
-    : ""
-  const pattern = query.search ? `%${query.search.replace(/[\\%_]/g, "\\$&")}%` : null
-  return all<StringRecord>(
-    db
-      .prepare(
-        `SELECT ${COLUMNS} FROM file f JOIN source s ON s.file_id = f.id
-         LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
-         WHERE f.area_id = ?1 AND (f.position, s.position) > (?3, ?4) ${FILTERS[query.filter]} ${search}
-         ORDER BY f.position, s.position LIMIT ?5`,
-      )
-      .bind(
-        query.areaId,
-        query.lang,
-        query.after?.[0] ?? -1,
-        query.after?.[1] ?? -1,
-        query.limit,
-        ...(pattern ? [pattern] : []),
-      ),
+export function stringPage(db: Db, query: PageQuery) {
+  return db.all<StringRecord>(
+    `SELECT ${COLUMNS} FROM file f JOIN source s ON s.file_id = f.id
+     LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
+     WHERE f.area_id = (SELECT id FROM area WHERE slug = ?1) AND (f.position, s.position) > (?3, ?4) ${FILTERS[query.filter]}
+     ORDER BY f.position, s.position LIMIT ?5`,
+    query.area,
+    query.lang,
+    query.after?.[0] ?? -1,
+    query.after?.[1] ?? -1,
+    query.limit,
   )
 }
 
-export function stringById(db: Strings, id: number, lang: string) {
-  return first<StringRecord>(
-    db
-      .prepare(
-        `SELECT ${COLUMNS} FROM source s JOIN file f ON f.id = s.file_id
-         LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2 WHERE s.id = ?1`,
-      )
-      .bind(id, lang),
+const MIN_TRIGRAM = 3
+
+export function searchStrings(db: Db, lang: string, text: string, limit: number) {
+  const pattern = `%${text.replace(/[\\%_]/g, "\\$&")}%`
+  const sources =
+    [...text].length >= MIN_TRIGRAM
+      ? "SELECT rowid FROM source_search WHERE source_search MATCH ?3"
+      : "SELECT id FROM source WHERE key LIKE ?4 ESCAPE '\\' OR plain LIKE ?4 ESCAPE '\\'"
+  return db.all<StringRecord>(
+    `WITH hits (id) AS (${sources} UNION SELECT source_id FROM translation WHERE lang = ?2 AND body LIKE ?4 ESCAPE '\\')
+     SELECT ${COLUMNS} FROM hits JOIN source s ON s.id = hits.id JOIN file f ON f.id = s.file_id
+     LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2
+     WHERE f.area_id > 0 ORDER BY f.position, s.position LIMIT ?1`,
+    limit,
+    lang,
+    `"${text.replaceAll('"', '""')}"`,
+    pattern,
+  )
+}
+
+export function stringById(db: Db, id: number, lang: string) {
+  return db.one<StringRecord>(
+    `SELECT ${COLUMNS} FROM source s JOIN file f ON f.id = s.file_id
+     LEFT JOIN translation t ON t.source_id = s.id AND t.lang = ?2 WHERE s.id = ?1`,
+    id,
+    lang,
   )
 }

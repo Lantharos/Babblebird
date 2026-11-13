@@ -46,7 +46,6 @@ export const project = sqliteTable(
     strings: integer("strings").notNull().default(0),
     words: integer("words").notNull().default(0),
     progress: text("progress", { mode: "json" }).$type<Record<string, Progress>>().notNull().default({}),
-    pending: integer("pending", { mode: "boolean" }).notNull().default(false),
     pausedAt: integer("paused_at", { mode: "timestamp_ms" }),
     pausedReason: text("paused_reason"),
     pultItem: text("pult_item"),

@@ -10,5 +10,4 @@ CREATE TABLE `contribution` (
 --> statement-breakpoint
 CREATE INDEX `contribution_recent` ON `contribution` (`user_id`,`last_at`);--> statement-breakpoint
 ALTER TABLE `project` ADD `progress` text DEFAULT '{}' NOT NULL;--> statement-breakpoint
-ALTER TABLE `project` ADD `pending` integer DEFAULT false NOT NULL;--> statement-breakpoint
 ALTER TABLE `project` DROP COLUMN `shard`;

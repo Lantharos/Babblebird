@@ -1,7 +1,7 @@
 import { and, desc, eq, gt, isNotNull, isNull, like, or, type SQL, sql } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
 import { contributedTo, recentWork } from "../../projects/work.ts"
-import { all, stringsOf } from "../../strings/client.ts"
+import { queryOne } from "../../strings/client.ts"
 
 const RECENT = 20
 
@@ -112,13 +112,13 @@ export const users = {
   async suggestions(id: string) {
     const counts = await Promise.all(
       (await contributedTo(id)).map((row) =>
-        all<{ count: number }>(
-          stringsOf({ id: row.projectId })
-            .prepare("SELECT count(*) count FROM suggestion WHERE by = ?")
-            .bind(id),
+        queryOne<{ count: number }>(
+          { id: row.projectId },
+          "SELECT count(*) count FROM suggestion WHERE by = ?",
+          id,
         ),
       ),
     )
-    return counts.reduce((sum, rows) => sum + (rows[0]?.count ?? 0), 0)
+    return counts.reduce((sum, row) => sum + (row?.count ?? 0), 0)
   },
 }

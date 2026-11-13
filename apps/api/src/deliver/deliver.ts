@@ -1,12 +1,11 @@
-import { env } from "cloudflare:workers"
-import { and, eq, isNull, ne } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { GitHubError } from "../github/api.ts"
 import { type Repo, readPaths } from "../github/repo.ts"
 import { deliveriesOn, reportFailure } from "../ops/events.ts"
 import { stringsOf } from "../strings/client.ts"
 import { repoOf } from "../sync/area.ts"
-import { buildFile, type PendingFile, pathOf, pendingFiles, translators, withGenerated } from "./files.ts"
+import { type PendingFile, pathOf, withGenerated } from "./files.ts"
 import { BRANCH, closePull, commitFiles, headOf, mergeWhenReady, moveBranch, openPull } from "./git.ts"
 import { commitMessage } from "./message.ts"
 
@@ -15,9 +14,9 @@ export interface DeliverJob {
 }
 
 const CREDIT_WINDOW_MS = 7 * 86_400_000
-const QUIET_MS = 20 * 60_000
-const LONGEST_WAIT_MS = 6 * 3_600_000
-const QUEUE_BATCH = 100
+export const QUIET_MS = 20 * 60_000
+export const LONGEST_WAIT_MS = 6 * 3_600_000
+const RETRY_MS = 10 * 60_000
 const OVERTAKEN =
   "Everything in this pull request was changed or removed in the repository in the meantime, so Babblebird closed it. Translations that differ from the repository are kept as suggestions in Babblebird."
 
@@ -60,18 +59,18 @@ async function sameAsSent(
   return built.every((file) => sent.get(file.path) === file.content)
 }
 
-function settled(files: PendingFile[], sentAt: number, now: number) {
+function readyAt(files: PendingFile[], sentAt: number) {
   const newest = Math.max(...files.map((file) => file.changed))
   const waitingSince = Math.max(sentAt, Math.min(...files.map((file) => file.since)))
-  return now - newest >= QUIET_MS || now - waitingSince >= LONGEST_WAIT_MS
+  return Math.min(newest + QUIET_MS, waitingSince + LONGEST_WAIT_MS)
 }
 
 export async function deliver({ projectId }: DeliverJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, projectId) })
   if (!project || project.delivery === "off" || project.state === "removed" || project.pausedAt) return
-  if (!(await deliveriesOn())) return
   const strings = stringsOf(project)
-  const files = await pendingFiles(strings)
+  if (!(await deliveriesOn())) return strings.deliverAfter(RETRY_MS)
+  const files = await strings.pending()
   const previous = await db.query.delivery.findFirst({ where: eq(schema.delivery.projectId, project.id) })
   const open = previous?.pullNumber && !previous.mergedAt && !previous.closedAt ? previous.pullNumber : null
   if (!files.length) {
@@ -81,29 +80,29 @@ export async function deliver({ projectId }: DeliverJob) {
   const newest = Math.max(...files.map((file) => file.changed))
   if (previous?.closedAt && newest <= previous.closedAt.getTime()) return
   const sentAt = previous?.sentAt?.getTime() ?? 0
-  if (newest > sentAt && !settled(files, sentAt, Date.now())) return
+  const ready = readyAt(files, sentAt)
+  if (newest > sentAt && ready > Date.now()) return strings.deliverAfter(ready - Date.now())
   try {
     const repo = await repoOf(project)
     const head = await headOf(repo, project.defaultBranch)
     if (!head) throw new GitHubError(404, project.defaultBranch, "")
     if (open && previous?.baseSha === head && newest <= sentAt) return
-    const existing = await readPaths(repo, head, files.map(pathOf))
-    const built = withGenerated(
-      (await Promise.all(files.map((file) => buildFile(strings, file, existing.get(pathOf(file))!)))).filter(
-        (file) => file !== null,
-      ),
-      project.generated,
+    const since = Math.min(...files.map((file) => file.changed))
+    const prepared = await strings.build(
+      files,
+      await readPaths(repo, head, files.map(pathOf)),
+      since - CREDIT_WINDOW_MS,
     )
+    const built = withGenerated(prepared.built, project.generated)
     if (!built.length) {
       if (open) await withdraw(project.id, repo, open)
       return
     }
     if (open && newest <= sentAt && (await sameAsSent(repo, previous, built)))
       return recordDelivery(project.id, { baseSha: head })
-    const since = Math.min(...files.map((file) => file.changed))
     const message = await commitMessage(
       files.map((file) => file.lang),
-      await translators(strings, files, since - CREDIT_WINDOW_MS),
+      prepared.translators,
     )
     const commit = await commitFiles(repo, head, built, message)
     if (!commit) return
@@ -136,27 +135,7 @@ export async function deliver({ projectId }: DeliverJob) {
     console.error(error)
     const problem = explain(error)
     await recordDelivery(project.id, { problem })
+    await strings.deliverAfter(RETRY_MS)
     reportFailure({ kind: "delivery", projectId: project.id, problem, error })
   }
-}
-
-export async function queueDeliveries() {
-  if (!(await deliveriesOn())) return
-  const sending = await db
-    .select({ id: schema.project.id })
-    .from(schema.project)
-    .where(
-      and(
-        eq(schema.project.pending, true),
-        ne(schema.project.delivery, "off"),
-        ne(schema.project.state, "removed"),
-        isNull(schema.project.pausedAt),
-      ),
-    )
-  for (let index = 0; index < sending.length; index += QUEUE_BATCH)
-    await env.DELIVER.sendBatch(
-      sending
-        .slice(index, index + QUEUE_BATCH)
-        .map((project) => ({ body: { projectId: project.id } satisfies DeliverJob })),
-    )
 }

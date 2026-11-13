@@ -14,6 +14,7 @@
   import LoaderCircle from "@lucide/svelte/icons/loader-circle"
   import type { Detail, Editor } from "#lib/editor/editor.svelte.ts"
   import { variantLabel } from "#lib/editor/text/plural.ts"
+  import Avatar from "#lib/ui/Avatar.svelte"
   import Kbd from "#lib/ui/Kbd.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
   import PatternField from "./PatternField.svelte"
@@ -42,6 +43,13 @@
   const blocked = $derived(empty || problems.some((problem) => problem.severity === "error"))
   const shown = $derived(empty ? [] : previews(body, lang))
   const unchanged = $derived(detail.row.translation?.body === body)
+  const dirty = $derived(!unchanged && !(empty && !detail.row.translation))
+  const others = $derived(editor.others(detail.row.id))
+
+  $effect(() => {
+    if (editor.incoming && !dirty) editor.takeIncoming()
+  })
+
   const chips = $derived(
     [...new Set(placeablesOf(detail.row.body.slice(1)))].filter((chip) => !chip.includes("->")),
   )
@@ -97,6 +105,19 @@
 </script>
 
 <svelte:window onkeydown={keydown} />
+
+{#if others.length}
+  <div class="mb-4 flex items-center gap-2 text-small text-ink-muted">
+    <span class="flex">{#each others.slice(0, 3) as viewer (viewer.id)}<span class="-ml-1.5 first:ml-0"><Avatar name={viewer.name} image={viewer.image} /></span>{/each}</span>
+    <span>{others.map((viewer) => viewer.name).join(", ")} {others.length === 1 ? "is" : "are"} here too</span>
+  </div>
+{/if}
+{#if editor.incoming}
+  <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-well px-4 py-3 text-body">
+    <span class="flex-1">{editor.incoming.translation?.by?.name ?? "Someone"} just saved this</span>
+    <button type="button" class="button button-sm button-quiet" onclick={() => editor.takeIncoming()}>Show theirs</button>
+  </div>
+{/if}
 
 <div bind:this={form} class="space-y-5" onfocusin={(event) => (focused = event.target instanceof HTMLTextAreaElement ? event.target : focused)}>
   {#each shape.fields as field, fieldIndex}

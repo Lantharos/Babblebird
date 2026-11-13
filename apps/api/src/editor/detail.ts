@@ -1,26 +1,9 @@
 import type { StringDetail } from "@babblebird/protocol"
 import { inArray } from "drizzle-orm"
 import { db as core, type ProjectRow, schema } from "../db/core.ts"
-import { all, type Strings } from "../strings/client.ts"
 import { memoryFor } from "../tm/lookup.ts"
 import { peopleById, personOf } from "./people.ts"
-import type { StringRecord } from "./queries.ts"
-import { glossaryFor } from "./save.ts"
-
-const HISTORY = 20
-
-interface Shot {
-  id: number
-  name: string
-  image: string
-  width: number
-  height: number
-  lang: string
-  x: number | null
-  y: number | null
-  w: number | null
-  h: number | null
-}
+import type { Detail } from "./store.ts"
 
 async function projectSlugs(ids: string[]) {
   if (!ids.length) return new Map<string, string>()
@@ -31,37 +14,9 @@ async function projectSlugs(ids: string[]) {
   return new Map(rows.map((row) => [row.id, row.slug]))
 }
 
-export async function contextFor(
-  db: Strings,
-  project: ProjectRow,
-  record: StringRecord,
-  lang: string,
-): Promise<StringDetail> {
-  const [glossary, memory, suggestions, shots, history] = await Promise.all([
-    glossaryFor(db, lang, record.plain),
-    memoryFor(db, project, record, lang),
-    all<{ id: number; body: string; by: string; at: number; note: string | null }>(
-      db
-        .prepare("SELECT id, body, by, at, note FROM suggestion WHERE source_id = ? AND lang = ? ORDER BY id")
-        .bind(record.id, lang),
-    ),
-    all<Shot>(
-      db
-        .prepare(
-          `SELECT sc.id, sc.name, sc.image, sc.width, sc.height, sc.lang, sh.x, sh.y, sh.w, sh.h FROM shot sh
-           JOIN screenshot sc ON sc.id = sh.screenshot_id WHERE sh.source_id = ?1 AND sc.lang IN (?2, ?3)`,
-        )
-        .bind(record.id, lang, project.sourceLang),
-    ),
-    all<{ id: number; kind: string; user_id: string | null; detail: string | null; at: number }>(
-      db
-        .prepare(
-          `SELECT id, kind, user_id, detail, at FROM activity WHERE source_id = ?1 AND lang = ?2
-           ORDER BY id DESC LIMIT ${HISTORY}`,
-        )
-        .bind(record.id, lang),
-    ),
-  ])
+export async function detailView(project: ProjectRow, detail: Detail, lang: string): Promise<StringDetail> {
+  const { record, glossary, own, suggestions, shots, history } = detail
+  const memory = await memoryFor(project, record, lang, own)
   const [people, slugs] = await Promise.all([
     peopleById([...suggestions.map((row) => row.by), ...history.map((row) => row.user_id)]),
     projectSlugs(memory.map((match) => match.projectId)),

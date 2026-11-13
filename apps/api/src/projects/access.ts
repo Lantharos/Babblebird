@@ -65,8 +65,34 @@ export async function membershipOf(project: ProjectRow, viewer: Viewer | null) {
   return saved!
 }
 
-const covers = (list: string[] | null | undefined, value: string | undefined) =>
-  !list || value === undefined || list.includes(value)
+export type AreaScope = boolean | string[]
+
+export interface Access {
+  review: AreaScope
+  translate: AreaScope
+}
+
+export const allows = (scope: AreaScope, area?: string) =>
+  scope === true || (Array.isArray(scope) && (area === undefined || scope.includes(area)))
+
+export function accessFor(
+  project: ProjectRow,
+  viewer: Viewer | null,
+  member: MemberRow | null,
+  lang?: string,
+): Access {
+  if (project.pausedAt) return { review: false, translate: false }
+  if (member?.role === "admin") return { review: true, translate: true }
+  const scoped: AreaScope =
+    !!member &&
+    (!member.languages || lang === undefined || member.languages.includes(lang)) &&
+    (member.areas ?? true)
+  const open = !!viewer && project.whoTranslates === "anyone" && !project.private
+  return {
+    review: member?.role === "reviewer" && scoped,
+    translate: open || scoped,
+  }
+}
 
 export function abilitiesOf(
   project: ProjectRow,
@@ -75,15 +101,12 @@ export function abilitiesOf(
   lang?: string,
   area?: string,
 ): Abilities {
-  const admin = member?.role === "admin"
-  if (project.pausedAt) return { admin, review: false, translate: false }
-  const scoped = !!member && covers(member.languages, lang) && covers(member.areas, area)
-  const review = admin || (member?.role === "reviewer" && scoped)
-  const translate =
-    review ||
-    (member?.role === "translator" && scoped) ||
-    (!!viewer && project.whoTranslates === "anyone" && !project.private)
-  return { admin, review, translate }
+  const access = accessFor(project, viewer, member, lang)
+  return {
+    admin: member?.role === "admin",
+    review: allows(access.review, area),
+    translate: allows(access.translate, area),
+  }
 }
 
 export async function visibleProject(owner: string, name: string, viewer: Viewer | null) {

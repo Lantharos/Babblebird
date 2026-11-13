@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, like, or, type SQL } from "drizzle-orm"
 import { db, schema } from "../../db/core.ts"
 import { languagesProgress } from "../../projects/progress.ts"
-import { all, first, stringsOf } from "../../strings/client.ts"
+import { query, queryOne } from "../../strings/client.ts"
 
 const TRANSLATORS = 50
 const READS = 10
@@ -110,26 +110,23 @@ export const projects = {
     return languagesProgress(project, project.languages)
   },
   translators(project: ProjectView) {
-    return all<{ user_id: string; edits: number; last: number }>(
-      stringsOf(project).prepare(
-        `SELECT user_id, count(*) edits, max(at) last FROM activity WHERE user_id IS NOT NULL
-         GROUP BY user_id ORDER BY edits DESC LIMIT ${TRANSLATORS}`,
-      ),
+    return query<{ user_id: string; edits: number; last: number }>(
+      project,
+      `SELECT user_id, count(*) edits, max(at) last FROM activity WHERE user_id IS NOT NULL
+       GROUP BY user_id ORDER BY edits DESC LIMIT ${TRANSLATORS}`,
     )
   },
   async reads(project: ProjectView) {
-    const rows = await all<{ detail: string; at: number }>(
-      stringsOf(project).prepare(
-        `SELECT detail, at FROM activity WHERE kind = 'synced' ORDER BY id DESC LIMIT ${READS}`,
-      ),
+    const rows = await query<{ detail: string; at: number }>(
+      project,
+      `SELECT detail, at FROM activity WHERE kind = 'synced' ORDER BY id DESC LIMIT ${READS}`,
     )
     return rows.map((row): ReadEntry => ({ at: row.at, ...JSON.parse(row.detail) }))
   },
   async counts(project: ProjectView) {
-    const counts = await first<{ waiting: number; glossary: number }>(
-      stringsOf(project).prepare(
-        "SELECT (SELECT count(*) FROM pending) waiting, (SELECT count(*) FROM glossary) glossary",
-      ),
+    const counts = await queryOne<{ waiting: number; glossary: number }>(
+      project,
+      "SELECT (SELECT count(*) FROM pending) waiting, (SELECT count(*) FROM glossary) glossary",
     )
     return { waitingFiles: counts?.waiting ?? 0, glossaryTerms: counts?.glossary ?? 0 }
   },

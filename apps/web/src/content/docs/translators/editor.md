@@ -11,11 +11,13 @@ The filter at the top picks what you see:
 - **Problems**: translations a check is unhappy with.
 - **All**: everything in the area.
 
-The dot in front of each string says where it stands: empty for missing, green for translated, amber for needs review, red for a problem. Search with <kbd>Ctrl</kbd> <kbd>K</kbd>; it looks at keys, English and translations.
+The dot in front of each string says where it stands: empty for missing, green for translated, amber for needs review, red for a problem. Search with <kbd>Ctrl</kbd> <kbd>K</kbd>; it looks at keys, English and translations across every area of the project.
 
 ## Translating a string
 
 Above the fields you see the key, the file it comes from, the developers' comment if there is one, and the English. Glossary terms in the English are underlined; hover one to see how it's usually translated.
+
+If someone else is translating the same language, you see them next to the strings they have open, and their work shows up as they save. When they save the string you're on, it updates if you haven't typed yet; otherwise a note lets you look at theirs when you're ready.
 
 Messages with attributes, such as a button's label and its tooltip, get one field per attribute. Messages that change with a number get one field per plural form of your language; see [Plurals and placeables](/docs/plurals-and-placeables).
 

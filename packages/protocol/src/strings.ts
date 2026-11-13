@@ -33,6 +33,10 @@ export interface StringPage {
   next: string | null
 }
 
+export interface FoundString extends StringRow {
+  area: string
+}
+
 export interface MemoryMatch {
   body: string
   source: string

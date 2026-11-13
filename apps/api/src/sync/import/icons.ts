@@ -1,7 +1,12 @@
 import { env } from "cloudflare:workers"
 import { type Repo, readRawBlob, type TreeEntry } from "../../github/repo.ts"
 import { putOnce } from "../../lib/files.ts"
-import { runAll, type Statement, type Strings } from "../../strings/client.ts"
+
+export interface AreaIcon {
+  areaId: number
+  name: string
+  sha: string
+}
 
 const TYPES: Record<string, string> = { svg: "image/svg+xml", png: "image/png", webp: "image/webp" }
 
@@ -15,16 +20,13 @@ export async function storeIcon(repo: Repo, entry: TreeEntry) {
   return name
 }
 
-export async function storeIcons(db: Strings, repo: Repo, icons: { areaId: number; entry: TreeEntry }[]) {
+export async function storeIcons(repo: Repo, icons: { areaId: number; entry: TreeEntry }[]) {
   const stored = new Map<string, string | null>()
-  const updates: Statement[] = []
+  const named: AreaIcon[] = []
   for (const { areaId, entry } of icons) {
     if (!stored.has(entry.sha)) stored.set(entry.sha, await storeIcon(repo, entry))
     const name = stored.get(entry.sha)
-    if (name)
-      updates.push(
-        db.prepare("UPDATE area SET icon = ?, icon_sha = ? WHERE id = ?").bind(name, entry.sha, areaId),
-      )
+    if (name) named.push({ areaId, name, sha: entry.sha })
   }
-  await runAll(db, updates)
+  return named
 }

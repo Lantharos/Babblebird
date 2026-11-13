@@ -1,6 +1,6 @@
 import type { LanguageProgress, Progress } from "@babblebird/protocol"
 import type { ProjectRow } from "../db/core.ts"
-import { all, type Strings } from "../strings/client.ts"
+import { query } from "../strings/client.ts"
 
 export const emptyProgress = (): Progress => ({
   translated: 0,
@@ -28,18 +28,17 @@ export interface AreaProgressRow extends Progress {
 const AREA_COLUMNS =
   "a.id, a.slug, a.name, a.icon, a.strings, a.words, p.lang, p.translated, p.review, p.approved, p.problems, p.suggested"
 
-export function areasWithProgress(db: Strings, lang: string | null) {
-  return all<AreaProgressRow>(
-    db
-      .prepare(
-        `SELECT ${AREA_COLUMNS} FROM area a LEFT JOIN progress p ON p.area_id = a.id AND p.lang = ?1 ORDER BY a.position`,
-      )
-      .bind(lang ?? ""),
+export function areasWithProgress(project: { id: string }, lang: string | null) {
+  return query<AreaProgressRow>(
+    project,
+    `SELECT ${AREA_COLUMNS} FROM area a LEFT JOIN progress p ON p.area_id = a.id AND p.lang = ?1 ORDER BY a.position`,
+    lang ?? "",
   )
 }
 
-export function allAreaProgress(db: Strings) {
-  return all<AreaProgressRow>(
-    db.prepare(`SELECT ${AREA_COLUMNS} FROM area a JOIN progress p ON p.area_id = a.id ORDER BY a.position`),
+export function allAreaProgress(project: { id: string }) {
+  return query<AreaProgressRow>(
+    project,
+    `SELECT ${AREA_COLUMNS} FROM area a JOIN progress p ON p.area_id = a.id ORDER BY a.position`,
   )
 }

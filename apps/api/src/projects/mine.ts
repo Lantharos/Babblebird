@@ -5,7 +5,7 @@ import { type SignedInVars, signedIn } from "../auth/session.ts"
 import { db, schema } from "../db/core.ts"
 import { userInstallations } from "../github/user.ts"
 import { fail } from "../lib/http.ts"
-import { all, stringsOf } from "../strings/client.ts"
+import { query } from "../strings/client.ts"
 import { visibleProject } from "./access.ts"
 import { summaryOf } from "./routes.ts"
 import { recentWork } from "./work.ts"
@@ -88,8 +88,9 @@ mineRoutes.get("/installations/:id{\\d+}", signedIn, async (c) => {
 
 mineRoutes.get("/projects/:owner/:name/import", async (c) => {
   const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), null)
-  const areas = await all<{ slug: string; name: string; icon: string | null; strings: number }>(
-    stringsOf(project).prepare("SELECT slug, name, icon, strings FROM area ORDER BY position"),
+  const areas = await query<{ slug: string; name: string; icon: string | null; strings: number }>(
+    project,
+    "SELECT slug, name, icon, strings FROM area ORDER BY position",
   )
   const summary = summaryOf(project)
   return c.json({

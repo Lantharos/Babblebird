@@ -2,10 +2,9 @@ import { eq } from "drizzle-orm"
 import { db, schema } from "../db/core.ts"
 import { readBlobs, readTree, type TreeEntry } from "../github/repo.ts"
 import { reportFailure } from "../ops/events.ts"
-import { all, eachRow, runAll, stringsOf } from "../strings/client.ts"
-import { publishTotals, recountStatements } from "./apply/progress.ts"
+import { stringsOf } from "../strings/client.ts"
 import { repoOf } from "./area.ts"
-import { importGlossaries } from "./import/glossary.ts"
+import { changedGlossaries, glossaryPattern } from "./import/glossary.ts"
 import { storeIcon, storeIcons } from "./import/icons.ts"
 import { type AreaBlob, areaJobs, type SyncJob, sendJobs } from "./jobs.ts"
 import { CONFIG_PATH, readConfig } from "./layout/config.ts"
@@ -18,7 +17,6 @@ import {
   projectIcon,
 } from "./layout/detect.ts"
 import { type Manifest, readManifest } from "./layout/manifests.ts"
-import { saveLayout } from "./layout/save.ts"
 
 type ScanJob = Extract<SyncJob, { kind: "scan" }>
 
@@ -61,43 +59,30 @@ function changedBlobs(
 
 export async function scanProject(job: ScanJob) {
   const project = await db.query.project.findFirst({ where: eq(schema.project.id, job.projectId) })
-  if (!project || project.state === "removed" || project.pausedAt) return
+  if (!project || project.state === "removed" || project.pausedAt) return null
   const strings = stringsOf(project)
   const repo = await repoOf(project)
   try {
     const tree = await readTree(repo, job.sha)
     const { config, areas } = await readLayout(tree, repo)
-    const saved = await saveLayout(strings, areas, config.source)
-    await storeIcons(strings, repo, saved.icons)
+    const glossaryAt = glossaryPattern(tree, config)
+    const saved = await strings.applyLayout({ areas, sourceLang: config.source, glossaryPattern: glossaryAt })
+    const icons = await storeIcons(repo, saved.icons)
     const iconEntry = projectIcon(tree, config)
     const icon = iconEntry ? await storeIcon(repo, iconEntry) : null
-    const known = new Map(
-      (
-        await all<{ file_id: number; lang: string; sha: string }>(
-          strings.prepare(
-            "SELECT b.file_id, b.lang, b.sha FROM blob b JOIN file f ON f.id = b.file_id WHERE f.area_id > 0",
-          ),
-        )
-      ).map((row) => [`${row.file_id}:${row.lang}`, row.sha]),
-    )
-    await importGlossaries(strings, repo, tree, config)
-    const vanished = [...known.keys()].filter((key) => !saved.present.has(key)).map((key) => key.split(":"))
-    await runAll(strings, [
-      ...eachRow(
-        strings,
-        `DELETE FROM translation WHERE (source_id, lang) IN
-           (SELECT s.id, j.value->>1 FROM json_each(?1) j JOIN source s ON s.file_id = j.value->>0)`,
-        vanished,
-      ),
-      ...eachRow(
-        strings,
-        "DELETE FROM blob WHERE (file_id, lang) IN (SELECT j.value->>0, j.value->>1 FROM json_each(?1) j)",
-        vanished,
-      ),
-    ])
-    const fresh = known.size === 0
+    const glossaries =
+      glossaryAt && saved.glossary
+        ? await changedGlossaries(repo, tree, glossaryAt, saved.glossary, config.source)
+        : []
+    const vanished = [...saved.known.keys()]
+      .filter((key) => !saved.present.has(key))
+      .map((key) => {
+        const [fileId, lang] = key.split(":") as [string, string]
+        return [Number(fileId), lang] as [number, string]
+      })
+    const fresh = saved.known.size === 0
     const jobs = areas.flatMap((area) => {
-      const blobs = changedBlobs(area, saved.files, known)
+      const blobs = changedBlobs(area, saved.files, saved.known)
       const areaId = saved.areas.get(area.slug)!
       return blobs.length
         ? areaJobs(
@@ -113,14 +98,16 @@ export async function scanProject(job: ScanJob) {
         .update(schema.project)
         .set({ state: "scanning", importTotal: blobCount, importDone: 0, importStartedAt: new Date() })
         .where(eq(schema.project.id, project.id))
-    await sendJobs(jobs)
     const allBlobs = jobs.flatMap((queued) => (queued.kind === "area" ? queued.blobs : []))
     const sourceFiles = allBlobs.filter((blob) => blob.lang === config.source).length
     const translationLangs = [
       ...new Set(allBlobs.filter((blob) => blob.lang !== config.source).map((blob) => blob.lang)),
     ]
-    const synced = strings.prepare("INSERT INTO activity (kind, detail, at) VALUES ('synced', ?, ?)").bind(
-      JSON.stringify({
+    const usage = await strings.finishScan({
+      icons,
+      glossary: saved.glossary && { fileId: saved.glossary.fileId, entries: glossaries },
+      vanished,
+      synced: JSON.stringify({
         sha: job.sha,
         reason: job.reason,
         message: job.message,
@@ -130,12 +117,9 @@ export async function scanProject(job: ScanJob) {
         languages: translationLangs,
         areas: areas.length,
       }),
-      Date.now(),
-    )
-    await publishTotals(strings, project.id, [
-      synced,
-      ...[...saved.recount].flatMap((areaId) => recountStatements(strings, areaId, null)),
-    ])
+      recount: [...saved.recount],
+    })
+    await sendJobs(jobs)
     const languages = [
       ...new Set(areas.flatMap((area) => area.files.flatMap((file) => [...file.langs.keys()]))),
     ]
@@ -155,6 +139,7 @@ export async function scanProject(job: ScanJob) {
         layoutVersion: LAYOUT_VERSION,
       })
       .where(eq(schema.project.id, project.id))
+    return usage
   } catch (error) {
     const problem = (error as Error).message
     await db.update(schema.project).set({ state: "failed", problem }).where(eq(schema.project.id, project.id))

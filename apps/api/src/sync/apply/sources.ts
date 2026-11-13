@@ -1,6 +1,6 @@
 import { type Unit, wordCount } from "@babblebird/fluent"
 import { STATE } from "@babblebird/protocol"
-import { all, eachRow, runAll, type Strings } from "../../strings/client.ts"
+import type { Db } from "../../strings/db.ts"
 import { bandsOf, textHash } from "../../tm/minhash.ts"
 
 interface Existing {
@@ -14,122 +14,107 @@ interface Existing {
   plain: string
 }
 
-export async function applySources(db: Strings, fileId: number, units: Unit[]) {
-  const existing = new Map(
-    (
-      await all<Existing>(
-        db
-          .prepare(
-            "SELECT id, key, position, hash, comment, section, body, plain FROM source WHERE file_id = ?",
-          )
-          .bind(fileId),
-      )
-    ).map((row) => [row.key, row]),
-  )
-  const added: unknown[][] = []
-  const edited: unknown[][] = []
-  const moved: unknown[][] = []
-  const bands: [string | number, number][] = []
-  const oldBands: unknown[][] = []
-  const forget = (row: Existing) => {
-    for (const band of bandsOf(row.plain)) oldBands.push([band, row.id])
+const SOURCE_TABLES = ["translation", "suggestion", "shot"]
+
+export function addBands(db: Db, sourceId: number, plain: string) {
+  for (const band of bandsOf(plain)) db.run("INSERT OR IGNORE INTO tm_band VALUES (?, ?)", band, sourceId)
+}
+
+export function dropBands(db: Db, sourceId: number, plain: string) {
+  for (const band of bandsOf(plain))
+    db.run("DELETE FROM tm_band WHERE band = ? AND source_id = ?", band, sourceId)
+}
+
+export function removeSources(db: Db, sources: { id: number; plain: string }[]) {
+  for (const source of sources) {
+    for (const table of SOURCE_TABLES) db.run(`DELETE FROM ${table} WHERE source_id = ?`, source.id)
+    db.run("DELETE FROM source WHERE id = ?", source.id)
+    dropBands(db, source.id, source.plain)
   }
-  const stale: number[] = []
-  const renamed: unknown[][] = []
+}
+
+function contentOf(unit: Unit) {
+  return [
+    unit.body,
+    unit.hash,
+    textHash(unit.plain),
+    unit.plain,
+    wordCount(unit.plain),
+    unit.comment,
+    unit.section,
+  ] as const
+}
+
+export function applySources(db: Db, fileId: number, units: Unit[]) {
+  const existing = new Map(
+    db
+      .all<Existing>(
+        "SELECT id, key, position, hash, comment, section, body, plain FROM source WHERE file_id = ?",
+        fileId,
+      )
+      .map((row) => [row.key, row]),
+  )
   const keys = new Set(units.map((unit) => unit.key))
   const leaving = Map.groupBy(
     [...existing.values()].filter((row) => !keys.has(row.key)),
     (row) => row.hash,
   )
+  let changed = false
   units.forEach((unit, position) => {
     const before = existing.get(unit.key)
     existing.delete(unit.key)
     const renamedFrom = before ? undefined : leaving.get(unit.hash)?.shift()
     if (renamedFrom) {
       existing.delete(renamedFrom.key)
-      renamed.push([renamedFrom.id, unit.key, position, unit.comment, unit.section])
-      return
-    }
-    const row = [
-      unit.body,
-      unit.hash,
-      textHash(unit.plain),
-      unit.plain,
-      wordCount(unit.plain),
-      unit.comment,
-      unit.section,
-    ]
-    if (!before) {
-      added.push([unit.key, position, ...row])
-      for (const band of bandsOf(unit.plain)) bands.push([unit.key, band])
+      db.run(
+        "UPDATE source SET key = ?, position = ?, comment = ?, section = ? WHERE id = ?",
+        unit.key,
+        position,
+        unit.comment,
+        unit.section,
+        renamedFrom.id,
+      )
+      changed = true
+    } else if (!before) {
+      const { id } = db.one<{ id: number }>(
+        `INSERT INTO source (file_id, key, position, body, hash, text_hash, plain, words, comment, section)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        fileId,
+        unit.key,
+        position,
+        ...contentOf(unit),
+      )!
+      addBands(db, id, unit.plain)
+      changed = true
     } else if (before.hash !== unit.hash) {
-      edited.push([before.id, position, ...row, before.body])
-      stale.push(before.id)
-      forget(before)
-      for (const band of bandsOf(unit.plain)) bands.push([before.id, band])
+      db.run(
+        `UPDATE source SET position = ?, body = ?, hash = ?, text_hash = ?, plain = ?, words = ?, comment = ?, section = ?,
+           previous = ? WHERE id = ?`,
+        position,
+        ...contentOf(unit),
+        before.body,
+        before.id,
+      )
+      db.run(
+        `UPDATE translation SET state = ${STATE.review} WHERE source_id = ? AND state != ${STATE.review}`,
+        before.id,
+      )
+      dropBands(db, before.id, before.plain)
+      addBands(db, before.id, unit.plain)
+      changed = true
     } else if (
       before.position !== position ||
       before.comment !== unit.comment ||
       before.section !== unit.section
     )
-      moved.push([before.id, position, unit.comment, unit.section])
+      db.run(
+        "UPDATE source SET position = ?, comment = ?, section = ? WHERE id = ?",
+        position,
+        unit.comment,
+        unit.section,
+        before.id,
+      )
   })
-  for (const row of existing.values()) forget(row)
-  const removed = [...existing.values()].map((row) => [row.id])
-  const insertedIds = new Map<string, number>()
-  for (const statement of eachRow(
-    db,
-    `INSERT INTO source (file_id, key, position, body, hash, text_hash, plain, words, comment, section)
-     SELECT ?1, j.value->>0, j.value->>1, j.value->>2, j.value->>3, j.value->>4, j.value->>5, j.value->>6, j.value->>7, j.value->>8
-     FROM json_each(?2) j RETURNING id, key`,
-    added,
-    fileId,
-  ))
-    for (const row of await all<{ id: number; key: string }>(statement)) insertedIds.set(row.key, row.id)
-  await runAll(db, [
-    ...eachRow(
-      db,
-      `UPDATE source SET position = j.value->>1, body = j.value->>2, hash = j.value->>3, text_hash = j.value->>4,
-         plain = j.value->>5, words = j.value->>6, comment = j.value->>7, section = j.value->>8, previous = j.value->>9
-       FROM json_each(?1) j WHERE source.id = j.value->>0`,
-      edited,
-    ),
-    ...eachRow(
-      db,
-      `UPDATE source SET position = j.value->>1, comment = j.value->>2, section = j.value->>3
-       FROM json_each(?1) j WHERE source.id = j.value->>0`,
-      moved,
-    ),
-    ...eachRow(
-      db,
-      `UPDATE source SET key = j.value->>1, position = j.value->>2, comment = j.value->>3, section = j.value->>4
-       FROM json_each(?1) j WHERE source.id = j.value->>0`,
-      renamed,
-    ),
-    ...eachRow(
-      db,
-      `UPDATE translation SET state = ${STATE.review}
-       WHERE source_id IN (SELECT j.value->>0 FROM json_each(?1) j) AND state != ${STATE.review}`,
-      stale.map((id) => [id]),
-    ),
-    ...["translation", "suggestion", "shot"].flatMap((table) =>
-      eachRow(
-        db,
-        `DELETE FROM ${table} WHERE source_id IN (SELECT j.value->>0 FROM json_each(?1) j)`,
-        removed,
-      ),
-    ),
-    ...eachRow(db, "DELETE FROM source WHERE id IN (SELECT j.value->>0 FROM json_each(?1) j)", removed),
-    ...eachRow(
-      db,
-      "DELETE FROM tm_band WHERE (band, source_id) IN (SELECT j.value->>0, j.value->>1 FROM json_each(?1) j)",
-      oldBands,
-    ),
-    ...eachRow(
-      db,
-      "INSERT OR IGNORE INTO tm_band (band, source_id) SELECT j.value->>0, j.value->>1 FROM json_each(?1) j",
-      bands.map(([source, band]) => [band, typeof source === "number" ? source : insertedIds.get(source)]),
-    ),
-  ])
-  return added.length + edited.length + removed.length + renamed.length > 0
+  removeSources(db, [...existing.values()])
+  return changed || existing.size > 0
 }

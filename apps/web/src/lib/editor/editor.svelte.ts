@@ -1,17 +1,20 @@
-import type { Filter, StringDetail, StringPage, StringRow } from "@babblebird/protocol"
+import type { Filter, FoundString, Progress, StringDetail, StringPage, StringRow } from "@babblebird/protocol"
 import { ApiError, api } from "#lib/api/client.ts"
 import { projectPath } from "#lib/projects/project.svelte.ts"
+import { LiveChannel } from "./live.svelte.ts"
 
 export type Detail = StringDetail & { row: StringRow }
 
 export class Editor {
-  rows = $state<StringRow[]>([])
+  rows = $state<(StringRow | FoundString)[]>([])
   next = $state<string | null>(null)
   loading = $state(false)
   selected = $state<number | null>(null)
   detail = $state<Detail | null>(null)
   filter = $state<Filter>("untranslated")
   search = $state("")
+  incoming = $state<StringRow | null>(null)
+  readonly live: LiveChannel
   #generation = 0
 
   constructor(
@@ -19,7 +22,29 @@ export class Editor {
     readonly name: string,
     readonly area: string,
     readonly lang: string,
-  ) {}
+    private readonly self: () => string | null,
+    private readonly onprogress: (area: string, progress: Progress) => void,
+  ) {
+    this.live = new LiveChannel(`${projectPath(owner, name)}/live?lang=${lang}`, (event) => {
+      if (event.type === "synced") {
+        if (event.area === this.area && !this.search.trim()) void this.reload()
+        return
+      }
+      this.onprogress(event.area, event.progress)
+      this.rows = this.rows.map((row) => (row.id === event.row.id ? { ...row, ...event.row } : row))
+      if (this.detail?.row.id === event.row.id && event.row.translation?.by?.id !== this.self())
+        this.incoming = event.row
+    })
+  }
+
+  others(string: number) {
+    return this.live.viewers.filter((viewer) => viewer.string === string && viewer.id !== this.self())
+  }
+
+  takeIncoming() {
+    if (this.incoming) this.replace(this.incoming)
+    this.incoming = null
+  }
 
   get base() {
     return projectPath(this.owner, this.name)
@@ -37,10 +62,21 @@ export class Editor {
   async more(generation = this.#generation) {
     if (this.loading && generation === this.#generation && this.rows.length) return
     this.loading = true
-    const query = new URLSearchParams({ lang: this.lang, filter: this.filter })
-    if (this.next) query.set("after", this.next)
-    if (this.search.trim()) query.set("q", this.search.trim())
-    const page = await api.get<StringPage>(`${this.base}/areas/${this.area}/strings?${query}`)
+    const search = this.search.trim()
+    const page = search
+      ? {
+          rows: await api.get<FoundString[]>(
+            `${this.base}/search?${new URLSearchParams({ lang: this.lang, q: search })}`,
+          ),
+          next: null,
+        }
+      : await api.get<StringPage>(
+          `${this.base}/areas/${this.area}/strings?${new URLSearchParams({
+            lang: this.lang,
+            filter: this.filter,
+            ...(this.next && { after: this.next }),
+          })}`,
+        )
     if (generation !== this.#generation) return
     this.rows = [...this.rows, ...page.rows]
     this.next = page.next
@@ -50,6 +86,8 @@ export class Editor {
   async select(id: number | null) {
     this.selected = id
     this.detail = null
+    this.incoming = null
+    this.live.focus(id)
     if (id === null) return
     const detail = await api.get<Detail>(`${this.base}/strings/${id}?lang=${this.lang}`)
     if (this.selected === id) this.detail = detail
@@ -64,7 +102,7 @@ export class Editor {
   }
 
   replace(row: StringRow) {
-    this.rows = this.rows.map((other) => (other.id === row.id ? row : other))
+    this.rows = this.rows.map((other) => (other.id === row.id ? { ...other, ...row } : other))
     if (this.detail?.row.id === row.id) this.detail.row = row
   }
 

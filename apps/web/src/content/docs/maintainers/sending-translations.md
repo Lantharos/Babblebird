@@ -33,4 +33,4 @@ The manage page says what happened and Babblebird carries on:
 - **A pull request was closed without merging**: nothing new is sent until there are new translations, then a fresh pull request opens.
 - **Checks failed**: the manage page says so and links the pull request. It stays as it is until the next batch replaces it with a fresh one built on the default branch.
 - **The default branch is protected**: translations go through a pull request instead.
-- **GitHub refused the write or couldn't be reached**: Babblebird tries again on its next run, ten minutes later.
+- **GitHub refused the write or couldn't be reached**: Babblebird tries again ten minutes later.

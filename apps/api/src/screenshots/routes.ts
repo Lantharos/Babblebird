@@ -5,9 +5,10 @@ import { z } from "zod"
 import { db, schema } from "../db/core.ts"
 import { putOnce } from "../lib/files.ts"
 import { fail } from "../lib/http.ts"
-import { all, eachRow, first, runAll, stringsOf } from "../strings/client.ts"
+import { stringsOf } from "../strings/client.ts"
 import { imageSize } from "./images.ts"
 import { verifyWorkflow } from "./oidc.ts"
+import type { StoredScreenshot } from "./store.ts"
 
 export const screenshotRoutes = new Hono()
 
@@ -59,19 +60,7 @@ screenshotRoutes.post("/:owner/:name/screenshots", async (c) => {
     fail(403, "This workflow doesn't belong to that project")
   const form = await c.req.formData()
   const parsed = manifest.parse(JSON.parse(String(form.get("manifest") ?? "null")))
-  const strings = stringsOf(project)
-  const keys = [...new Set(parsed.screenshots.flatMap((shot) => shot.strings.map((entry) => entry.key)))]
-  const sources = await all<{ id: number; key: string; pattern: string }>(
-    strings
-      .prepare(
-        `SELECT s.id, s.key, f.pattern FROM source s JOIN file f ON f.id = s.file_id
-         WHERE s.key IN (SELECT value FROM json_each(?1))`,
-      )
-      .bind(JSON.stringify(keys)),
-  )
-  const byKey = Map.groupBy(sources, (source) => source.key)
-  const unknown = new Set<string>()
-  let linked = 0
+  const stored: StoredScreenshot[] = []
   for (const shot of parsed.screenshots) {
     const file = form.get(shot.file)
     if (!(file instanceof File) || file.size > MAX_IMAGE)
@@ -82,33 +71,20 @@ screenshotRoutes.post("/:owner/:name/screenshots", async (c) => {
     const image = `${await sha256(bytes)}.${size.extension}`
     if (!(await env.FILES.head(`screenshots/${image}`)))
       await putOnce(`screenshots/${image}`, bytes, size.type)
-    const row = await first<{ id: number }>(
-      strings
-        .prepare(
-          `INSERT INTO screenshot (name, image, width, height, lang, commit_sha, at) VALUES (?, ?, ?, ?, ?, ?, ?)
-           ON CONFLICT (name, lang) DO UPDATE SET image = excluded.image, width = excluded.width,
-             height = excluded.height, commit_sha = excluded.commit_sha, at = excluded.at RETURNING id`,
-        )
-        .bind(shot.name, image, size.width, size.height, shot.lang, parsed.commit ?? claims.sha, Date.now()),
-    )
-    const shots = shot.strings.flatMap((entry) => {
-      const matches = (byKey.get(entry.key) ?? []).filter(
-        (source) => !entry.file || source.pattern === patternOf(entry.file),
-      )
-      if (!matches.length) unknown.add(entry.key)
-      return matches.map((source) => [source.id, ...(entry.box ?? [null, null, null, null])])
+    stored.push({
+      name: shot.name,
+      lang: shot.lang,
+      image,
+      width: size.width,
+      height: size.height,
+      commit: parsed.commit ?? claims.sha,
+      strings: shot.strings.map((entry) => ({
+        key: entry.key,
+        pattern: entry.file ? patternOf(entry.file) : null,
+        box: entry.box ?? null,
+      })),
     })
-    linked += shots.length
-    await runAll(strings, [
-      strings.prepare("DELETE FROM shot WHERE screenshot_id = ?").bind(row!.id),
-      ...eachRow(
-        strings,
-        `INSERT OR REPLACE INTO shot (source_id, screenshot_id, x, y, w, h)
-         SELECT j.value->>0, ?1, j.value->>1, j.value->>2, j.value->>3, j.value->>4 FROM json_each(?2) j`,
-        shots,
-        row!.id,
-      ),
-    ])
   }
-  return c.json({ screenshots: parsed.screenshots.length, strings: linked, unknown: [...unknown] })
+  const { linked, unknown } = await stringsOf(project).saveScreenshots(stored)
+  return c.json({ screenshots: parsed.screenshots.length, strings: linked, unknown })
 })

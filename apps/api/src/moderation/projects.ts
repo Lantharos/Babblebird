@@ -28,6 +28,7 @@ export async function resume(project: ProjectRow, by: string) {
     .update(schema.project)
     .set({ pausedAt: null, pausedReason: null })
     .where(eq(schema.project.id, project.id))
+  await stringsOf(project).deliverAfter(0)
   if (project.state === "removed") return true
   return resync({ ...project, pausedAt: null }, by).then(
     () => true,

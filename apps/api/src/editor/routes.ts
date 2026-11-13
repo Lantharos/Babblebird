@@ -1,62 +1,34 @@
 import {
   FILTERS,
-  STATE,
+  type FoundString,
   type StringDetail,
   type StringPage,
   type StringRow,
-  stateName,
 } from "@babblebird/protocol"
+import type { Context } from "hono"
 import { Hono } from "hono"
 import { z } from "zod"
 import { maybeSignedIn, type ViewerVars } from "../auth/session.ts"
 import { fail, readBody, readQuery } from "../lib/http.ts"
-import { abilitiesOf, PAUSED, visibleProject } from "../projects/access.ts"
-import { all, first, type Strings, stringsOf } from "../strings/client.ts"
-import { publishTotals, recountStatements } from "../sync/apply/progress.ts"
-import { contextFor } from "./context.ts"
+import { accessFor, PAUSED, visibleProject } from "../projects/access.ts"
+import { query, stringsOf } from "../strings/client.ts"
+import { VIEWER_HEADER } from "../strings/live.ts"
+import { detailView } from "./detail.ts"
 import { peopleById, personOf } from "./people.ts"
-import { type StringRecord, stringById, stringPage } from "./queries.ts"
-import { checkTranslation, noteContribution, rememberLanguage, saveTranslation, stateFor } from "./save.ts"
+import { rowsOf } from "./rows.ts"
+import { noteContribution, rememberLanguage } from "./save.ts"
+import type { Edit, EditResult } from "./store.ts"
 
 export const editorRoutes = new Hono<ViewerVars>()
 editorRoutes.use(maybeSignedIn)
 
+type Ctx = Context<ViewerVars>
+
 const lang = z.string().regex(/^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/)
 const PAGE = 50
+const FOUND = 50
 
-async function rowsOf(records: StringRecord[]): Promise<StringRow[]> {
-  const people = await peopleById(records.map((record) => record.t_by))
-  return records.map((record) => ({
-    id: record.id,
-    key: record.key,
-    file: record.pattern,
-    position: record.position,
-    body: record.body,
-    comment: record.comment,
-    section: record.section,
-    words: record.words,
-    suggestions: record.suggestions,
-    translation:
-      record.t_body === null
-        ? null
-        : {
-            body: record.t_body,
-            state: stateName(record.t_state),
-            flags: record.t_flags ?? 0,
-            by: personOf(people, record.t_by, record.t_credit),
-            at: record.t_at ?? 0,
-            stale: record.t_source_hash !== record.hash,
-          },
-  }))
-}
-
-async function areaOf(db: Strings, slug: string) {
-  const area = await first<{ id: number; slug: string }>(
-    db.prepare("SELECT id, slug FROM area WHERE slug = ?").bind(slug),
-  )
-  if (!area) fail(404, "There's no such area")
-  return area
-}
+const project = (c: Ctx) => visibleProject(c.req.param("owner")!, c.req.param("name")!, c.get("viewer"))
 
 editorRoutes.get("/:owner/:name/areas/:area/strings", async (c) => {
   const query = readQuery(
@@ -68,18 +40,13 @@ editorRoutes.get("/:owner/:name/areas/:area/strings", async (c) => {
         .string()
         .regex(/^\d+\.\d+$/)
         .optional(),
-      q: z.string().trim().max(200).optional(),
     }),
   )
-  const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const db = stringsOf(project)
-  const area = await areaOf(db, c.req.param("area"))
-  const records = await stringPage(db, {
-    areaId: area.id,
+  const records = await stringsOf((await project(c)).project).page({
+    area: c.req.param("area"),
     lang: query.lang,
     filter: query.filter,
     after: query.after ? (query.after.split(".").map(Number) as [number, number]) : null,
-    search: query.q || null,
     limit: PAGE + 1,
   })
   const shown = records.slice(0, PAGE)
@@ -90,163 +57,102 @@ editorRoutes.get("/:owner/:name/areas/:area/strings", async (c) => {
   } satisfies StringPage)
 })
 
-async function loadString(
-  c: { req: { param: (name: string) => string } },
-  viewer: ViewerVars["Variables"]["viewer"],
-  language: string,
-) {
-  const { project, member } = await visibleProject(c.req.param("owner"), c.req.param("name"), viewer)
-  const db = stringsOf(project)
-  const record = await stringById(db, Number(c.req.param("id")), language)
-  if (!record) fail(404, "There's no such string")
-  return {
-    project,
-    member,
-    db,
-    record,
-    can: abilitiesOf(project, viewer, member, language, record.area_slug),
-  }
-}
-
-async function loadForWriting(...args: Parameters<typeof loadString>) {
-  const loaded = await loadString(...args)
-  if (loaded.project.pausedAt) fail(409, PAUSED)
-  return loaded
-}
+editorRoutes.get("/:owner/:name/search", async (c) => {
+  const { lang: language, q } = readQuery(c, z.object({ lang, q: z.string().trim().min(1).max(200) }))
+  const records = await stringsOf((await project(c)).project).search(language, q, FOUND)
+  const rows = await rowsOf(records)
+  return c.json(rows.map((row, index): FoundString => ({ ...row, area: records[index]!.area_slug })))
+})
 
 editorRoutes.get("/:owner/:name/strings/:id{\\d+}", async (c) => {
   const { lang: language } = readQuery(c, z.object({ lang }))
-  const { project, db, record } = await loadString(c, c.get("viewer"), language)
-  const [row] = await rowsOf([record])
-  return c.json({ row: row!, ...(await contextFor(db, project, record, language)) } satisfies {
+  const found = await project(c)
+  const detail = await stringsOf(found.project).detail(
+    Number(c.req.param("id")),
+    language,
+    found.project.sourceLang,
+  )
+  if (!detail) fail(404, "There's no such string")
+  const [row] = await rowsOf([detail.record])
+  return c.json({ row: row!, ...(await detailView(found.project, detail, language)) } satisfies {
     row: StringRow
   } & StringDetail)
 })
 
+async function edit(c: Ctx, change: () => Edit | Promise<Edit>) {
+  const viewer = c.get("viewer")
+  if (!viewer) fail(401, "Sign in first")
+  const language = lang.parse(c.req.param("lang"))
+  const found = await project(c)
+  if (found.project.pausedAt) fail(409, PAUSED)
+  const kind = await change()
+  if (kind.kind !== "suggested" && language === found.project.sourceLang)
+    fail(403, "The source language changes in the repository")
+  const access = accessFor(found.project, viewer, found.member, language)
+  const result: EditResult = await stringsOf(found.project).edit({
+    id: Number(c.req.param("id")),
+    lang: language,
+    userId: viewer.id,
+    edit: kind,
+    scope: kind.kind === "approved" ? access.review : access.translate,
+  })
+  if (result.status === "rejected") {
+    if (result.problems) return c.json({ error: result.error, problems: result.problems }, 422)
+    fail(result.code, result.error)
+  }
+  await Promise.all([
+    kind.kind === "approved" ? null : rememberLanguage(viewer.id, language),
+    noteContribution(viewer.id, found.project.id, kind.kind === "suggested" ? 0 : 1),
+  ])
+  return result
+}
+
 const saving = z.object({ body: z.string().min(1).max(20_000), approve: z.boolean().default(false) })
 
 editorRoutes.put("/:owner/:name/strings/:id{\\d+}/:lang", async (c) => {
-  const viewer = c.get("viewer")
-  if (!viewer) fail(401, "Sign in first")
-  const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadForWriting(c, viewer, language)
-  if (language === project.sourceLang) fail(403, "The source language changes in the repository")
-  const { body, approve } = await readBody(c, saving)
-  if (!can.translate) fail(403, "You can suggest a translation here, but not save one")
-  if (approve && !can.review) fail(403, "Only reviewers of this language can approve")
-  const problems = await checkTranslation(db, { record, lang: language, body })
-  if (problems.some((problem) => problem.severity === "error"))
-    return c.json({ error: problems[0]!.text, problems }, 422)
-  await saveTranslation(
-    db,
-    {
-      project,
-      record,
-      lang: language,
-      body,
-      state: stateFor(approve),
-      userId: viewer.id,
-      kind: approve ? "approved" : "translated",
-    },
-    problems,
-  )
-  await rememberLanguage(viewer.id, language)
-  const [row] = await rowsOf([(await stringById(db, record.id, language))!])
-  return c.json({ row: row!, problems })
+  const outcome = await edit(c, async () => {
+    const { body, approve } = await readBody(c, saving)
+    return { kind: approve ? "approved" : "translated", body }
+  })
+  if (outcome instanceof Response) return outcome
+  const [row] = await rowsOf([outcome.record])
+  return c.json({ row: row!, problems: outcome.problems })
 })
 
 editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/approve", async (c) => {
-  const viewer = c.get("viewer")
-  if (!viewer) fail(401, "Sign in first")
-  const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadForWriting(c, viewer, language)
-  if (!can.review) fail(403, "Only reviewers of this language can approve")
-  if (record.t_body === null) fail(409, "There's nothing to approve yet")
-  const problems = await checkTranslation(db, { record, lang: language, body: record.t_body })
-  await saveTranslation(
-    db,
-    {
-      project,
-      record,
-      lang: language,
-      body: record.t_body,
-      state: STATE.approved,
-      userId: viewer.id,
-      kind: "approved",
-    },
-    problems,
-  )
-  return c.body(null, 204)
+  const outcome = await edit(c, () => ({ kind: "approved", body: null }))
+  return outcome instanceof Response ? outcome : c.body(null, 204)
 })
 
 editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions", async (c) => {
-  const viewer = c.get("viewer")
-  if (!viewer) fail(401, "Sign in first")
-  const language = lang.parse(c.req.param("lang"))
-  const { project, db, record } = await loadForWriting(c, viewer, language)
-  const { body } = await readBody(c, saving)
-  const problems = await checkTranslation(db, { record, lang: language, body })
-  if (problems.some((problem) => problem.severity === "error"))
-    return c.json({ error: problems[0]!.text, problems }, 422)
-  await publishTotals(db, project.id, [
-    db
-      .prepare("INSERT INTO suggestion (source_id, lang, body, by, at) VALUES (?, ?, ?, ?, ?)")
-      .bind(record.id, language, body, viewer.id, Date.now()),
-    ...recountStatements(db, record.area_id, [language]),
-  ])
-  await Promise.all([rememberLanguage(viewer.id, language), noteContribution(viewer.id, project.id, 0)])
-  return c.body(null, 204)
+  const outcome = await edit(c, async () => ({ kind: "suggested", body: (await readBody(c, saving)).body }))
+  return outcome instanceof Response ? outcome : c.body(null, 204)
 })
 
 editorRoutes.post("/:owner/:name/strings/:id{\\d+}/:lang/suggestions/:suggestion{\\d+}/accept", async (c) => {
-  const viewer = c.get("viewer")
-  if (!viewer) fail(401, "Sign in first")
-  const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadForWriting(c, viewer, language)
-  if (!can.translate) fail(403, "You can't accept suggestions here")
-  const suggestion = await first<{ body: string }>(
-    db
-      .prepare("SELECT body FROM suggestion WHERE id = ? AND source_id = ? AND lang = ?")
-      .bind(c.req.param("suggestion"), record.id, language),
-  )
-  if (!suggestion) fail(404, "That suggestion is gone")
-  const problems = await checkTranslation(db, { record, lang: language, body: suggestion.body })
-  await saveTranslation(
-    db,
-    {
-      project,
-      record,
-      lang: language,
-      body: suggestion.body,
-      state: STATE.translated,
-      userId: viewer.id,
-      kind: "accepted",
-    },
-    problems,
-    [db.prepare("DELETE FROM suggestion WHERE source_id = ? AND lang = ?").bind(record.id, language)],
-  )
-  return c.body(null, 204)
+  const outcome = await edit(c, () => ({ kind: "accepted", suggestion: Number(c.req.param("suggestion")) }))
+  return outcome instanceof Response ? outcome : c.body(null, 204)
 })
 
 editorRoutes.delete("/:owner/:name/strings/:id{\\d+}/:lang/suggestions/:suggestion{\\d+}", async (c) => {
   const viewer = c.get("viewer")
   if (!viewer) fail(401, "Sign in first")
   const language = lang.parse(c.req.param("lang"))
-  const { project, db, record, can } = await loadString(c, viewer, language)
-  const owner = can.translate ? "" : "AND by = ?4"
-  await publishTotals(db, project.id, [
-    db
-      .prepare(`DELETE FROM suggestion WHERE id = ?1 AND source_id = ?2 AND lang = ?3 ${owner}`)
-      .bind(c.req.param("suggestion"), record.id, language, ...(can.translate ? [] : [viewer.id])),
-    ...recountStatements(db, record.area_id, [language]),
-  ])
+  const found = await project(c)
+  const access = accessFor(found.project, viewer, found.member, language)
+  const dropped = await stringsOf(found.project).dropSuggestion(
+    Number(c.req.param("id")),
+    language,
+    Number(c.req.param("suggestion")),
+    access.translate === false ? viewer.id : null,
+  )
+  if (!dropped) fail(404, "There's no such string")
   return c.body(null, 204)
 })
 
 editorRoutes.get("/:owner/:name/activity", async (c) => {
-  const query = readQuery(c, z.object({ lang: lang.optional(), before: z.coerce.number().int().optional() }))
-  const { project } = await visibleProject(c.req.param("owner"), c.req.param("name"), c.get("viewer"))
-  const rows = await all<{
+  const params = readQuery(c, z.object({ lang: lang.optional(), before: z.coerce.number().int().optional() }))
+  const rows = await query<{
     id: number
     kind: string
     lang: string | null
@@ -256,12 +162,11 @@ editorRoutes.get("/:owner/:name/activity", async (c) => {
     detail: string | null
     at: number
   }>(
-    stringsOf(project)
-      .prepare(
-        `SELECT a.id, a.kind, a.lang, a.source_id, s.key, a.user_id, a.detail, a.at FROM activity a LEFT JOIN source s ON s.id = a.source_id
-         WHERE a.id < ?1 ${query.lang ? "AND a.lang = ?2" : ""} ORDER BY a.id DESC LIMIT ${PAGE}`,
-      )
-      .bind(query.before ?? Number.MAX_SAFE_INTEGER, ...(query.lang ? [query.lang] : [])),
+    (await project(c)).project,
+    `SELECT a.id, a.kind, a.lang, a.source_id, s.key, a.user_id, a.detail, a.at FROM activity a LEFT JOIN source s ON s.id = a.source_id
+     WHERE a.id < ?1 ${params.lang ? "AND a.lang = ?2" : ""} ORDER BY a.id DESC LIMIT ${PAGE}`,
+    params.before ?? Number.MAX_SAFE_INTEGER,
+    ...(params.lang ? [params.lang] : []),
   )
   const people = await peopleById(rows.map((row) => row.user_id))
   return c.json(
@@ -275,5 +180,27 @@ editorRoutes.get("/:owner/:name/activity", async (c) => {
       by: personOf(people, row.user_id, null),
       at: row.at,
     })),
+  )
+})
+
+editorRoutes.get("/:owner/:name/live", async (c) => {
+  if (c.req.header("upgrade") !== "websocket") fail(400, "This only speaks WebSocket")
+  const { lang: language } = readQuery(c, z.object({ lang }))
+  const viewer = c.get("viewer")
+  const url = new URL(c.req.url)
+  url.search = new URLSearchParams({ lang: language }).toString()
+  return stringsOf((await project(c)).project).fetch(
+    new Request(url, {
+      headers: {
+        upgrade: "websocket",
+        ...(viewer && {
+          [VIEWER_HEADER]: JSON.stringify({
+            id: viewer.id,
+            name: viewer.name || "A translator",
+            image: viewer.image,
+          }),
+        }),
+      },
+    }),
   )
 })

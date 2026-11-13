@@ -19,8 +19,8 @@ Babblebird is built to stay cheap at hundreds of thousands of strings per projec
 | ------------ | ---------------------------------- |
 | Files read   | 1,665, fetched a hundred at a time |
 | Queue jobs   | 34, one per area                   |
-| Rows read    | 2.7 million                        |
-| Rows written | 323,000                            |
+| Rows read    | 1 million                          |
+| Rows written | 180,000                            |
 
 The largest job, Settings with 7 files in 37 languages, takes a few seconds of CPU; most of its wall time is reading `git blame` for the credits.
 
@@ -40,10 +40,11 @@ Measured locally, warm:
 | Request                                                                              | Time  |
 | ------------------------------------------------------------------------------------ | ----- |
 | A page of 50 strings with their translations                                         | 12 ms |
-| One string with glossary, earlier translations, suggestions, screenshots and history | 23 ms |
-| Saving a translation                                                                 | 40 ms |
+| Searching every area of the project                                                  | 17 ms |
+| One string with glossary, earlier translations, suggestions, screenshots and history | 9 ms  |
+| Saving a translation                                                                 | 25 ms |
 
-Saving is one round trip to the project's storage, which writes the translation, its activity entry, the pending file and the area's progress in one transaction, and two small writes to the main database: the project's progress and the translator's contribution. The project page, the project list and badges read progress from the main database and never touch the strings.
+Saving is one call to the project's object, which checks the translation, writes it with its activity entry, the pending file and the area's progress in one transaction, tells everyone else on that language, and sets the alarm for sending; then two small writes to the main database: the project's progress and the translator's contribution. The project page, the project list and badges read progress from the main database and never touch the strings.
 
 ## Cost per month
 
@@ -52,7 +53,7 @@ On the Workers Paid plan ($5 a month, shared with every other Worker on the acco
 |                           | Luft                             | Ten times Luft                        |
 | ------------------------- | -------------------------------- | ------------------------------------- |
 | Storage                   | 30 MB                            | 300 MB                                |
-| First import              | 323,000 writes, once             | 3.2 million writes, once              |
+| First import              | 180,000 writes, once             | 1.8 million writes, once              |
 | 300 relevant pushes       | 0.4 million reads, 50,000 writes | 4 million reads, 500,000 writes       |
 | 20,000 saved translations | 40 million reads, 160,000 writes | 400 million reads, 1.6 million writes |
 | Queue messages            | about 1,000                      | about 10,000                          |

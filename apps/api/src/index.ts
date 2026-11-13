@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers"
 import { Hono } from "hono"
 import { authRoutes } from "./auth/routes.ts"
 import { badgeRoutes } from "./badge/routes.ts"
-import { type DeliverJob, deliver, queueDeliveries } from "./deliver/deliver.ts"
+import { type DeliverJob, deliver } from "./deliver/deliver.ts"
 import { editorRoutes } from "./editor/routes.ts"
 import { fileRoutes } from "./files/routes.ts"
 import { githubRoutes } from "./github/routes.ts"
@@ -66,12 +66,7 @@ export default {
   },
   async scheduled() {
     const office = backOffice()
-    await Promise.all([
-      queueDeliveries(),
-      rescanStale(),
-      publishDefinitions(),
-      office && deliverPending(office.pult),
-    ])
+    await Promise.all([rescanStale(), publishDefinitions(), office && deliverPending(office.pult)])
   },
   email: receiveMail,
 } satisfies ExportedHandler<Env, SyncJob | DeliverJob>

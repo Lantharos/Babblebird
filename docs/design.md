@@ -4,7 +4,7 @@ The repository is the only source of truth. Babblebird never asks anyone to conf
 
 ## Pieces
 
-- `apps/api` is a Cloudflare Worker with Hono. It serves `/api/*`, receives GitHub webhooks, runs the sync and delivery queues and a ten-minute cron.
+- `apps/api` is a Cloudflare Worker with Hono. It serves `/api/*`, receives GitHub webhooks, runs the sync and delivery queues and a ten-minute cron that retries failed reads.
 - `apps/web` is a SvelteKit app on Workers at babblebird.dev. It forwards `/api/*` to the API Worker through a service binding.
 - `packages/fluent` reads and writes Fluent: it turns a file into units, a message into editable fields and back, runs the checks and renders previews. The API and the editor share it, so a translation is checked the same way in the browser and on save.
 - `packages/protocol` holds the types both sides speak.
@@ -13,7 +13,7 @@ The repository is the only source of truth. Babblebird never asks anyone to conf
 
 ## Storage
 
-The D1 database `babblebird` holds accounts, installations, projects, members, deliveries, each project's progress per language and who contributed where. Strings live apart from it: every project has its own SQLite database in a `ProjectStrings` Durable Object, named by the project's id, so projects never compete for space and nothing has to be provisioned as they're added. The Worker talks to it with prepared statements sent over RPC, and a batch of them runs as one transaction.
+The D1 database `babblebird` holds accounts, installations, projects, members, deliveries, each project's progress per language and who contributed where. Strings live apart from it: every project has its own SQLite database in a `ProjectStrings` Durable Object, named by the project's id, so projects never compete for space and nothing has to be provisioned as they're added. The object owns every write: importing an area, saving a translation, sending, removing someone's work and storing screenshots are each one RPC that runs as one transaction next to the data, so two jobs for the same project can never interleave. Anything that talks to GitHub stays in the Worker and hands the object what it read. Reads that aren't part of a change go through one `query` method.
 
 A project's strings database has:
 
@@ -25,6 +25,7 @@ A project's strings database has:
 | `translation`                                                         | One row per message and language, keyed by both, with the body, state, check results, who made it and the source hash it was made against. `unsent` marks a value the repository doesn't have yet, and `base` keeps the repository's value only when it differs |
 | `progress`                                                            | Counts per area and language, recounted when something in that area changes                                                                                                                                                                                     |
 | `tm_band`                                                             | MinHash bands of each source string, for finding similar ones within the project                                                                                                                                                                                |
+| `source_search`                                                       | A trigram full-text index of each message's key and English, so search finds any part of a word across the whole project                                                                                                                                        |
 | `credit`                                                              | Names credited from the repository's history, stored once and referenced by translations                                                                                                                                                                        |
 | `glossary`, `suggestion`, `activity`, `pending`, `screenshot`, `shot` | What their names say                                                                                                                                                                                                                                            |
 
@@ -54,9 +55,13 @@ A translation is `translated`, `review` (its English changed, or it was imported
 
 Earlier translations come from the project itself, by the same text (an indexed hash lookup) or similar text (MinHash bands, compared by trigram similarity), and from the language pair's shared memory, which only public projects add to.
 
+## Live editing
+
+The editor keeps a WebSocket open to the project's object, one per language, using hibernation so idle connections cost nothing. It says which string each translator has open, so the list and the form show who else is there, and every save is pushed to everyone on that language with the area's new progress. A translation saved by someone else while you're on it replaces your form if you haven't typed, and otherwise waits behind a note until you choose to see it.
+
 ## Sending translations back
 
-Each project chooses whether translations go back: not at all, through a `babblebird/translations` branch whose pull request the maintainers merge or that merges itself when the checks pass, or straight to the default branch. Every save records the file and language as pending and flags the project in the main database, so the cron, which runs every ten minutes, only looks at projects with something waiting. Once nothing was saved in the project for twenty minutes, or six hours after the oldest change waiting, it builds the changed files from the files at the head of the default branch, changing only the messages that differ so comments and layout stay, and commits them with the Git Data API in one tree and one commit, together with each generated language's files made from them. People who saved translations with a GitHub account are credited as co-authors.
+Each project chooses whether translations go back: not at all, through a `babblebird/translations` branch whose pull request the maintainers merge or that merges itself when the checks pass, or straight to the default branch. Every save records the file and language as pending and sets an alarm on the project's object for twenty minutes later, or six hours after the oldest change waiting, whichever comes first; another save moves it. When it goes off, the project is queued for sending, which builds the changed files from the files at the head of the default branch, changing only the messages that differ so comments and layout stay, and commits them with the Git Data API in one tree and one commit, together with each generated language's files made from them. People who saved translations with a GitHub account are credited as co-authors.
 
 Every translation knows the value Babblebird last read from the repository: the translation itself unless it's `unsent`, otherwise `base`. Syncing and sending both merge each message three ways: base, the repository now and the value here. A message changed on one side takes that side; changed differently on both, the repository wins and Babblebird's value becomes a suggestion marked as a conflict. A `pending` file and language stays until the repository holds what was translated here, which is checked by comparing values, so merges, squashes, rebases and force pushes all just work. Renamed messages are matched by their English, moved files by their English file's blob.
 
