@@ -1,18 +1,26 @@
 <script lang="ts">
-  import { INSTALL_URL } from "@babblebird/protocol"
+  import { INSTALL_URL, type Project } from "@babblebird/protocol"
   import ArrowRight from "@lucide/svelte/icons/arrow-right"
+  import { onMount } from "svelte"
+  import type { Resource } from "#lib/api/resource.svelte.ts"
   import Bubble from "#lib/landing/Bubble.svelte"
-  import Diff from "#lib/landing/Diff.svelte"
-  import Journey from "#lib/landing/Journey.svelte"
   import LiveProgress from "#lib/landing/LiveProgress.svelte"
   import Placeable from "#lib/landing/Placeable.svelte"
-  import Plurals from "#lib/landing/Plurals.svelte"
   import Puff from "#lib/landing/Puff.svelte"
   import Said from "#lib/landing/Said.svelte"
-  import Thanks from "#lib/landing/Thanks.svelte"
+  import Diff from "#lib/landing/scenes/Diff.svelte"
+  import Journey from "#lib/landing/scenes/Journey.svelte"
+  import Plurals from "#lib/landing/scenes/Plurals.svelte"
+  import Thanks from "#lib/landing/scenes/Thanks.svelte"
   import Footer from "#lib/layout/Footer.svelte"
   import Header from "#lib/layout/Header.svelte"
+  import { projectResource } from "#lib/projects/project.svelte.ts"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
+
+  let luft = $state<Resource<Project>>()
+  onMount(() => {
+    luft = projectResource("lantharos", "luft")
+  })
 </script>
 
 <svelte:head>
@@ -25,31 +33,23 @@
 
 <Header />
 
-<main class="overflow-x-clip">
+<main id="main" class="overflow-x-clip">
   <h1 class="sr-only">Babblebird, translations that live in your repository</h1>
 
-  <section class="page relative hidden h-[42rem] lg:block">
-    <Bubble class="enter absolute top-10 left-[19rem] w-[23rem]">
+  <section class="page relative flex flex-col gap-6 pt-6 pb-10 lg:block lg:h-[42rem] lg:py-0">
+    <div class="h-52 lg:absolute lg:top-[13rem] lg:left-0 lg:z-10 lg:h-auto"><Puff class="origin-top-left scale-50 lg:scale-100" /></div>
+    <Bubble class="enter lg:absolute lg:top-10 lg:left-[19rem] lg:w-[23rem]">
       I read the Fluent files in your GitHub repository and send the translations back as commits. That’s the whole setup.
     </Bubble>
-    <Bubble class="enter absolute top-[13rem] right-8 w-[21rem]" --order="1">
+    <Bubble class="enter lg:absolute lg:top-[13rem] lg:right-8 lg:w-[21rem]" --order="1">
       Translators get a field for every plural form, with <Placeable text="$count" /> kept where it belongs and the screen it shows on.
     </Bubble>
-    <Bubble href={INSTALL_URL} tone="accent" class="enter absolute top-[29rem] right-8 w-fit font-semibold" --order="2">
+    <Bubble href={INSTALL_URL} tone="accent" class="enter w-fit font-semibold lg:absolute lg:top-[29rem] lg:right-8" --order="2">
       Add me to a repository →
     </Bubble>
-    <Bubble href="/p/lantharos/luft" class="enter absolute top-[34.5rem] right-8 w-fit hover:ring-ink-muted/40" --order="3">
-      Luft is here already: 5,140 strings in 36 languages →
+    <Bubble href="/p/lantharos/luft" class="enter w-fit hover:ring-ink-muted/40 lg:absolute lg:top-[34.5rem] lg:right-8" --order="3">
+      {#if luft?.data}Luft is here already: {luft.data.strings.toLocaleString()} strings in {luft.data.languages.length} languages →{:else}Luft is here already →{/if}
     </Bubble>
-    <Puff class="absolute top-[13rem] left-0" />
-  </section>
-
-  <section class="page space-y-6 pt-6 pb-10 lg:hidden">
-    <div class="h-52 w-full"><Puff class="origin-top-left scale-50" /></div>
-    <Bubble>I read the Fluent files in your GitHub repository and send the translations back as commits. That’s the whole setup.</Bubble>
-    <Bubble>Translators get a field for every plural form, with <Placeable text="$count" /> kept where it belongs and the screen it shows on.</Bubble>
-    <Bubble href={INSTALL_URL} tone="accent" class="w-fit font-semibold">Add me to a repository →</Bubble>
-    <Bubble href="/p/lantharos/luft" class="w-fit">Luft is here already: 5,140 strings in 36 languages →</Bubble>
   </section>
 
   <div class="page space-y-28 py-20 sm:space-y-36 sm:py-28">
@@ -60,7 +60,7 @@
 
     <section class="grid items-center gap-10 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-20">
       <div class="lg:order-2"><Said side="right">Maintainers see how far each language has come and what’s still missing. This is Luft, right now.</Said></div>
-      <LiveProgress />
+      <LiveProgress project={luft?.data} />
     </section>
 
     <section class="grid items-center gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-20">

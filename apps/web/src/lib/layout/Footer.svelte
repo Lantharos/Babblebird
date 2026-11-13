@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import Bird from "../Bird.svelte"
-  import Wordmark from "../Wordmark.svelte"
+  import Bird from "#lib/Bird.svelte"
+  import Wordmark from "#lib/Wordmark.svelte"
 
   const GOODBYES = [
     { lang: "sq", text: "Mirupafshim!" },
@@ -42,13 +42,13 @@
   <div class="flex flex-wrap items-end justify-between gap-x-10 gap-y-8 pt-10">
     <div>
       <a href="/" aria-label="Babblebird"><Wordmark class="text-[26px]" /></a>
-      <p class="mt-2 text-[15px] text-ink-soft">Undoing Babel, one string at a time.</p>
+      <p class="mt-2 text-body text-ink-soft">Undoing Babel, one string at a time.</p>
     </div>
-    <nav aria-label="Footer" class="flex max-w-xl flex-wrap gap-x-6 gap-y-2 text-[15px] text-ink-soft">
+    <nav aria-label="Footer" class="flex max-w-xl flex-wrap gap-x-6 gap-y-2 text-body text-ink-soft">
       {#each links as link}
         <a href={link.href} class="transition-colors hover:text-ink">{link.label}</a>
       {/each}
     </nav>
   </div>
-  <p class="mt-8 text-[13px] text-ink-muted">Made by <a href="https://github.com/Lantharos" class="hover:text-ink">Lantharos</a>. Free for open source.</p>
+  <p class="mt-8 text-small text-ink-muted">Made by <a href="https://github.com/Lantharos" class="hover:text-ink">Lantharos</a>. Free for open source.</p>
 </footer>

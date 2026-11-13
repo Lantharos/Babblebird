@@ -1,27 +1,36 @@
 <script lang="ts">
   import type { ImportStatus } from "@babblebird/protocol"
   import { api } from "#lib/api/client.ts"
-  import { percent } from "#lib/languages.ts"
+  import { percent } from "#lib/format/languages.ts"
   import Header from "#lib/layout/Header.svelte"
   import AreaIcon from "#lib/projects/AreaIcon.svelte"
+  import ProgressBar from "#lib/projects/ProgressBar.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
   import { page } from "$app/state"
 
   const { owner, name } = page.params as { owner: string; name: string }
   let status = $state<ImportStatus | null>(null)
+  let failure = $state<string | null>(null)
   let now = $state(Date.now())
 
   async function load() {
-    status = await api.get<ImportStatus>(`/projects/${owner}/${name}/import`)
-    now = Date.now()
+    try {
+      status = await api.get<ImportStatus>(`/projects/${owner}/${name}/import`)
+      failure = null
+      now = Date.now()
+    } catch (error) {
+      failure = (error as Error).message
+    }
   }
 
   $effect(() => void load())
   poll(load, 1500, () => !status || status.state === "scanning")
 
   const importing = $derived(status?.importing ?? null)
-  const done = $derived(importing ? percent(Math.min(importing.done, importing.total), importing.total) : 100)
   const finished = $derived(status !== null && status.state !== "scanning")
+  const done = $derived(
+    importing ? percent(Math.min(importing.done, importing.total), importing.total) : finished ? 100 : 0,
+  )
 
   function remaining() {
     if (!importing?.startedAt || !importing.done) return null
@@ -32,6 +41,7 @@
   }
 
   function step() {
+    if (failure) return failure
     if (!status) return "Starting"
     if (status.state === "failed") return status.problem ?? "Something went wrong"
     if (finished) return "Everything is read in"
@@ -55,18 +65,18 @@
 
 <Header />
 
-<main class="page pt-14 pb-24">
-  <p class="font-mono text-[15px] text-ink-muted">{owner}/{name}</p>
-  <div class="mt-3 flex flex-wrap items-end justify-between gap-6">
-    <h1 class="text-[40px] font-semibold tracking-[-0.03em] sm:text-[52px]">{finished ? "All read in" : "Reading your translations"}</h1>
-    <p class="font-semibold text-[56px] leading-none tracking-[-0.04em] tabular sm:text-[72px]">{done}%</p>
+<main id="main" class="page pt-14 pb-24">
+  <div class="flex flex-wrap items-end justify-between gap-6">
+    <div>
+      <h1 class="title">{finished ? "All read in" : "Reading your translations"}</h1>
+      <p class="mt-1 font-mono text-body text-ink-muted">{owner}/{name}</p>
+    </div>
+    <p class="text-[56px] leading-none font-semibold tracking-[-0.04em] tabular sm:text-[72px]">{done}%</p>
   </div>
 
-  <div class="mt-8 h-2.5 overflow-hidden rounded-full bg-well" aria-hidden="true">
-    <span class="block h-full rounded-full transition-[width] duration-700 {finished ? 'bg-done' : 'bg-accent'}" style:width="{Math.max(done, 2)}%"></span>
-  </div>
+  <ProgressBar class="mt-8" value={Math.max(done, 2)} tone={finished ? "done" : "accent"} size="lg" />
   <p class="mt-4 flex flex-wrap justify-between gap-x-6 gap-y-1 text-[16px] text-ink-soft" role="status">
-    <span class={status?.state === "failed" ? "text-danger" : ""}>{step()}</span>
+    <span class={failure || status?.state === "failed" ? "text-danger" : ""}>{step()}</span>
     {#if !finished && remaining()}<span class="text-ink-muted">{remaining()}</span>{/if}
   </p>
 
@@ -74,7 +84,7 @@
     <dl class="mt-14 grid grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-4">
       {#each counts as count}
         <div>
-          <dt class="text-[15px] text-ink-muted">{count.label}</dt>
+          <dt class="text-body text-ink-muted">{count.label}</dt>
           <dd class="mt-1 text-[34px] font-semibold tracking-[-0.03em] tabular">{count.value.toLocaleString()}</dd>
         </div>
       {/each}

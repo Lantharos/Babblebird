@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Snippet } from "svelte"
-  import Bird from "../Bird.svelte"
+  import Bird from "#lib/Bird.svelte"
 
   let { side = "left", children }: { side?: "left" | "right"; children: Snippet } = $props()
 </script>
 
 <div class="mb-10 w-fit max-w-md {side === 'left' ? 'ml-13' : 'mr-13 lg:ml-auto'}">
-  <p class="relative rounded-[26px] bg-raised px-6 py-5 text-[20px] leading-snug ring-1 ring-hairline {side === 'left' ? 'rounded-bl-none' : 'rounded-br-none'}">
+  <p class="relative rounded-bubble bg-raised px-6 py-5 text-[20px] leading-snug ring-1 ring-hairline {side === 'left' ? 'rounded-bl-none' : 'rounded-br-none'}">
     {@render children()}
     <span class="speaker {side}" aria-hidden="true"><Bird class="size-full" /></span>
   </p>

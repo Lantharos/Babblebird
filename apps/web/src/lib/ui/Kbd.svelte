@@ -6,6 +6,6 @@
 
 <span class="inline-flex items-center gap-0.5" aria-hidden="true">
   {#each parts as part}
-    <kbd class="min-w-5 rounded-md bg-[color-mix(in_oklab,currentColor_16%,transparent)] px-1.5 text-center font-sans text-xs leading-5 font-medium">{part}</kbd>
+    <kbd class="min-w-5 rounded-md bg-current/16 px-1.5 text-center font-sans text-xs leading-5 font-medium">{part}</kbd>
   {/each}
 </span>

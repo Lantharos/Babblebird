@@ -3,7 +3,6 @@ import { api } from "./client.ts"
 export class Resource<T> {
   data = $state<T>()
   error = $state<Error>()
-  loading = $derived(this.data === undefined && this.error === undefined)
   #request: Promise<void> | null = null
 
   constructor(readonly path: string) {}
@@ -22,10 +21,6 @@ export class Resource<T> {
         this.#request = null
       })
     return this.#request
-  }
-
-  set(data: T) {
-    this.data = data
   }
 }
 

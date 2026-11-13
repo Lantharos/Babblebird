@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { StringRow } from "@babblebird/protocol"
-  import type { Editor } from "./editor.svelte.ts"
+  import type { Editor } from "#lib/editor/editor.svelte.ts"
 
-  let { editor }: { editor: Editor } = $props()
+  let { editor, onselect }: { editor: Editor; onselect?: () => void } = $props()
   let sentinel = $state<HTMLElement>()
 
   const DOTS: Record<string, string> = {
@@ -41,13 +41,16 @@
         type="button"
         data-string={row.id}
         aria-current={row.id === editor.selected ? "true" : undefined}
-        onclick={() => editor.select(row.id)}
+        onclick={() => {
+          void editor.select(row.id)
+          onselect?.()
+        }}
         class="flex w-full items-start gap-3 rounded-xl px-3 py-2 text-left transition-colors {row.id === editor.selected ? 'bg-well' : 'hover:bg-well/60'}"
       >
         <span class="mt-2 size-2 shrink-0 rounded-full {dot(row)}"></span>
         <span class="min-w-0">
           <span class="block truncate font-mono text-[12px] text-ink-muted">{row.key}</span>
-          <span class="block truncate text-[15px] {row.translation ? '' : 'text-ink-soft'}">{preview(row)}</span>
+          <span class="block truncate text-body {row.translation ? '' : 'text-ink-soft'}">{preview(row)}</span>
         </span>
       </button>
     </li>
@@ -55,5 +58,5 @@
 </ul>
 <div bind:this={sentinel} class="h-8"></div>
 {#if !editor.loading && !editor.rows.length}
-  <p class="px-3 text-[15px] text-ink-muted">Nothing here.</p>
+  <p class="px-3 text-body text-ink-muted">Nothing here.</p>
 {/if}

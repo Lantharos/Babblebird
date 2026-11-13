@@ -5,7 +5,7 @@
   }: { nav: { name: string; pages: { slug: string; title: string }[] }[]; current?: string | null } = $props()
 </script>
 
-<nav aria-label="Docs" class="space-y-8 text-[15px]">
+<nav aria-label="Docs" class="space-y-8 text-body">
   {#each nav as section}
     <div>
       <p class="mb-2 font-semibold text-ink">{section.name}</p>

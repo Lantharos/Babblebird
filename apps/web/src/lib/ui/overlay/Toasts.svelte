@@ -11,7 +11,7 @@
     <div
       animate:flip={{ duration: still ? 0 : 250 }}
       transition:fly={{ y: still ? 0 : 12, duration: still ? 0 : 220 }}
-      class="pointer-events-auto flex max-w-sm items-center gap-3 rounded-2xl py-2.5 pr-2.5 pl-4 text-[15px] text-canvas shadow-float {toast.tone === 'danger' ? 'bg-danger' : 'bg-ink'} {toast.action ? '' : 'pr-4'}"
+      class="pointer-events-auto flex max-w-sm items-center gap-3 rounded-2xl py-2.5 pr-2.5 pl-4 text-body text-canvas shadow-float {toast.tone === 'danger' ? 'bg-danger' : 'bg-ink'} {toast.action ? '' : 'pr-4'}"
     >
       <button type="button" class="text-left" onclick={() => toasts.dismiss(toast.id)}>
         {toast.text}

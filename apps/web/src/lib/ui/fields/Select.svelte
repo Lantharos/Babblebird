@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends string">
   import Check from "@lucide/svelte/icons/check"
   import ChevronDown from "@lucide/svelte/icons/chevron-down"
-  import Popover from "../overlay/Popover.svelte"
+  import Popover from "#lib/ui/overlay/Popover.svelte"
 
   interface Option {
     value: T
@@ -87,7 +87,7 @@
         aria-selected={option.value === value}
         onpointermove={() => (active = index)}
         onclick={() => choose(option)}
-        class="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[15px] {index === active ? 'bg-well' : ''}"
+        class="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-body {index === active ? 'bg-well' : ''}"
       >
         <span class="flex-1">{option.label}</span>
         {#if option.value === value}<Check class="size-4 text-accent" />{/if}

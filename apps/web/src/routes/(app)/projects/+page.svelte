@@ -1,10 +1,9 @@
 <script lang="ts">
   import type { ProjectSummary } from "@babblebird/protocol"
-  import Search from "@lucide/svelte/icons/search"
   import { untrack } from "svelte"
   import { api } from "#lib/api/client.ts"
   import { session } from "#lib/api/session.svelte.ts"
-  import { nativeName } from "#lib/languages.ts"
+  import { nativeName } from "#lib/format/languages.ts"
   import Header from "#lib/layout/Header.svelte"
   import Importing from "#lib/projects/Importing.svelte"
   import LanguageSelect from "#lib/projects/LanguageSelect.svelte"
@@ -12,6 +11,7 @@
   import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
   import { donePercent } from "#lib/projects/progress.ts"
+  import SearchField from "#lib/ui/fields/SearchField.svelte"
   import Segmented from "#lib/ui/fields/Segmented.svelte"
 
   const SHOWN_LANGUAGES = 3
@@ -50,8 +50,7 @@
     if (session.loaded) untrack(() => void load())
   })
 
-  function searchFor(event: Event & { currentTarget: HTMLInputElement }) {
-    search = event.currentTarget.value
+  function searchFor() {
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => load(), 200)
   }
@@ -67,10 +66,10 @@
 
 <Header />
 
-<main class="page pt-10 pb-24">
+<main id="main" class="page pt-10 pb-24">
   <div class="flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="text-[34px] font-semibold tracking-[-0.025em]">Projects you can help translate</h1>
+      <h1 class="title">Projects you can help translate</h1>
       <p class="mt-1 text-[17px] text-ink-soft">
         {#if mine.length}Showing how far each one is in {mine.map(nativeName).join(", ")}. <a href="/settings" class="link">Change your languages</a>{:else}Pick a language to see what still needs translating.{/if}
       </p>
@@ -81,10 +80,7 @@
   </div>
 
   <div class="mt-8 flex flex-wrap items-center gap-3">
-    <label class="relative min-w-60 flex-1 sm:max-w-sm">
-      <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-muted" />
-      <input value={search} oninput={searchFor} placeholder="Search by name, owner or description" aria-label="Search projects" class="field pl-10" />
-    </label>
+    <SearchField bind:value={search} oninput={searchFor} label="Search projects" placeholder="Search by name, owner or description" class="min-w-60 flex-1 sm:max-w-sm" />
     {#if langs.length}
       <Segmented
         bind:value={needs}
@@ -117,7 +113,7 @@
                 <p class="truncate text-sm text-ink-muted">{project.owner}</p>
               </div>
             </div>
-            {#if project.description}<p class="mt-3 line-clamp-2 text-[15px] text-ink-soft">{project.description}</p>{/if}
+            {#if project.description}<p class="mt-3 line-clamp-2 text-body text-ink-soft">{project.description}</p>{/if}
             {#if project.importing}
               <Importing importing={project.importing} class="mt-4" />
             {:else if project.progress?.length}

@@ -48,7 +48,7 @@
 
 <style>
   .puff {
-    --puff: #ff5f45;
+    --puff: var(--accent-bird);
     --puff-belly: light-dark(#ffe6da, #ffdccc);
     --puff-wing: light-dark(#e8432b, #f04f36);
     --puff-jaw: light-dark(#962b17, #f29b7a);

@@ -1,15 +1,17 @@
 <script lang="ts">
   import { INSTALL_URL, type ProjectSummary, type Role } from "@babblebird/protocol"
   import Plus from "@lucide/svelte/icons/plus"
-  import Search from "@lucide/svelte/icons/search"
+  import { linkGitHub } from "#lib/api/auth.ts"
   import { api } from "#lib/api/client.ts"
   import { session } from "#lib/api/session.svelte.ts"
-  import { when } from "#lib/editor/time.ts"
-  import { nativeName } from "#lib/languages.ts"
+  import { nativeName } from "#lib/format/languages.ts"
+  import { when } from "#lib/format/time.ts"
   import Header from "#lib/layout/Header.svelte"
+  import { roleName } from "#lib/manage/people.svelte.ts"
   import Importing from "#lib/projects/Importing.svelte"
-  import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
+  import ProjectRow from "#lib/projects/ProjectRow.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
+  import SearchField from "#lib/ui/fields/SearchField.svelte"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { goto } from "$app/navigation"
 
@@ -45,29 +47,40 @@
     `${project.owner}/${project.name} ${project.description ?? ""}`
       .toLowerCase()
       .includes(search.trim().toLowerCase())
-  const owned = $derived(projects?.filter((project) => project.role === "admin" && matches(project)) ?? [])
+  const admin = $derived(projects?.filter((project) => project.role === "admin") ?? [])
+  const owned = $derived(admin.filter(matches))
   const translating = $derived(
     projects?.filter((project) => project.role !== "admin" && matches(project)) ?? [],
   )
   const target = (project: Mine) =>
-    project.importing ? `/p/${project.slug}/import` : `/dashboard/p/${project.slug}`
+    project.state === "removed"
+      ? INSTALL_URL
+      : project.importing
+        ? `/p/${project.slug}/import`
+        : `/dashboard/p/${project.slug}`
+  const translateIn = (project: Mine) =>
+    `/p/${project.slug}${project.memberLanguages?.[0] ? `/${project.memberLanguages[0]}` : ""}`
+  const scopeOf = (project: Mine) =>
+    [
+      project.role ? roleName(project.role) : null,
+      project.memberLanguages?.map(nativeName).join(", ") || null,
+    ]
+      .filter(Boolean)
+      .join(" · ") || `${project.strings.toLocaleString()} strings · ${project.languages} languages`
 </script>
 
 <svelte:head><title>Your projects · Babblebird</title></svelte:head>
 
 <Header />
 
-<main class="page pt-12 pb-24">
+<main id="main" class="page pt-12 pb-24">
   <div class="flex flex-wrap items-end justify-between gap-6">
-    <h1 class="text-[36px] font-semibold tracking-[-0.03em]">Your projects</h1>
+    <h1 class="title">Your projects</h1>
     <a href={INSTALL_URL} class="button button-ink"><Plus class="size-4" />Add a repository</a>
   </div>
 
   {#if (projects?.length ?? 0) > 5}
-    <label class="relative mt-8 block max-w-sm">
-      <Search class="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-ink-muted" />
-      <input bind:value={search} placeholder="Search your projects" aria-label="Search your projects" class="field pl-10" />
-    </label>
+    <SearchField bind:value={search} label="Search your projects" placeholder="Search your projects" class="mt-8 max-w-sm" />
   {/if}
 
   {#if projects === null}
@@ -77,31 +90,31 @@
       <ul class="mt-10 divide-y divide-hairline">
         {#each owned as project (project.slug)}
           <li>
-            <a href={project.state === "removed" ? INSTALL_URL : target(project)} class="-mx-4 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-2xl px-4 py-5 hover:bg-well/60">
-              <ProjectIcon {project} />
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-[17px] font-semibold">{project.owner}/{project.name}</p>
-                {#if project.state === "removed"}
-                  <p class="text-sm text-caution">Disconnected from GitHub. Add it again to reconnect.</p>
-                {:else if project.state === "failed"}
-                  <p class="text-sm text-danger">The last sync didn’t work</p>
-                {:else if !project.importing}
-                  <p class="text-sm text-ink-muted tabular">{project.strings.toLocaleString()} strings · {project.languages} languages</p>
-                {/if}
-              </div>
-              {#if project.importing}<Importing importing={project.importing} class="w-56" />{/if}
-            </a>
+            <ProjectRow {project} href={target(project)}>
+              {#if project.state === "removed"}
+                <span class="text-caution">Disconnected from GitHub. Add it again to reconnect.</span>
+              {:else if project.state === "failed"}
+                <span class="text-danger">The last sync didn’t work</span>
+              {:else if !project.importing}
+                <span class="tabular">{project.strings.toLocaleString()} strings · {project.languages} languages</span>
+              {/if}
+              {#snippet trailing()}
+                {#if project.importing}<Importing importing={project.importing} class="w-56" />{/if}
+              {/snippet}
+            </ProjectRow>
           </li>
         {/each}
       </ul>
+    {:else if admin.length}
+      <p class="mt-10 text-ink-muted">No project matches that.</p>
     {:else}
       <div class="mt-12 max-w-xl">
         <p class="text-[20px] font-semibold">No repositories yet</p>
         {#if session.me?.githubLogin}
-          <p class="mt-2 text-[17px] leading-relaxed text-ink-soft">Add Babblebird to a repository on GitHub and it shows up here while its translations are read in.</p>
+          <p class="mt-2 text-[17px] leading-relaxed text-ink-soft">Add Babblebird to a repository on GitHub and it shows up here.</p>
         {:else}
-          <p class="mt-2 text-[17px] leading-relaxed text-ink-soft">Sign in with GitHub too, so Babblebird can see which repositories are yours.</p>
-          <a href="/sign-in?next=/dashboard" class="button button-quiet mt-6"><GitHubMark class="size-4" />Sign in with GitHub</a>
+          <p class="mt-2 text-[17px] leading-relaxed text-ink-soft">Link GitHub so Babblebird can see which repositories are yours.</p>
+          <button type="button" class="button button-quiet mt-6" onclick={() => linkGitHub(location.href)}><GitHubMark class="size-4" />Link GitHub</button>
         {/if}
       </div>
     {/if}
@@ -110,28 +123,26 @@
       <section class="mt-20">
         <h2 class="text-[24px] font-semibold tracking-[-0.02em]">Translating</h2>
         {#if session.me?.languages.length}
-          <p class="mt-1 text-[15px] text-ink-soft">Into {session.me.languages.map(nativeName).join(", ")} · <a href="/settings" class="link">Change</a></p>
+          <p class="mt-1 text-body text-ink-soft">Into {session.me.languages.map(nativeName).join(", ")} · <a href="/settings" class="link">Change</a></p>
         {/if}
-        <ul class="mt-6 flex flex-wrap gap-3">
-          {#each translating as project (project.slug)}
-            <li>
-              <a href="/p/{project.slug}{project.memberLanguages?.[0] ? `/${project.memberLanguages[0]}` : ''}" class="button button-quiet">
-                {project.owner}/{project.name}{project.role === "reviewer" ? " · reviewer" : ""}
-              </a>
-            </li>
-          {/each}
-          <li><a href="/projects" class="button button-quiet">Find a project to help with</a></li>
-        </ul>
+        {#if translating.length}
+          <ul class="mt-6 divide-y divide-hairline">
+            {#each translating as project (project.slug)}
+              <li><ProjectRow {project} href={translateIn(project)}>{scopeOf(project)}</ProjectRow></li>
+            {/each}
+          </ul>
+        {/if}
+        <a href="/projects" class="button button-quiet mt-6">Find a project to help with</a>
       </section>
     {/if}
 
     {#if work.length}
       <section class="mt-20">
         <h2 class="text-[24px] font-semibold tracking-[-0.02em]">Your recent work</h2>
-        <ol class="mt-4 divide-y divide-hairline text-[15px]">
+        <ol class="mt-4 divide-y divide-hairline text-body">
           {#each work as entry, index (index)}
             <li class="flex flex-wrap justify-between gap-x-6 gap-y-1 py-2.5">
-              <span><span class="font-mono text-[13px] text-ink-soft">{entry.key}</span> · {entry.kind} in {nativeName(entry.lang)}</span>
+              <span><span class="font-mono text-small text-ink-soft">{entry.key}</span> · {entry.kind} in {nativeName(entry.lang)}</span>
               <span class="text-ink-muted">{entry.project} · {when(entry.at)}</span>
             </li>
           {/each}

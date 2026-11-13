@@ -1,6 +1,7 @@
 <script lang="ts">
   import { segments } from "@babblebird/fluent"
   import type { GlossaryEntry } from "@babblebird/protocol"
+  import Term from "./Term.svelte"
 
   let { text, glossary = [] }: { text: string; glossary?: GlossaryEntry[] } = $props()
 
@@ -24,4 +25,4 @@
   }
 </script>
 
-<span class="whitespace-pre-wrap">{#each segments(text) as part}{#if part.placeable}<span class="mono-placeable px-1">{part.text}</span>{:else}{#each pieces(part.text) as piece}{#if piece.term}<span class="underline decoration-beak decoration-2 underline-offset-4" title={noteOf(piece.text)}>{piece.text}</span>{:else}{piece.text}{/if}{/each}{/if}{/each}</span>
+<span class="whitespace-pre-wrap">{#each segments(text) as part}{#if part.placeable}<span class="mono-placeable px-1">{part.text}</span>{:else}{#each pieces(part.text) as piece}{#if piece.term}<Term text={piece.text} note={noteOf(piece.text)} />{:else}{piece.text}{/if}{/each}{/if}{/each}</span>

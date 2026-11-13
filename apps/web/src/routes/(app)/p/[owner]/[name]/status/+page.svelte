@@ -4,6 +4,7 @@
   import { projectResource } from "#lib/projects/project.svelte.ts"
   import Badge from "#lib/status/Badge.svelte"
   import Missing from "#lib/status/Missing.svelte"
+  import Loaded from "#lib/ui/Loaded.svelte"
   import { page } from "$app/state"
 
   const project = $derived(projectResource(page.params.owner!, page.params.name!))
@@ -13,16 +14,14 @@
 
 <Header />
 
-<main class="page pt-10 pb-24">
-  {#if project.data}
-    <ProjectHeader project={project.data} />
-    <div class="mt-10 grid gap-16 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <Missing project={project.data} />
-      <div class="space-y-14">
-        <Badge project={project.data} />
+<main id="main" class="page pt-10 pb-24">
+  <Loaded data={project.data} error={project.error} retry={() => project.refresh()}>
+    {#snippet children(found)}
+      <ProjectHeader project={found} />
+      <div class="mt-10 grid grid-cols-[minmax(0,1fr)] gap-16 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <Missing project={found} />
+        <Badge project={found} />
       </div>
-    </div>
-  {:else if project.error}
-    <p class="text-danger">{project.error.message}</p>
-  {/if}
+    {/snippet}
+  </Loaded>
 </main>

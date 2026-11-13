@@ -1,6 +1,6 @@
 import type { Filter, StringDetail, StringPage, StringRow } from "@babblebird/protocol"
-import { ApiError, api } from "../api/client.ts"
-import { projectPath } from "../projects/project.svelte.ts"
+import { ApiError, api } from "#lib/api/client.ts"
+import { projectPath } from "#lib/projects/project.svelte.ts"
 
 export type Detail = StringDetail & { row: StringRow }
 
@@ -24,8 +24,6 @@ export class Editor {
   get base() {
     return projectPath(this.owner, this.name)
   }
-
-  current = $derived(this.rows.find((row) => row.id === this.selected) ?? null)
 
   async reload() {
     const generation = ++this.#generation
@@ -88,12 +86,6 @@ export class Editor {
   async suggest(body: string) {
     await api.post(`${this.base}/strings/${this.selected}/${this.lang}/suggestions`, { body })
     await this.select(this.selected)
-  }
-
-  async approve() {
-    await api.post(`${this.base}/strings/${this.selected}/${this.lang}/approve`)
-    await this.select(this.selected)
-    if (this.detail) this.replace(this.detail.row)
   }
 
   async accept(suggestion: number) {

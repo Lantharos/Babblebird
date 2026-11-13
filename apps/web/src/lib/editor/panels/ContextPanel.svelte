@@ -3,11 +3,11 @@
   import type { Abilities } from "@babblebird/protocol"
   import Check from "@lucide/svelte/icons/check"
   import X from "@lucide/svelte/icons/x"
+  import type { Detail, Editor } from "#lib/editor/editor.svelte.ts"
+  import Highlighted from "#lib/editor/text/Highlighted.svelte"
+  import { when } from "#lib/format/time.ts"
   import Kbd from "#lib/ui/Kbd.svelte"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
-  import type { Detail, Editor } from "./editor.svelte.ts"
-  import Highlighted from "./Highlighted.svelte"
-  import { when } from "./time.ts"
 
   let {
     detail,
@@ -25,7 +25,7 @@
   }
 </script>
 
-<div class="space-y-8 text-[15px]">
+<div class="space-y-8 text-body">
   {#if detail.screenshots.length}
     <section>
       <h2 class="mb-3 font-semibold">Where it shows</h2>
@@ -71,9 +71,9 @@
             <button type="button" class="-mx-3 block w-[calc(100%+1.5rem)] rounded-xl px-3 py-2 text-left transition-colors hover:bg-well" onclick={() => onuse(match.body)}>
               <span class="flex items-baseline justify-between gap-3">
                 <span><Highlighted text={text(match.body)} /></span>
-                <span class="shrink-0 text-[13px] text-ink-muted tabular">{Math.round(match.similarity * 100)}%</span>
+                <span class="shrink-0 text-small text-ink-muted tabular">{Math.round(match.similarity * 100)}%</span>
               </span>
-              <span class="mt-0.5 flex items-center justify-between gap-3 text-[13px] text-ink-muted">
+              <span class="mt-0.5 flex items-center justify-between gap-3 text-small text-ink-muted">
                 <span class="truncate">{match.source}</span>
                 {#if index < 5}<Kbd keys="alt+{index + 1}" />{/if}
               </span>
@@ -93,7 +93,7 @@
         {#each detail.suggestions as suggestion (suggestion.id)}
           <li class="rounded-2xl bg-well px-4 py-3">
             <p><Highlighted text={text(suggestion.body)} /></p>
-            <div class="mt-2 flex items-center gap-2 text-[13px] text-ink-muted">
+            <div class="mt-2 flex items-center gap-2 text-small text-ink-muted">
               <span class="mr-auto">{suggestion.by.name} · {when(suggestion.at)}{#if suggestion.note}<span class="block text-caution">Its translation, {suggestion.note}</span>{/if}</span>
               {#if can.translate}
                 <button type="button" class="button button-sm button-quiet" onclick={() => editor.accept(suggestion.id)}><Check class="size-4" />Use</button>
@@ -112,7 +112,7 @@
       <ol class="space-y-2">
         {#each detail.history as entry (entry.id)}
           <li>
-            <p class="text-[13px] text-ink-muted">{entry.by?.name ?? "Someone"} {entry.kind} · {when(entry.at)}</p>
+            <p class="text-small text-ink-muted">{entry.by?.name ?? "Someone"} {entry.kind} · {when(entry.at)}</p>
             {#if entry.detail}<p class="text-ink-soft"><Highlighted text={text(entry.detail)} /></p>{/if}
           </li>
         {/each}
@@ -121,6 +121,6 @@
   {/if}
 </div>
 
-<Dialog open={zoomed !== null} class="max-w-5xl" label={zoomed?.name} onclose={() => (zoomed = null)}>
-  {#if zoomed}<img src={zoomed.url} alt="Screenshot: {zoomed.name}" class="block w-full rounded-3xl" />{/if}
+<Dialog open={zoomed !== null} class="max-w-5xl" label={zoomed?.name} bare onclose={() => (zoomed = null)}>
+  {#if zoomed}<img src={zoomed.url} alt="Screenshot: {zoomed.name}" class="block w-full" />{/if}
 </Dialog>

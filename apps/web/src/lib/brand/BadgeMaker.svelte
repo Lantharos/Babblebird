@@ -1,8 +1,8 @@
 <script lang="ts">
   import Copy from "@lucide/svelte/icons/copy"
+  import { copy } from "#lib/ui/copy.ts"
   import Segmented from "#lib/ui/fields/Segmented.svelte"
   import { BADGES, type BadgeKind, badgeUrl, SITE } from "./brand.ts"
-  import { copy } from "./copy.ts"
 
   type Format = "markdown" | "html"
   type Look = "light" | "dark" | "auto"
@@ -48,15 +48,15 @@
 <div class="grid gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
   <div class="space-y-6">
     <div>
-      <p class="mb-2 text-[15px] font-medium">Badge</p>
+      <p class="mb-2 text-body font-medium">Badge</p>
       <Segmented bind:value={kind} label="Badge" options={BADGES.map((badge) => ({ value: badge.kind, label: badge.label }))} />
     </div>
     <div>
-      <p class="mb-2 text-[15px] font-medium">Colours</p>
+      <p class="mb-2 text-body font-medium">Colours</p>
       <Segmented bind:value={look} label="Colours" options={looks} />
     </div>
     <div>
-      <p class="mb-2 text-[15px] font-medium">Format</p>
+      <p class="mb-2 text-body font-medium">Format</p>
       <Segmented
         bind:value={format}
         label="Format"
@@ -68,14 +68,14 @@
       />
     </div>
     <label class="block">
-      <span class="mb-2 block text-[15px] font-medium">Your repository</span>
+      <span class="mb-2 block text-body font-medium">Your repository</span>
       <input bind:value={repository} class="field font-mono text-[14px]" placeholder="owner/repo" spellcheck="false" autocomplete="off" />
       <span class="mt-2 block text-[14px] text-ink-muted">The badge links to your project’s page. Leave it empty to link to Babblebird.</span>
     </label>
   </div>
 
   <div class="min-w-0">
-    <div class="grid h-32 grid-cols-2 overflow-hidden rounded-[28px] ring-1 ring-hairline">
+    <div class="grid h-32 grid-cols-2 overflow-hidden rounded-panel ring-1 ring-hairline">
       <div data-scheme="light" class="grid place-items-center bg-raised px-4">
         <img src={badgeUrl(kind, look === "dark" ? "dark" : "light")} alt={alt} class="h-6 max-w-full" />
       </div>
@@ -83,8 +83,8 @@
         <img src={badgeUrl(kind, look === "light" ? "light" : "dark")} alt={alt} class="h-6 max-w-full" />
       </div>
     </div>
-    <div class="mt-4 rounded-[22px] bg-well p-2">
-      <pre class="overflow-x-auto px-3 pt-2 pb-3 font-mono text-[13px] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{snippet}</pre>
+    <div class="mt-4 rounded-tile bg-well p-2">
+      <pre class="overflow-x-auto px-3 pt-2 pb-3 font-mono text-small leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">{snippet}</pre>
       <div class="flex justify-end">
         <button type="button" class="button button-sm button-ink" onclick={() => copy(snippet)}><Copy class="size-4" />Copy</button>
       </div>

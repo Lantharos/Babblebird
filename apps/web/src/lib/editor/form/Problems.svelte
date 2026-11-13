@@ -5,7 +5,7 @@
 </script>
 
 {#if problems.length || hints.length}
-  <ul class="space-y-1.5 text-[15px]" aria-live="polite">
+  <ul class="space-y-1.5 text-body" aria-live="polite">
     {#each problems as problem}
       <li class="flex items-start gap-2.5">
         <span class="mt-2 size-1.5 shrink-0 rounded-full {problem.severity === 'error' ? 'bg-danger' : 'bg-caution'}"></span>

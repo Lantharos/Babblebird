@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { englishName, nativeName } from "#lib/format/languages.ts"
   import Select from "#lib/ui/fields/Select.svelte"
-  import { englishName, nativeName } from "../languages.ts"
 
   let {
     value,

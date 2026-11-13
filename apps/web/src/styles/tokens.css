@@ -2,6 +2,13 @@
   --font-sans: "Open Runde", "Open Runde Fallback", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Maple Mono NF", ui-monospace, monospace;
   --container-page: 74rem;
+  --text-small: 0.8125rem;
+  --text-body: 0.9375rem;
+  --text-title: 2.125rem;
+  --radius-tile: 22px;
+  --radius-bubble: 26px;
+  --radius-panel: 28px;
+  --radius-stage: 32px;
 }
 
 @theme inline {
@@ -13,7 +20,9 @@
   --color-ink-muted: var(--ink-muted);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
+  --color-accent-hover: var(--accent-hover);
   --color-hairline: var(--hairline);
+  --color-tint: var(--tint);
   --color-glass: var(--glass);
   --color-danger: var(--danger);
   --color-caution: var(--caution);
@@ -21,6 +30,7 @@
   --color-beak: var(--beak);
   --color-scrim: var(--scrim);
   --shadow-float: var(--float-shadow);
+  --shadow-thumb: var(--thumb-shadow);
 }
 
 :root,
@@ -34,16 +44,19 @@
   --ink-muted: light-dark(#5c6570, #9aa3ad);
   --accent: light-dark(#bc3f17, #ff865a);
   --accent-ink: light-dark(#ffffff, #1a0d05);
+  --accent-hover: color-mix(in oklab, var(--accent) 88%, var(--ink));
   --beak: light-dark(#bf3a22, #ffbf9f);
   --accent-bird: #ff5f45;
   --done: light-dark(#23794a, #67cf95);
   --caution: light-dark(#8f5c06, #f0b44c);
   --danger: light-dark(#b8352a, #ff8f80);
   --hairline: color-mix(in oklab, var(--ink) 9%, transparent);
+  --tint: color-mix(in oklab, var(--ink) 12%, transparent);
   --glass: color-mix(in oklab, var(--canvas) 72%, transparent);
   --scrim: light-dark(rgb(18 22 27 / 0.28), rgb(0 0 0 / 0.6));
   --float-shadow:
     0 1px 2px rgb(18 22 27 / 0.06), 0 18px 48px -16px light-dark(rgb(18 22 27 / 0.24), rgb(0 0 0 / 0.7));
+  --thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
 }
 
 [data-scheme="light"] {

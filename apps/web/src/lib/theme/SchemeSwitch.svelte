@@ -3,7 +3,7 @@
   import Moon from "@lucide/svelte/icons/moon"
   import Sun from "@lucide/svelte/icons/sun"
   import { onMount } from "svelte"
-  import Segmented from "../ui/fields/Segmented.svelte"
+  import Segmented from "#lib/ui/fields/Segmented.svelte"
   import { type Scheme, scheme } from "./scheme.svelte.ts"
 
   onMount(() => scheme.load())

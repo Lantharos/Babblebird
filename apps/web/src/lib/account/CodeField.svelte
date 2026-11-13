@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { CODE_LENGTH } from "../api/auth.ts"
-  import { focusOnMount } from "../ui/focus.ts"
+  import { CODE_LENGTH } from "#lib/api/auth.ts"
+  import { focusOnMount } from "#lib/ui/focus.ts"
 
   let { value = $bindable(""), oncomplete }: { value?: string; oncomplete: (code: string) => void } = $props()
 

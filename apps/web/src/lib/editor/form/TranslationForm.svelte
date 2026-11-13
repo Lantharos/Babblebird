@@ -12,12 +12,12 @@
   } from "@babblebird/fluent"
   import type { Abilities } from "@babblebird/protocol"
   import LoaderCircle from "@lucide/svelte/icons/loader-circle"
+  import type { Detail, Editor } from "#lib/editor/editor.svelte.ts"
+  import { variantLabel } from "#lib/editor/text/plural.ts"
   import Kbd from "#lib/ui/Kbd.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
-  import type { Detail, Editor } from "./editor.svelte.ts"
   import PatternField from "./PatternField.svelte"
   import Problems from "./Problems.svelte"
-  import { variantLabel } from "./plural.ts"
 
   let { editor, detail, source, can }: { editor: Editor; detail: Detail; source: Shape; can: Abilities } =
     $props()
@@ -64,9 +64,13 @@
     if (blocked || busy) return
     busy = true
     if (!can.translate) {
-      await editor.suggest(body).catch(toasts.error)
+      try {
+        await editor.suggest(body)
+        toasts.show("Your suggestion is in")
+      } catch (error) {
+        toasts.error(error)
+      }
       busy = false
-      toasts.show("Your suggestion is in")
       return
     }
     refused = unchanged && !approve ? null : await editor.save(body, approve && can.review)
@@ -97,14 +101,14 @@
 <div bind:this={form} class="space-y-5" onfocusin={(event) => (focused = event.target instanceof HTMLTextAreaElement ? event.target : focused)}>
   {#each shape.fields as field, fieldIndex}
     <div class="space-y-2">
-      {#if field.name !== null}<p class="font-mono text-[13px] text-ink-muted">.{field.name}</p>{/if}
+      {#if field.name !== null}<p class="font-mono text-small text-ink-muted">.{field.name}</p>{/if}
       {#if field.part.kind === "text"}
         <PatternField bind:value={field.part.text} label={field.name ?? "Translation"} autofocus={fieldIndex === 0} placeholder="Translation" />
       {:else}
         {#each field.part.variants as variant, variantIndex}
           {@const label = variantLabel(lang, variant.key)}
           <div>
-            <p class="mb-1 flex gap-2 text-[13px] text-ink-muted">
+            <p class="mb-1 flex gap-2 text-small text-ink-muted">
               <span class="font-medium text-ink-soft">{label.name}</span>{#if label.hint}<span class="tabular">{label.hint}</span>{/if}
             </p>
             <PatternField bind:value={variant.text} label="{field.name ?? 'Translation'}, {label.name}" autofocus={fieldIndex === 0 && variantIndex === 0} />
@@ -117,18 +121,18 @@
   {#if chips.length}
     <div class="flex flex-wrap items-center gap-1.5">
       {#each chips as chip}
-        <button type="button" class="mono-placeable px-2 py-1 text-[13px] hover:brightness-110" onclick={() => insert(chip)}>{chip}</button>
+        <button type="button" class="mono-placeable px-2 py-1 text-small hover:brightness-110" onclick={() => insert(chip)}>{chip}</button>
       {/each}
     </div>
   {/if}
 
   <Problems {problems} {hints} />
-  {#if refused}<p class="text-[15px] text-danger" role="alert">{refused}</p>{/if}
+  {#if refused}<p class="text-body text-danger" role="alert">{refused}</p>{/if}
 
   {#if shown.length}
     <div class="space-y-1.5 rounded-2xl bg-well/60 px-4 py-3">
       {#each shown as preview}
-        <p class="flex gap-3 text-[15px]">
+        <p class="flex gap-3 text-body">
           {#if preview.label || preview.attribute}<span class="w-24 shrink-0 text-ink-muted">{preview.attribute ? `.${preview.attribute}` : ""} {preview.label ?? ""}</span>{/if}
           <span class="whitespace-pre-wrap">{preview.text}</span>
         </p>

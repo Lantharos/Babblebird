@@ -6,12 +6,14 @@
     options,
     label,
     size = "md",
+    class: className = "",
     onchange,
   }: {
     value: T
     options: { value: T; label: string; icon?: Component<{ class?: string }> }[]
     label: string
     size?: "sm" | "md"
+    class?: string
     onchange?: (value: T) => void
   } = $props()
 
@@ -44,12 +46,12 @@
   aria-label={label}
   tabindex="-1"
   onkeydown={keydown}
-  class="relative inline-grid rounded-full bg-well p-1"
+  class="relative inline-grid rounded-full bg-well p-1 {className}"
   style:grid-template-columns="repeat({options.length}, minmax(0, 1fr))"
 >
   <span
     aria-hidden="true"
-    class="thumb absolute inset-y-1 left-1 rounded-full bg-raised shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
+    class="thumb absolute inset-y-1 left-1 rounded-full bg-raised shadow-thumb"
     style:width="calc((100% - 0.5rem) / {options.length})"
     style:translate="{selected * 100}% 0"
   ></span>
@@ -62,7 +64,7 @@
       tabindex={index === selected ? 0 : -1}
       onclick={() => choose(option.value)}
       class="relative z-10 flex items-center justify-center gap-1.5 rounded-full font-medium whitespace-nowrap transition-colors {size === 'sm'
-        ? 'h-7 px-3 text-[13px]'
+        ? 'h-7 px-3 text-small'
         : 'h-8 px-4 text-sm'} {index === selected ? 'text-ink' : 'text-ink-muted hover:text-ink'}"
     >
       {#if option.icon}<option.icon class="size-4" />{/if}

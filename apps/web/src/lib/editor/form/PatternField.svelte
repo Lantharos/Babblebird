@@ -24,7 +24,7 @@
 
 <div class="field-shell relative rounded-2xl bg-well transition-shadow focus-within:shadow-[0_0_0_2px_var(--accent)]">
   <div aria-hidden="true" class="pattern pointer-events-none text-transparent">
-    {#each parts as part}{#if part.placeable}<mark class="rounded-md bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] text-transparent">{part.text}</mark>{:else}{part.text}{/if}{/each}&#8203;
+    {#each parts as part}{#if part.placeable}<mark class="rounded-md bg-accent/16 text-transparent">{part.text}</mark>{:else}{part.text}{/if}{/each}&#8203;
   </div>
   <textarea
     bind:this={textarea}

@@ -20,7 +20,7 @@
 
 <Header />
 
-<main class="page pt-16 pb-12">
+<main id="main" class="page pt-16 pb-12">
   <h1 class="text-[44px] font-semibold tracking-[-0.03em]">Brand</h1>
   <p class="mt-3 max-w-2xl text-[18px] leading-relaxed text-ink-soft">
     Our logo, colours and badges, for writing about Babblebird or telling people your project can be translated here.
@@ -29,7 +29,7 @@
   <section class="mt-20">
     <h2 class="text-[28px] font-semibold tracking-[-0.02em]">App icon</h2>
     <p class="mt-2 max-w-2xl text-[16px] leading-relaxed text-ink-soft">
-      The full icon is for 64 pixels and up. Smaller than that, use the small one: its beak is the same colour as the bird and its eye is bigger, so it still reads as a bird in a browser tab.
+      Below 64 pixels, use the small one.
     </p>
     <div class="mt-8 grid gap-8 md:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <Showcase
@@ -51,7 +51,7 @@
         ]}
       >
         <img src={file("icon-small.svg")} alt="Small Babblebird app icon" class="size-8" />
-        <div class="flex w-full max-w-60 items-center gap-2 rounded-xl bg-raised px-3 py-2.5 text-[13px] shadow-float" aria-hidden="true">
+        <div class="flex w-full max-w-60 items-center gap-2 rounded-xl bg-raised px-3 py-2.5 text-small shadow-float" aria-hidden="true">
           <img src={file("icon-small.svg")} alt="" class="size-4" />
           <span class="truncate">Babblebird · Undoing Babel</span>
         </div>
@@ -61,7 +61,7 @@
 
   <section class="mt-24">
     <h2 class="text-[28px] font-semibold tracking-[-0.02em]">Wordmark</h2>
-    <p class="mt-2 max-w-2xl text-[16px] leading-relaxed text-ink-soft">The bird sits on the i. The letters are outlines, so it looks the same everywhere without the font.</p>
+    <p class="mt-2 max-w-2xl text-[16px] leading-relaxed text-ink-soft">The bird sits on the i.</p>
     <div class="mt-8 grid gap-8 md:grid-cols-2">
       {#each SCHEMES as { scheme, label }}
         <Showcase {scheme} caption={label} files={svgAndPng(`wordmark-${scheme}`)}>

@@ -9,7 +9,7 @@
 <svelte:head><title>{missing ? "Lost in translation" : "Something went wrong"} · Babblebird</title></svelte:head>
 
 <Header />
-<main class="page grid min-h-[60svh] place-items-center text-center">
+<main id="main" class="page grid min-h-[60svh] place-items-center text-center">
   <div class="enter">
     <p class="text-[96px] leading-none font-semibold text-accent tabular">{page.status}</p>
     <h1 class="mt-4 text-[32px] font-semibold tracking-[-0.025em]">{missing ? "This page got lost in translation" : "Something went wrong"}</h1>

@@ -16,12 +16,10 @@
 </script>
 
 <Dialog bind:open class="max-w-md">
-  <div class="p-6">
-    <h2 class="text-[20px] font-semibold">Keyboard</h2>
-    <dl class="mt-4 space-y-2.5 text-[15px]">
-      {#each keys as [combo, text]}
-        <div class="flex items-center justify-between gap-4"><dt class="text-ink-soft">{text}</dt><dd><Kbd keys={combo!} /></dd></div>
-      {/each}
-    </dl>
-  </div>
+  <h2 class="text-[20px] font-semibold">Keyboard</h2>
+  <dl class="mt-4 space-y-2.5 text-body">
+    {#each keys as [combo, text]}
+      <div class="flex items-center justify-between gap-4"><dt class="text-ink-soft">{text}</dt><dd><Kbd keys={combo!} /></dd></div>
+    {/each}
+  </dl>
 </Dialog>

@@ -1,5 +1,5 @@
 import type { Project } from "@babblebird/protocol"
-import { type Resource, resource } from "../api/resource.svelte.ts"
+import { type Resource, resource } from "#lib/api/resource.svelte.ts"
 
 export const projectPath = (owner: string, name: string) => `/projects/${owner}/${name}`
 

@@ -4,10 +4,10 @@ const plural = (count: number, one: string, many: string) => `${count} ${count =
 
 export function titleOf(entry: SyncEntry) {
   if (entry.message) return entry.message
-  if (entry.reason === "install") return "First read of the repository"
-  if (entry.reason === "manual") return "Read again on request"
-  if (entry.reason === "automatic") return "Read again by Babblebird"
-  return "Read after a push"
+  if (entry.reason === "install") return "First sync"
+  if (entry.reason === "manual") return "Synced on request"
+  if (entry.reason === "automatic") return "Synced by Babblebird"
+  return "Synced after a push"
 }
 
 export function changesOf(entry: SyncEntry) {

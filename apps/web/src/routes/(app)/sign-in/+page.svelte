@@ -78,21 +78,21 @@
   <div class="enter w-full max-w-[22rem] text-center">
     <a href="/" aria-label="Babblebird" class="inline-flex"><Bird class="h-10 w-12" /></a>
     {#if sent}
-      <h1 class="mt-6 text-[26px] font-semibold tracking-[-0.02em]">Check your email</h1>
-      <p class="mt-1.5 text-[15px] leading-relaxed text-ink-soft">Enter the code we sent to <span class="text-ink">{email}</span>.</p>
+      <h1 class="title mt-6">Check your email</h1>
+      <p class="mt-1.5 text-body leading-relaxed text-ink-soft">Enter the code we sent to <span class="text-ink">{email}</span>.</p>
       <div class="mt-7">
         <CodeField bind:value={code} oncomplete={verify} />
       </div>
-      <p class="mt-3 h-5 text-[15px] {error ? 'text-danger' : 'text-ink-muted'}" role="status">
+      <p class="mt-3 h-5 text-body {error ? 'text-danger' : 'text-ink-muted'}" role="status">
         {#if error}{error}{:else if busy === "code"}Checking…{/if}
       </p>
-      <p class="mt-4 flex justify-center gap-5 text-[15px]">
-        <button type="button" class="text-accent hover:underline" onclick={() => request()}>Send a new code</button>
+      <p class="mt-4 flex justify-center gap-5 text-body">
+        <button type="button" class="link" onclick={() => request()}>Send a new code</button>
         <button type="button" class="text-ink-muted hover:text-ink" onclick={() => ((sent = false), (error = null))}>Use another email</button>
       </p>
     {:else}
-      <h1 class="mt-6 text-[26px] font-semibold tracking-[-0.02em]">Sign in to Babblebird</h1>
-      <p class="mt-1.5 text-[15px] text-ink-soft">Sign in or make an account to start translating.</p>
+      <h1 class="title mt-6">Sign in to Babblebird</h1>
+      <p class="mt-1.5 text-body text-ink-soft">Sign in or make an account to start translating.</p>
 
       <button type="button" class="button button-ink mt-8 w-full" disabled={busy !== null} onclick={github}>
         {#if busy === "github"}<LoaderCircle class="size-4 animate-spin" />{:else}<GitHubMark class="size-[18px]" />{/if}
@@ -105,7 +105,7 @@
         </button>
       {/if}
 
-      <div class="my-6 flex items-center gap-3 text-[13px] text-ink-muted"><span class="h-px flex-1 bg-hairline"></span>or<span class="h-px flex-1 bg-hairline"></span></div>
+      <div class="my-6 flex items-center gap-3 text-small text-ink-muted"><span class="h-px flex-1 bg-hairline"></span>or<span class="h-px flex-1 bg-hairline"></span></div>
 
       <form onsubmit={request} class="space-y-2.5">
         <input bind:value={email} type="email" required placeholder="you@example.com" aria-label="Email" autocomplete="email webauthn" class="field text-left" />
@@ -114,13 +114,15 @@
           Email me a code
         </button>
       </form>
-      <button type="button" class="mx-auto mt-5 flex items-center gap-2 rounded-full px-3 py-1.5 text-[15px] text-ink-soft transition-colors hover:text-ink" disabled={busy !== null} onclick={passkey}>
-        {#if busy === "passkey"}<LoaderCircle class="size-4 animate-spin" />{:else}<KeyRound class="size-4" />{/if}
-        Use a passkey
-      </button>
-      {#if error}<p class="mt-4 text-[15px] text-danger" role="alert">{error}</p>{/if}
+      <div class="mt-5 flex justify-center">
+        <button type="button" class="button button-sm button-ghost" disabled={busy !== null} onclick={passkey}>
+          {#if busy === "passkey"}<LoaderCircle class="size-4 animate-spin" />{:else}<KeyRound class="size-4" />{/if}
+          Use a passkey
+        </button>
+      </div>
+      {#if error}<p class="mt-4 text-body text-danger" role="alert">{error}</p>{/if}
 
-      <p class="mt-10 text-[13px] leading-relaxed text-ink-muted">
+      <p class="mt-10 text-small leading-relaxed text-ink-muted">
         Read how Babblebird handles your data in the <a href="/privacy" class="link">privacy policy</a>.
       </p>
     {/if}

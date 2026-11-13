@@ -1,9 +1,10 @@
 <script lang="ts">
   import type { Project } from "@babblebird/protocol"
   import { resource } from "#lib/api/resource.svelte.ts"
+  import PeopleDialog from "#lib/manage/dialogs/PeopleDialog.svelte"
+  import { type People, roleName } from "#lib/manage/people.svelte.ts"
   import { projectPath } from "#lib/projects/project.svelte.ts"
-  import PeopleDialog from "./PeopleDialog.svelte"
-  import { type People, roleName } from "./people.svelte.ts"
+  import Avatar from "#lib/ui/Avatar.svelte"
   import Section from "./Section.svelte"
 
   const SHOWN = 4
@@ -16,13 +17,13 @@
   const invited = $derived(people.data?.invitations.length ?? 0)
 </script>
 
-<Section title="People" text="Anyone who can push to {project.name} manages it here. Add translators and reviewers for some languages or areas, or for all of them.">
+<Section title="People" text="Translators and reviewers, for some languages and areas or all of them.">
   {#if people.data}
     <ul class="space-y-2">
       {#each members.slice(0, SHOWN) as member (member.userId)}
         <li class="flex items-center gap-3">
-          {#if member.image}<img src={member.image} alt="" class="size-7 rounded-full" />{:else}<span class="grid size-7 place-items-center rounded-full bg-well text-[13px] font-semibold">{(member.name || member.githubLogin || "?").slice(0, 1)}</span>{/if}
-          <span class="text-[15px]">{member.name || member.githubLogin}</span>
+          <Avatar name={member.name || member.githubLogin || ""} image={member.image} />
+          <span class="text-body">{member.name || member.githubLogin}</span>
           <span class="text-[14px] text-ink-muted">{roleName(member.role)}</span>
         </li>
       {/each}

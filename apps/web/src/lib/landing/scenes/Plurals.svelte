@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Placeable from "./Placeable.svelte"
+  import Placeable from "#lib/landing/Placeable.svelte"
 
   const forms = [
     { key: "one", hint: "1, 21, 31…", word: "sat" },
@@ -13,7 +13,7 @@
   ]
 </script>
 
-<div class="rounded-[32px] bg-raised p-8 ring-1 ring-hairline sm:p-10" aria-hidden="true">
+<div class="rounded-stage bg-raised p-8 ring-1 ring-hairline sm:p-10" aria-hidden="true">
   <p class="text-[22px]"><Placeable text="$count" /> hours left</p>
   <div class="mt-8 space-y-3">
     {#each forms as form, index}

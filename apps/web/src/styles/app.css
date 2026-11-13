@@ -113,7 +113,7 @@
   color: var(--accent-ink);
 
   &:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--accent) 88%, var(--ink));
+    background: var(--accent-hover);
   }
 }
 
@@ -131,7 +131,17 @@
   color: var(--ink);
 
   &:hover:not(:disabled) {
-    background: color-mix(in oklab, var(--ink) 12%, transparent);
+    background: var(--tint);
+  }
+}
+
+@utility button-ghost {
+  color: var(--ink-soft);
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    color: var(--ink);
+    background: color-mix(in oklab, var(--ink) 6%, transparent);
   }
 }
 
@@ -142,6 +152,14 @@
   &:hover:not(:disabled) {
     background: color-mix(in oklab, var(--danger) 18%, transparent);
   }
+}
+
+@utility title {
+  font-size: var(--text-title);
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
 @utility link {
@@ -190,14 +208,6 @@
   color: var(--accent);
   background: color-mix(in oklab, var(--accent) 12%, transparent);
   border-radius: 6px;
-}
-
-@utility scrollbar-none {
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 }
 
 @utility skip {

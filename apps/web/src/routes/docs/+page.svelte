@@ -19,7 +19,7 @@
 
 <Header />
 
-<main class="page pt-16 pb-20">
+<main id="main" class="page pt-16 pb-20">
   <h1 class="text-[44px] font-semibold tracking-[-0.03em]">Docs</h1>
   <div class="mt-14 grid gap-x-16 gap-y-14 md:grid-cols-3">
     {#each data.nav as section}
