@@ -99,6 +99,8 @@
   }
 
   function keydown(event: KeyboardEvent) {
+    const typing = event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement
+    if (typing && !form?.contains(event.target)) return
     const mod = event.metaKey || event.ctrlKey
     if (mod && event.key === "Enter") {
       event.preventDefault()
