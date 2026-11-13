@@ -1,12 +1,14 @@
 <script lang="ts">
   import { KNOWN_LANGUAGES } from "@babblebird/protocol"
   import Plus from "@lucide/svelte/icons/plus"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import { englishName, nativeName } from "#lib/format/languages.ts"
   import Chip from "#lib/ui/fields/Chip.svelte"
   import SearchField from "#lib/ui/fields/SearchField.svelte"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
+
+  const session = getSession()
 
   let open = $state(false)
   let search = $state("")

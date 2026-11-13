@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type { ProjectSummary } from "@babblebird/protocol"
-  import { untrack } from "svelte"
   import { api } from "#lib/api/client.ts"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import { nativeName } from "#lib/format/languages.ts"
   import Header from "#lib/layout/Header.svelte"
   import Importing from "#lib/projects/Importing.svelte"
@@ -11,14 +9,18 @@
   import ProjectIcon from "#lib/projects/ProjectIcon.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
   import { donePercent } from "#lib/projects/progress.ts"
+  import { type ProjectList, projectListPath } from "#lib/projects/project.svelte.ts"
   import SearchField from "#lib/ui/fields/SearchField.svelte"
   import Segmented from "#lib/ui/fields/Segmented.svelte"
 
   const SHOWN_LANGUAGES = 3
 
-  let projects = $state<ProjectSummary[] | null>(null)
-  let more = $state(false)
-  let languages = $state<string[]>([])
+  let { data } = $props()
+
+  const session = getSession()
+  let projects = $derived(data.list.projects)
+  let more = $derived(data.list.more)
+  let languages = $derived(data.list.languages)
   let search = $state("")
   let needs = $state<"needs" | "all">("needs")
   let page = 0
@@ -26,29 +28,22 @@
   let searchTimer: ReturnType<typeof setTimeout> | undefined
 
   const mine = $derived(session.me?.languages ?? [])
-  const langs = $derived(mine.length ? mine : session.language ? [session.language] : [])
+  const langs = $derived(session.browsing)
 
   async function load(next = 0) {
     const current = ++generation
-    const query = new URLSearchParams({ page: String(next) })
-    if (langs.length) query.set("langs", langs.join(","))
-    if (langs.length && needs === "needs") query.set("needs", "1")
-    if (search.trim()) query.set("q", search.trim())
-    const result = await api.get<{ projects: ProjectSummary[]; more: boolean; languages: string[] }>(
-      `/projects?${query}`,
-    )
+    const result = await api.get<ProjectList>(projectListPath(langs, needs === "needs", search.trim(), next))
     if (current !== generation) return
     languages = result.languages
-    projects = next ? [...(projects ?? []), ...result.projects] : result.projects
+    projects = next ? [...projects, ...result.projects] : result.projects
     more = result.more
     page = next
   }
 
-  $effect(() => {
-    void langs
-    void needs
-    if (session.loaded) untrack(() => void load())
-  })
+  function browseIn(lang: string) {
+    session.browseIn(lang)
+    void load()
+  }
 
   function searchFor() {
     clearTimeout(searchTimer)
@@ -58,11 +53,14 @@
   poll(
     () => load(),
     4000,
-    () => !!projects?.some((project) => project.importing),
+    () => projects.some((project) => project.importing),
   )
 </script>
 
-<svelte:head><title>Help translate · Babblebird</title></svelte:head>
+<svelte:head>
+  <title>Help translate · Babblebird</title>
+  <meta name="description" content="Open source projects looking for translators, and how far each language has come." />
+</svelte:head>
 
 <Header />
 
@@ -75,7 +73,7 @@
       </p>
     </div>
     {#if !mine.length}
-      <LanguageSelect value={session.language} {languages} onchange={(next) => session.browseIn(next)} />
+      <LanguageSelect value={session.language} {languages} onchange={browseIn} />
     {/if}
   </div>
 
@@ -84,6 +82,7 @@
     {#if langs.length}
       <Segmented
         bind:value={needs}
+        onchange={() => load()}
         label="Which projects"
         options={[
           { value: "needs", label: mine.length > 1 ? "Need my languages" : `Need ${nativeName(langs[0]!)}` },
@@ -93,11 +92,7 @@
     {/if}
   </div>
 
-  {#if projects === null}
-    <div class="mt-10 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-      {#each { length: 3 } as _}<div class="placeholder h-28"></div>{/each}
-    </div>
-  {:else if !projects.length}
+  {#if !projects.length}
     <p class="mt-16 text-ink-muted">
       {search.trim() ? "No project matches that." : needs === "needs" && langs.length ? "Nothing is waiting for your languages right now. Nice work." : "Nobody’s looking for translators yet. Check back soon."}
     </p>

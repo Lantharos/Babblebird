@@ -26,12 +26,21 @@ export class Resource<T> {
 
 const cache = new Map<string, Resource<unknown>>()
 
-export function resource<T>(path: string): Resource<T> {
+function entryFor<T>(path: string): Resource<T> {
   let entry = cache.get(path) as Resource<T> | undefined
   if (!entry) {
     entry = new Resource<T>(path)
     cache.set(path, entry as Resource<unknown>)
   }
+  return entry
+}
+
+export function resource<T>(path: string): Resource<T> {
+  const entry = entryFor<T>(path)
   void entry.refresh()
   return entry
+}
+
+export function seed<T>(path: string, data: T) {
+  entryFor<T>(path).data = data
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
   import ArrowLeft from "@lucide/svelte/icons/arrow-left"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import Header from "#lib/layout/Header.svelte"
   import Summary from "#lib/manage/Summary.svelte"
   import AccessSection from "#lib/manage/sections/AccessSection.svelte"
@@ -11,6 +11,8 @@
   import { projectResource } from "#lib/projects/project.svelte.ts"
   import { goto } from "$app/navigation"
   import { page } from "$app/state"
+
+  const session = getSession()
 
   const project = $derived(projectResource(page.params.owner!, page.params.name!))
   const refresh = () => project.refresh()

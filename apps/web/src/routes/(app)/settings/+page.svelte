@@ -3,13 +3,15 @@
   import LogOut from "@lucide/svelte/icons/log-out"
   import Languages from "#lib/account/Languages.svelte"
   import { auth, linkGitHub } from "#lib/api/auth.ts"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import Header from "#lib/layout/Header.svelte"
   import SchemeSwitch from "#lib/theme/SchemeSwitch.svelte"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import ConfirmDialog from "#lib/ui/overlay/ConfirmDialog.svelte"
   import { toasts } from "#lib/ui/overlay/toasts.svelte.ts"
   import { goto } from "$app/navigation"
+
+  const session = getSession()
 
   let name = $state("")
   let deleting = $state(false)

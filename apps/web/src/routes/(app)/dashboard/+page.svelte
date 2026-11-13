@@ -3,7 +3,7 @@
   import Plus from "@lucide/svelte/icons/plus"
   import { linkGitHub } from "#lib/api/auth.ts"
   import { api } from "#lib/api/client.ts"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import { nativeName } from "#lib/format/languages.ts"
   import { when } from "#lib/format/time.ts"
   import Header from "#lib/layout/Header.svelte"
@@ -14,6 +14,8 @@
   import SearchField from "#lib/ui/fields/SearchField.svelte"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { goto } from "$app/navigation"
+
+  const session = getSession()
 
   type Mine = ProjectSummary & { role: Role | null; memberLanguages: string[] | null }
   interface Work {

@@ -2,10 +2,11 @@
   import type { Project } from "@babblebird/protocol"
   import Copy from "@lucide/svelte/icons/copy"
   import { copy } from "#lib/ui/copy.ts"
+  import { page } from "$app/state"
 
   let { project }: { project: Project } = $props()
-  const image = $derived(`${location.origin}/api/badge/${project.slug}.svg`)
-  const markdown = $derived(`[![Translations](${image})](${location.origin}/p/${project.slug})`)
+  const image = $derived(`${page.url.origin}/api/badge/${project.slug}.svg`)
+  const markdown = $derived(`[![Translations](${image})](${page.url.origin}/p/${project.slug})`)
 </script>
 
 <section>

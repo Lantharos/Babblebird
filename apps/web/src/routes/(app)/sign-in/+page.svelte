@@ -10,12 +10,14 @@
     signInWithPasskey,
   } from "#lib/api/auth.ts"
   import { api } from "#lib/api/client.ts"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import Bird from "#lib/Bird.svelte"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import GoogleMark from "#lib/ui/GoogleMark.svelte"
   import { goto, invalidateAll } from "$app/navigation"
   import { page } from "$app/state"
+
+  const session = getSession()
 
   let email = $state("")
   let code = $state("")

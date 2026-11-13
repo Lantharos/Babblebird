@@ -2,12 +2,14 @@
   import type { ProjectSummary } from "@babblebird/protocol"
   import { linkGitHub, signInWithGitHub } from "#lib/api/auth.ts"
   import { ApiError, api } from "#lib/api/client.ts"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import Header from "#lib/layout/Header.svelte"
   import { poll } from "#lib/projects/poll.svelte.ts"
   import GitHubMark from "#lib/ui/GitHubMark.svelte"
   import { goto } from "$app/navigation"
   import { page } from "$app/state"
+
+  const session = getSession()
 
   const installation = page.url.searchParams.get("installation_id")
   let projects = $state<ProjectSummary[] | null>(null)

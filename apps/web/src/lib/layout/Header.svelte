@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import { session } from "#lib/api/session.svelte.ts"
+  import { getSession } from "#lib/api/session.svelte.ts"
   import Avatar from "#lib/ui/Avatar.svelte"
   import Wordmark from "#lib/Wordmark.svelte"
   import { page } from "$app/state"
 
+  const session = getSession()
   onMount(() => void session.load())
   const signIn = $derived(`/sign-in?next=${encodeURIComponent(page.url.pathname + page.url.search)}`)
 </script>

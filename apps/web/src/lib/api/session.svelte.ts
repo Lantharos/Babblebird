@@ -1,3 +1,4 @@
+import { createContext } from "svelte"
 import { api } from "./client.ts"
 
 export interface Me {
@@ -9,35 +10,41 @@ export interface Me {
   languages: string[]
 }
 
-const LANGUAGE = "babblebird:language"
+export const LANGUAGE_COOKIE = "babblebird-language"
+const YEAR = 365 * 24 * 60 * 60 * 1000
 
-function remembered() {
-  try {
-    return localStorage.getItem(LANGUAGE)
-  } catch {
-    return null
-  }
-}
+export const browsedLanguages = (me: Me | null, language: string | null) =>
+  me?.languages.length ? me.languages : language ? [language] : []
 
-class Session {
+export class Session {
   loaded = $state(false)
   me = $state<Me | null>(null)
   #language = $state<string | null>(null)
 
   language = $derived(this.#language ?? this.me?.languages[0] ?? null)
+  browsing = $derived(browsedLanguages(this.me, this.#language))
+
+  seed(me: Me | null, language: string | null) {
+    this.me = me
+    this.#language = language
+    this.loaded = true
+  }
 
   async load() {
     if (this.loaded) return
-    this.#language = remembered()
     this.me = await api.get<Me | null>("/me")
     this.loaded = true
   }
 
   browseIn(lang: string) {
     this.#language = lang
-    try {
-      localStorage.setItem(LANGUAGE, lang)
-    } catch {}
+    void cookieStore.set({
+      name: LANGUAGE_COOKIE,
+      value: lang,
+      path: "/",
+      expires: Date.now() + YEAR,
+      sameSite: "lax",
+    })
   }
 
   async setLanguages(languages: string[]) {
@@ -50,4 +57,4 @@ class Session {
   }
 }
 
-export const session = new Session()
+export const [getSession, setSession] = createContext<Session>()
