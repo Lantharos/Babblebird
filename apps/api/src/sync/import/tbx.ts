@@ -50,7 +50,7 @@ export interface TermChange {
 
 const ENTRY = /^[ \t]*<termEntry\b[\s\S]*?<\/termEntry>[ \t]*\n?/gm
 
-const escape = (text: string) =>
+const escapeXml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
 function sourceTerm(entry: string, source: string) {
@@ -65,13 +65,13 @@ function entryXml(id: string | number, source: string, lang: string, change: Ter
     ...(kept ? ['        <descrip type="Translation needed">No</descrip>'] : []),
     `        <langSet xml:lang="${source}">`,
     "          <tig>",
-    `            <term>${escape(change.term)}</term>`,
+    `            <term>${escapeXml(change.term)}</term>`,
     "          </tig>",
     "        </langSet>",
     `        <langSet xml:lang="${lang}">`,
     "          <tig>",
-    `            <term>${escape(change.translation ?? change.term)}</term>`,
-    ...(change.note ? [`            <note from="translator">${escape(change.note)}</note>`] : []),
+    `            <term>${escapeXml(change.translation ?? change.term)}</term>`,
+    ...(change.note ? [`            <note from="translator">${escapeXml(change.note)}</note>`] : []),
     "          </tig>",
     "        </langSet>",
     "      </termEntry>",

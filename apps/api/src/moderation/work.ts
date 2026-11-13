@@ -71,6 +71,7 @@ export function removeWork(db: Db, userId: string) {
     )
   }
   for (const row of suggested) db.run("DELETE FROM suggestion WHERE id = ?", row.id)
+  db.run("DELETE FROM comment WHERE user_id = ?", userId)
   for (const row of new Map(changed.map((row) => [`${row.file_id}:${row.lang}`, row])).values()) {
     clearSettled(db, row.file_id, row.lang)
     db.run("UPDATE pending SET changed = ? WHERE file_id = ? AND lang = ?", now, row.file_id, row.lang)

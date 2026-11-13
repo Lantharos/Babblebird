@@ -3,6 +3,8 @@ import { eq, sql } from "drizzle-orm"
 import { db, type ProjectRow, schema } from "../db/core.ts"
 import { installationToken } from "../github/app.ts"
 import { type Repo, readBlobs } from "../github/repo.ts"
+import type { StringsPayload } from "../notices/mails.ts"
+import { queueNotices, translatorsOf } from "../notices/queue.ts"
 import { stringsOf } from "../strings/client.ts"
 import { blameCredits } from "./import/credits.ts"
 import type { SyncJob } from "./jobs.ts"
@@ -27,7 +29,7 @@ export async function syncArea(job: AreaJob) {
         targets.map((blob) => ({ path: blob.path, text: texts.get(blob.sha)! })),
       )
     : null
-  const usage = await stringsOf(project).applyArea({
+  const { usage, added } = await stringsOf(project).applyArea({
     areaId: job.areaId,
     sources: job.blobs
       .filter((blob) => blob.lang === project.sourceLang)
@@ -51,5 +53,25 @@ export async function syncArea(job: AreaJob) {
       })
       .where(eq(schema.project.id, project.id))
   }
+  if (added && project.state === "ready") await announceStrings(project, added)
   return usage
+}
+
+async function announceStrings(project: ProjectRow, added: number) {
+  const translators = await translatorsOf(project, null)
+  await queueNotices(
+    translators.flatMap((translator) => {
+      const langs = translator.languages.filter((lang) => project.languages.includes(lang))
+      return langs.length
+        ? [
+            {
+              userId: translator.id,
+              projectId: project.id,
+              kind: "strings" as const,
+              payload: { added, langs } satisfies StringsPayload,
+            },
+          ]
+        : []
+    }),
+  )
 }

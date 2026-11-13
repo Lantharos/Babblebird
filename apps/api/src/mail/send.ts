@@ -8,6 +8,12 @@ export function sendNotice(to: string, mail: Mail) {
     subject: mail.subject,
     html: renderHtml(mail),
     text: renderText(mail),
+    ...(mail.unsubscribe && {
+      headers: {
+        "List-Unsubscribe": `<${mail.unsubscribe}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
+    }),
   })
 }
 

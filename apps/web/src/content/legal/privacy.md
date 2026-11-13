@@ -8,7 +8,7 @@ Nothing here is used for advertising, sold, or shared with anyone beyond what's 
 
 When you sign in, Babblebird keeps your name, your email address and, if you use GitHub or Google, your account number there and your profile picture, plus your GitHub username. It also keeps the access GitHub gives it when you sign in, so it can ask GitHub which repositories you look after. If you add a passkey, Babblebird keeps the passkey's public key, never anything that could sign in as you.
 
-Your email address is used to send you sign-in codes and is never shown to other people. A code is kept, scrambled, for ten minutes or until it's used.
+Your email address is used to send you sign-in codes and, unless you turn them off in your settings or from the email, replies to discussions you took part in, news of new strings in your languages and messages from the maintainers of projects you translate. It's never shown to other people. Comments you write on strings are shown with your name to everyone who can see the project. A code is kept, scrambled, for ten minutes or until it's used.
 
 The languages you translate into are kept so the site can open in them.
 
@@ -42,7 +42,7 @@ Like any website, Babblebird's servers log requests and errors so they can be ke
 
 ## Who else handles it
 
-Babblebird runs on Cloudflare, which hosts the site, stores the data, keeps the logs and sends sign-in emails on Babblebird's behalf. GitHub and Google handle signing in with their accounts, and GitHub receives the translations Babblebird commits. Data may be handled outside your country, under Cloudflare's, GitHub's and Google's own data protection terms.
+Babblebird runs on Cloudflare, which hosts the site, stores the data, keeps the logs and sends Babblebird's emails on its behalf. GitHub and Google handle signing in with their accounts, and GitHub receives the translations Babblebird commits. Data may be handled outside your country, under Cloudflare's, GitHub's and Google's own data protection terms.
 
 ## How long it's kept
 

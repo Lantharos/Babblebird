@@ -1,6 +1,12 @@
 import { createContext } from "svelte"
 import { api } from "./client.ts"
 
+export interface Emails {
+  replies: boolean
+  strings: boolean
+  announcements: boolean
+}
+
 export interface Me {
   id: string
   name: string
@@ -9,6 +15,7 @@ export interface Me {
   githubLogin: string | null
   languages: string[]
   credit: { credited: boolean; name: string | null }
+  emails: Emails
 }
 
 export const LANGUAGE_COOKIE = "babblebird-language"

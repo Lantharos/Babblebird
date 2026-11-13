@@ -22,3 +22,9 @@ Translators and reviewers can be limited to some languages and some areas, for e
 ## Adding people
 
 Under **People**, choose **Manage people**, then **Add someone**, and enter their GitHub name or email address. If they don't have a Babblebird account yet, they're invited and join as soon as they sign in with that GitHub account or address.
+
+## Questions and messages
+
+When a translator asks something about the English, it shows up under **Questions about the English** on the manage page, with a link straight to the string, until someone resolves it.
+
+**Write to translators** sends an email to everyone who has translated for the project or is a member, or only to those who translate one language. Translators who added the project's languages also get an email when a push brings new strings to translate. Everyone can turn each kind of email off in their settings or from the email itself.

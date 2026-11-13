@@ -16,6 +16,7 @@ export class Editor {
   incoming = $state<StringRow | null>(null)
   readonly live: LiveChannel
   #generation = 0
+  #opening: number | null
 
   constructor(
     readonly owner: string,
@@ -24,8 +25,14 @@ export class Editor {
     readonly lang: string,
     private readonly self: () => string | null,
     private readonly onprogress: (area: string, progress: Progress) => void,
+    opening: number | null,
   ) {
+    this.#opening = opening
     this.live = new LiveChannel(`${projectPath(owner, name)}/live?lang=${lang}`, (event) => {
+      if (event.type === "discussion") {
+        if (this.detail?.row.id === event.id) void this.refreshDiscussion(event.id)
+        return
+      }
       if (event.type === "synced") {
         if (event.area === this.area && !this.search.trim()) void this.reload()
         return
@@ -56,7 +63,10 @@ export class Editor {
     this.next = null
     await this.more(generation)
     if (generation !== this.#generation) return
-    if (!this.rows.some((row) => row.id === this.selected)) await this.select(this.rows[0]?.id ?? null)
+    const opening = this.#opening
+    this.#opening = null
+    if (opening !== null) await this.select(opening)
+    else if (!this.rows.some((row) => row.id === this.selected)) await this.select(this.rows[0]?.id ?? null)
   }
 
   async more(generation = this.#generation) {
@@ -130,6 +140,25 @@ export class Editor {
     await api.post(`${this.base}/strings/${this.selected}/${this.lang}/suggestions/${suggestion}/accept`)
     await this.select(this.selected)
     if (this.detail) this.replace(this.detail.row)
+  }
+
+  async refreshDiscussion(id: number) {
+    const fresh = await api.get<Detail>(`${this.base}/strings/${id}?lang=${this.lang}`)
+    if (this.detail?.row.id !== id) return
+    this.detail.discussion = fresh.discussion
+    this.rows = this.rows.map((row) => (row.id === id ? { ...row, threads: fresh.row.threads } : row))
+  }
+
+  async comment(body: string, english: boolean) {
+    const id = this.selected!
+    await api.post(`${this.base}/strings/${id}/${this.lang}/comments`, { body, english })
+    await this.refreshDiscussion(id)
+  }
+
+  async resolve(english: boolean, resolved: boolean) {
+    const id = this.selected!
+    await api.put(`${this.base}/strings/${id}/${this.lang}/comments/resolved`, { english, resolved })
+    await this.refreshDiscussion(id)
   }
 
   async dismiss(suggestion: number) {

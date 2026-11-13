@@ -85,6 +85,13 @@
       "when": 1794611422293,
       "tag": "0011_credit",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1794613265777,
+      "tag": "0012_notices",
+      "breakpoints": true
     }
   ]
 }

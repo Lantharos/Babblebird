@@ -19,6 +19,11 @@ meRoutes.get("/", maybeSignedIn, async (c) => {
     githubLogin: user?.githubLogin ?? null,
     languages: user?.languages ?? [],
     credit: { credited: user?.credited ?? true, name: user?.creditName ?? null },
+    emails: {
+      replies: user?.emailReplies ?? true,
+      strings: user?.emailStrings ?? true,
+      announcements: user?.emailAnnouncements ?? true,
+    },
   })
 })
 
@@ -40,6 +45,21 @@ meRoutes.put("/credit", signedIn, async (c) => {
   await db
     .update(schema.user)
     .set({ credited, creditName: name })
+    .where(eq(schema.user.id, c.get("viewer")!.id))
+  return c.body(null, 204)
+})
+
+const emails = z.object({ replies: z.boolean(), strings: z.boolean(), announcements: z.boolean() })
+
+meRoutes.put("/emails", signedIn, async (c) => {
+  const chosen = await readBody(c, emails)
+  await db
+    .update(schema.user)
+    .set({
+      emailReplies: chosen.replies,
+      emailStrings: chosen.strings,
+      emailAnnouncements: chosen.announcements,
+    })
     .where(eq(schema.user.id, c.get("viewer")!.id))
   return c.body(null, 204)
 })

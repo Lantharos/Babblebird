@@ -14,7 +14,7 @@ interface Existing {
   plain: string
 }
 
-const SOURCE_TABLES = ["translation", "suggestion", "shot"]
+const SOURCE_TABLES = ["translation", "suggestion", "shot", "comment", "resolved_thread"]
 
 export function addBands(db: Db, sourceId: number, plain: string) {
   for (const band of bandsOf(plain)) db.run("INSERT OR IGNORE INTO tm_band VALUES (?, ?)", band, sourceId)
@@ -60,6 +60,7 @@ export function applySources(db: Db, fileId: number, units: Unit[]) {
     (row) => row.hash,
   )
   let changed = false
+  let added = 0
   units.forEach((unit, position) => {
     const before = existing.get(unit.key)
     existing.delete(unit.key)
@@ -86,6 +87,7 @@ export function applySources(db: Db, fileId: number, units: Unit[]) {
       )!
       addBands(db, id, unit.plain)
       changed = true
+      added++
     } else if (before.hash !== unit.hash) {
       db.run(
         `UPDATE source SET position = ?, body = ?, hash = ?, text_hash = ?, plain = ?, words = ?, comment = ?, section = ?,
@@ -116,5 +118,5 @@ export function applySources(db: Db, fileId: number, units: Unit[]) {
       )
   })
   removeSources(db, [...existing.values()])
-  return changed || existing.size > 0
+  return { changed: changed || existing.size > 0, added }
 }

@@ -2,6 +2,7 @@
   import KeyRound from "@lucide/svelte/icons/key-round"
   import LogOut from "@lucide/svelte/icons/log-out"
   import Credit from "#lib/account/Credit.svelte"
+  import Emails from "#lib/account/Emails.svelte"
   import Languages from "#lib/account/Languages.svelte"
   import { auth, linkGitHub } from "#lib/api/auth.ts"
   import { getSession } from "#lib/api/session.svelte.ts"
@@ -65,6 +66,7 @@
     </form>
     <Languages />
     <Credit />
+    <Emails />
     <section class="mt-10 space-y-3">
       <h2 class="text-[20px] font-semibold">Signing in</h2>
       <p class="text-body text-ink-soft">You sign in as {session.me.email}{session.me.githubLogin ? ` and with GitHub as ${session.me.githubLogin}` : ""}.</p>

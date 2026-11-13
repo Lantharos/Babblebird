@@ -14,6 +14,7 @@ export async function rowsOf(records: StringRecord[]): Promise<StringRow[]> {
     section: record.section,
     words: record.words,
     suggestions: record.suggestions,
+    threads: record.threads,
     translation:
       record.t_body === null
         ? null

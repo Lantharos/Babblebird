@@ -43,6 +43,7 @@
       const entry = areas.data?.find((candidate) => candidate.slug === slug)
       if (entry) entry.progress = progress
     },
+    Number(page.url.searchParams.get("string")) || null,
   )
   const project = projectResource(owner, name)
   const areaNames = $derived(new Map(areas.data?.map((entry) => [entry.slug, entry.name])))

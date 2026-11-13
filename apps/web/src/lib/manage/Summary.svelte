@@ -19,7 +19,7 @@
   <div class="min-w-0 flex-1">
     <h1 class="title">{project.owner}/{project.name}</h1>
     <p class="mt-1 text-[16px] text-ink-soft">
-      {done}% translated across {project.languages.length} languages · {project.strings.toLocaleString()} strings{#if review} · {review.toLocaleString()} to review{/if}
+      {done}% translated across {project.languages.length} languages · {project.strings.toLocaleString()} strings{review ? ` · ${review.toLocaleString()} to review` : ""}
     </p>
   </div>
   <a href="/p/{project.slug}" class="button button-sm button-ink">Open as a translator</a>

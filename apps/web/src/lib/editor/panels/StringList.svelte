@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FoundString, StringRow } from "@babblebird/protocol"
+  import MessageCircle from "@lucide/svelte/icons/message-circle"
   import type { Editor } from "#lib/editor/editor.svelte.ts"
   import Avatar from "#lib/ui/Avatar.svelte"
 
@@ -61,6 +62,7 @@
           <span class="block truncate text-body {row.translation ? '' : 'text-ink-soft'}">{preview(row)}</span>
           {#if elsewhere(row)}<span class="block truncate text-small text-ink-muted">{elsewhere(row)}</span>{/if}
         </span>
+        {#if row.threads}<MessageCircle class="mt-1.5 size-3.5 shrink-0 text-ink-muted" aria-label="Open discussion" />{/if}
         {#each editor.others(row.id).slice(0, 2) as viewer (viewer.id)}
           <span class="mt-1 -ml-2 first:ml-0" role="img" aria-label={viewer.name}><Avatar name={viewer.name} image={viewer.image} /></span>
         {/each}

@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers"
 import type { LiveEvent, Progress } from "@babblebird/protocol"
 import { eq } from "drizzle-orm"
+import { addComment, ENGLISH, type NewComment, openQuestions, resolveThread } from "../comments/store.ts"
 import { db as core, schema } from "../db/core.ts"
 import { type BuiltFile, buildFile, type PendingFile, pendingFiles, translators } from "../deliver/files.ts"
 import { type PageQuery, searchStrings, stringPage } from "../editor/queries.ts"
@@ -70,13 +71,13 @@ export class ProjectStrings extends DurableObject<Env> {
   }
 
   async applyArea(input: AreaInput) {
-    const { usage } = this.write((db) => applyArea(db, input))
+    const { result: added, usage } = this.write((db) => applyArea(db, input))
     await this.settle()
     const area = this.read((db) =>
       db.one<{ slug: string }>("SELECT slug FROM area WHERE id = ?", input.areaId),
     )
     if (area) this.live.broadcastAll({ type: "synced", area: area.slug })
-    return usage
+    return { usage, added }
   }
 
   page(query: PageQuery) {
@@ -139,6 +140,27 @@ export class ProjectStrings extends DurableObject<Env> {
     const { result } = this.write((db) => dropTerm(db, lang, term, userId))
     if (result) await this.schedule.delivery()
     return result
+  }
+
+  comment(input: NewComment) {
+    const { result } = this.write((db) => addComment(db, input))
+    if (result) this.discussed(input.sourceId, input.lang)
+    return result
+  }
+
+  resolveThread(sourceId: number, lang: string, userId: string, resolved: boolean) {
+    this.write((db) => resolveThread(db, sourceId, lang, userId, resolved))
+    this.discussed(sourceId, lang)
+  }
+
+  questions() {
+    return this.read((db) => openQuestions(db))
+  }
+
+  private discussed(id: number, lang: string) {
+    const event = { type: "discussion", id } satisfies LiveEvent
+    if (lang === ENGLISH) this.live.broadcastAll(event)
+    else this.live.broadcast(lang, event)
   }
 
   async removeWork(userId: string) {

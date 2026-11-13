@@ -42,5 +42,6 @@ On a Mac, <kbd>Cmd</kbd> works in place of <kbd>Ctrl</kbd>.
 - **Where it shows**: screenshots from the project with the string marked, when the project sends them. Click one to see it larger.
 - **Glossary**: the agreed translations for terms in this string.
 - **Seen before**: translations of the same or similar English from this project and other public ones, with how close they are.
+- **Discussion**: questions and notes about the string, either for your language or about the English. Anyone can resolve a discussion once it's settled, and a string with an open one shows a speech bubble in the list. When someone replies to a discussion you took part in, you get an email.
 - **Suggestions**: what others proposed.
 - **History**: who changed the translation and when, including changes made directly in the repository.

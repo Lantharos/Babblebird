@@ -8,6 +8,7 @@
   import { when } from "#lib/format/time.ts"
   import Kbd from "#lib/ui/Kbd.svelte"
   import Dialog from "#lib/ui/overlay/Dialog.svelte"
+  import Discussion from "./Discussion.svelte"
 
   let {
     detail,
@@ -47,6 +48,8 @@
       </div>
     </section>
   {/if}
+
+  <Discussion {detail} {editor} canClose={can.translate || can.admin} />
 
   {#if detail.glossary.length}
     <section>

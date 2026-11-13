@@ -2,6 +2,7 @@ import { env } from "cloudflare:workers"
 import { Hono } from "hono"
 import { authRoutes } from "./auth/routes.ts"
 import { badgeRoutes } from "./badge/routes.ts"
+import { commentRoutes } from "./comments/routes.ts"
 import { type DeliverJob, deliver } from "./deliver/deliver.ts"
 import { editorRoutes } from "./editor/routes.ts"
 import { fileRoutes } from "./files/routes.ts"
@@ -10,6 +11,8 @@ import { glossaryRoutes } from "./glossary/routes.ts"
 import { receiveMail } from "./inbox/receive.ts"
 import { errorResponse, fail } from "./lib/http.ts"
 import { meRoutes } from "./me/routes.ts"
+import { sendNotices } from "./notices/send.ts"
+import { unsubscribeRoutes } from "./notices/unsubscribe.ts"
 import { deliverPending } from "./ops/pending.ts"
 import { backOffice, publishDefinitions } from "./ops/pult.ts"
 import { listRoutes } from "./projects/list.ts"
@@ -54,6 +57,8 @@ app.route("/projects", listRoutes)
 app.route("/projects", projectRoutes)
 app.route("/projects", editorRoutes)
 app.route("/projects", glossaryRoutes)
+app.route("/projects", commentRoutes)
+app.route("/unsubscribe", unsubscribeRoutes)
 app.route("/projects", memberRoutes)
 app.route("/projects", manageRoutes)
 app.route("/projects", screenshotRoutes)
@@ -68,7 +73,12 @@ export default {
   },
   async scheduled() {
     const office = backOffice()
-    await Promise.all([rescanStale(), publishDefinitions(), office && deliverPending(office.pult)])
+    await Promise.all([
+      rescanStale(),
+      sendNotices(),
+      publishDefinitions(),
+      office && deliverPending(office.pult),
+    ])
   },
   email: receiveMail,
 } satisfies ExportedHandler<Env, SyncJob | DeliverJob>

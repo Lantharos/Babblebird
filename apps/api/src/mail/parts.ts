@@ -42,3 +42,20 @@ export function button(label: string, href: string): Part {
     text: `${label}: ${href}`,
   }
 }
+
+export function quote(text: string): Part {
+  return {
+    html: `<p class="ink" style="margin:0;padding-left:14px;border-left:3px solid ${colors.well};font-family:${FONT};font-size:16px;line-height:1.6;color:${colors.ink};white-space:pre-wrap;">${escapeHtml(text)}</p>`,
+    text: text
+      .split("\n")
+      .map((line) => `> ${line}`)
+      .join("\n"),
+  }
+}
+
+export function link(label: string, href: string): Part {
+  return {
+    html: `<p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.6;"><a href="${escapeHtml(href)}" style="color:${colors.accent};font-weight:600;text-decoration:none;">${escapeHtml(label)}</a></p>`,
+    text: `${label}: ${href}`,
+  }
+}

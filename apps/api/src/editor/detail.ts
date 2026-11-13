@@ -1,5 +1,6 @@
 import type { StringDetail } from "@babblebird/protocol"
 import { inArray } from "drizzle-orm"
+import { ENGLISH } from "../comments/store.ts"
 import { db as core, type ProjectRow, schema } from "../db/core.ts"
 import { memoryFor } from "../tm/lookup.ts"
 import { peopleById, personOf } from "./people.ts"
@@ -15,10 +16,17 @@ async function projectSlugs(ids: string[]) {
 }
 
 export async function detailView(project: ProjectRow, detail: Detail, lang: string): Promise<StringDetail> {
-  const { record, glossary, own, suggestions, shots, history } = detail
+  const { record, glossary, own, suggestions, shots, history, discussion } = detail
   const memory = await memoryFor(project, record, lang, own)
   const [people, slugs] = await Promise.all([
-    peopleById([...suggestions.map((row) => row.by), ...history.map((row) => row.user_id)]),
+    peopleById([
+      ...suggestions.map((row) => row.by),
+      ...history.map((row) => row.user_id),
+      ...discussion.flatMap((thread) => [
+        ...thread.comments.map((comment) => comment.user_id),
+        thread.resolved?.by ?? null,
+      ]),
+    ]),
     projectSlugs(memory.map((match) => match.projectId)),
   ])
   const translated = shots.filter((shot) => shot.lang === lang)
@@ -49,6 +57,16 @@ export async function detailView(project: ProjectRow, detail: Detail, lang: stri
       detail: row.detail,
       by: personOf(people, row.user_id, null),
       at: row.at,
+    })),
+    discussion: discussion.map((thread) => ({
+      english: thread.lang === ENGLISH,
+      resolved: thread.resolved && { at: thread.resolved.at, by: personOf(people, thread.resolved.by, null) },
+      comments: thread.comments.map((comment) => ({
+        id: comment.id,
+        body: comment.body,
+        at: comment.at,
+        by: personOf(people, comment.user_id, null),
+      })),
     })),
     sourceChanged:
       record.t_source_hash !== null && record.t_source_hash !== record.hash ? record.previous : null,

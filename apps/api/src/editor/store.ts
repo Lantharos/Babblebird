@@ -1,5 +1,6 @@
 import { type GlossaryTerm, type Problem, problemFlags, runChecks, termsIn } from "@babblebird/fluent"
 import { STATE } from "@babblebird/protocol"
+import { threadsFor } from "../comments/store.ts"
 import { type AreaScope, allows } from "../projects/access.ts"
 import type { Db } from "../strings/db.ts"
 import { recount } from "../sync/apply/progress.ts"
@@ -51,6 +52,7 @@ export function detailOf(db: Db, id: number, lang: string, sourceLang: string) {
       lang,
       sourceLang,
     ),
+    discussion: threadsFor(db, id, lang),
     history: db.all<{ id: number; kind: string; user_id: string | null; detail: string | null; at: number }>(
       `SELECT id, kind, user_id, detail, at FROM activity WHERE source_id = ? AND lang = ? ORDER BY id DESC LIMIT ${HISTORY}`,
       id,

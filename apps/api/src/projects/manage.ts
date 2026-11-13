@@ -13,7 +13,7 @@ manageRoutes.use(maybeSignedIn)
 
 const HISTORY = 30
 
-async function asAdmin(owner: string, name: string, viewer: ViewerVars["Variables"]["viewer"]) {
+export async function asAdmin(owner: string, name: string, viewer: ViewerVars["Variables"]["viewer"]) {
   const found = await visibleProject(owner, name, viewer)
   if (!abilitiesOf(found.project, viewer, found.member).admin)
     fail(403, "Only the project's maintainers can do this")

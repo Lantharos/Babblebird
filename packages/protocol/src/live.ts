@@ -12,6 +12,7 @@ export type LiveEvent =
   | { type: "presence"; viewers: Presence[] }
   | { type: "changed"; area: string; row: StringRow; progress: Progress }
   | { type: "synced"; area: string }
+  | { type: "discussion"; id: number }
 
 export interface LiveFocus {
   type: "focus"

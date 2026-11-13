@@ -26,6 +26,7 @@ export interface StringRow {
   words: number
   translation: TranslationView | null
   suggestions: number
+  threads: number
 }
 
 export interface StringPage {
@@ -94,4 +95,26 @@ export interface StringDetail {
   screenshots: Screenshot[]
   history: ActivityEntry[]
   sourceChanged: string | null
+  discussion: Thread[]
+}
+
+export interface CommentView {
+  id: number
+  body: string
+  at: number
+  by: Person | null
+}
+
+export interface Thread {
+  english: boolean
+  resolved: { at: number; by: Person | null } | null
+  comments: CommentView[]
+}
+
+export interface Question {
+  id: number
+  key: string
+  area: string
+  comments: number
+  last: CommentView
 }

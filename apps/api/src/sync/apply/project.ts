@@ -68,8 +68,12 @@ export interface AreaInput {
 
 export function applyArea(db: Db, input: AreaInput) {
   let sourcesChanged = false
-  for (const source of input.sources)
-    sourcesChanged = applySources(db, source.fileId, source.units) || sourcesChanged
+  let added = 0
+  for (const source of input.sources) {
+    const applied = applySources(db, source.fileId, source.units)
+    sourcesChanged ||= applied.changed
+    added += applied.added
+  }
   const glossaries = new Map<string, GlossaryTerm[]>()
   const touched = new Set<string>()
   for (const target of input.targets) {
@@ -83,4 +87,5 @@ export function applyArea(db: Db, input: AreaInput) {
     input.blobs,
   )
   if (sourcesChanged || touched.size) recount(db, input.areaId, sourcesChanged ? null : [...touched])
+  return added
 }

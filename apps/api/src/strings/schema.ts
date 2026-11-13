@@ -182,4 +182,23 @@ export const STRINGS_SCHEMA = [
   `ALTER TABLE glossary ADD COLUMN unsent INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE glossary ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0;
   ALTER TABLE glossary ADD COLUMN in_repo INTEGER NOT NULL DEFAULT 1;`,
+  `CREATE TABLE comment (
+    id INTEGER PRIMARY KEY,
+    source_id INTEGER NOT NULL,
+    lang TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    body TEXT NOT NULL,
+    at INTEGER NOT NULL
+  );
+
+  CREATE INDEX comment_thread ON comment (source_id, lang, id);
+  CREATE INDEX comment_user ON comment (user_id);
+
+  CREATE TABLE resolved_thread (
+    source_id INTEGER NOT NULL,
+    lang TEXT NOT NULL,
+    at INTEGER NOT NULL,
+    by TEXT NOT NULL,
+    PRIMARY KEY (source_id, lang)
+  ) WITHOUT ROWID;`,
 ]

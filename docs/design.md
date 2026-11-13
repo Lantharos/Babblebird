@@ -58,6 +58,10 @@ A translation is `translated`, `review` (its English changed, or it was imported
 
 Earlier translations come from the project itself, by the same text (an indexed hash lookup) or similar text (MinHash bands, compared by trigram similarity), and from the language pair's shared memory, which only public projects add to.
 
+## Discussion and email
+
+Each string has a discussion per language and one about the English, stored in the project's object with a resolved marker per thread. Replies, new strings after a push, and maintainers' messages are queued as rows in the main database's `notice` table; the ten-minute cron sends what has waited a few minutes, one digest per person for replies and new strings and one email per message, honouring each person's email settings. Every email carries a signed one-click unsubscribe link.
+
 ## Live editing
 
 The editor keeps a WebSocket open to the project's object, one per language, using hibernation so idle connections cost nothing. It says which string each translator has open, so the list and the form show who else is there, and every save is pushed to everyone on that language with the area's new progress. A translation saved by someone else while you're on it replaces your form if you haven't typed, and otherwise waits behind a note until you choose to see it.

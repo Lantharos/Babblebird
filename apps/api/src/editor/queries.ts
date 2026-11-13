@@ -26,6 +26,7 @@ export interface StringRecord {
   t_at: number | null
   t_source_hash: number | null
   suggestions: number
+  threads: number
 }
 
 const FILTERS: Record<Filter, string> = {
@@ -41,7 +42,9 @@ const COLUMNS = `s.id, s.file_id, s.key, f.pattern, f.position file_position, s.
   s.hash, s.text_hash, s.previous, f.area_id, (SELECT slug FROM area WHERE id = f.area_id) area_slug,
   t.body t_body, t.state t_state, t.flags t_flags, t.by t_by, (SELECT names FROM credit WHERE id = t.credit_id) t_credit,
   t.at t_at, t.source_hash t_source_hash,
-  (SELECT count(*) FROM suggestion g WHERE g.source_id = s.id AND g.lang = ?2) suggestions`
+  (SELECT count(*) FROM suggestion g WHERE g.source_id = s.id AND g.lang = ?2) suggestions,
+  (SELECT count(DISTINCT c.lang) FROM comment c WHERE c.source_id = s.id AND c.lang IN (?2, '')
+    AND NOT EXISTS (SELECT 1 FROM resolved_thread r WHERE r.source_id = c.source_id AND r.lang = c.lang)) threads`
 
 export interface PageQuery {
   area: string

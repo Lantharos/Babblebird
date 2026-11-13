@@ -127,3 +127,22 @@ export const contribution = sqliteTable(
     index("contribution_recent").on(table.userId, table.lastAt),
   ],
 )
+
+export const NOTICE_KINDS = ["reply", "strings", "announcement"] as const
+
+export const notice = sqliteTable(
+  "notice",
+  {
+    id: integer("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => project.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: NOTICE_KINDS }).notNull(),
+    payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (table) => [index("notice_created").on(table.createdAt)],
+)

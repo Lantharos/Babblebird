@@ -4,9 +4,11 @@
   import Header from "#lib/layout/Header.svelte"
   import Summary from "#lib/manage/Summary.svelte"
   import AccessSection from "#lib/manage/sections/AccessSection.svelte"
+  import AnnounceSection from "#lib/manage/sections/AnnounceSection.svelte"
   import DangerSection from "#lib/manage/sections/DangerSection.svelte"
   import DeliverySection from "#lib/manage/sections/DeliverySection.svelte"
   import PeopleSection from "#lib/manage/sections/PeopleSection.svelte"
+  import QuestionsSection from "#lib/manage/sections/QuestionsSection.svelte"
   import SyncSection from "#lib/manage/sections/SyncSection.svelte"
   import { projectResource } from "#lib/projects/project.svelte.ts"
   import { goto } from "$app/navigation"
@@ -42,6 +44,8 @@
       <DeliverySection project={project.data} onchange={refresh} />
       <AccessSection project={project.data} onchange={refresh} />
       <PeopleSection project={project.data} />
+      <QuestionsSection project={project.data} />
+      <AnnounceSection project={project.data} />
     </div>
     <DangerSection project={project.data} />
   {:else}

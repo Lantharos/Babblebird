@@ -8,6 +8,7 @@ export interface Mail {
   heading: string
   body: Part[]
   reason: string
+  unsubscribe?: string
 }
 
 const WIDTH = 520
@@ -20,10 +21,11 @@ function header() {
   return `<a href="${env.PUBLIC_URL}" style="text-decoration:none;">${mark()}<span class="ink" style="padding-left:10px;font-family:${FONT};font-size:17px;font-weight:600;color:${colors.ink};vertical-align:middle;">Babblebird</span></a>`
 }
 
-function footer(reason: string) {
-  const link = (path: string, label: string) =>
-    `<a href="${env.PUBLIC_URL}${path}" style="color:${colors.inkMuted};text-decoration:underline;">${label}</a>`
-  return `<td class="rule ink-muted" style="padding-top:24px;border-top:1px solid ${colors.well};font-family:${FONT};font-size:13px;line-height:1.6;color:${colors.inkMuted};">${escapeHtml(reason)}<br>Babblebird is made by Lantharos. ${link("/privacy", "Privacy")}</td>`
+function footer(reason: string, unsubscribe?: string) {
+  const link = (href: string, label: string) =>
+    `<a href="${escapeHtml(href)}" style="color:${colors.inkMuted};text-decoration:underline;">${label}</a>`
+  const stop = unsubscribe ? ` ${link(unsubscribe, "Stop these emails")}` : ""
+  return `<td class="rule ink-muted" style="padding-top:24px;border-top:1px solid ${colors.well};font-family:${FONT};font-size:13px;line-height:1.6;color:${colors.inkMuted};">${escapeHtml(reason)}${stop}<br>Babblebird is made by Lantharos. ${link(`${env.PUBLIC_URL}/privacy`, "Privacy")}</td>`
 }
 
 const row = (content: string, spacing: number) =>
@@ -51,7 +53,7 @@ ${stylesheets(env.PUBLIC_URL).join("\n")}
 <!--[if mso]><table role="presentation" width="${WIDTH}" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:${WIDTH}px;">
 ${rows.join("\n")}
-<tr><td style="padding-top:16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${footer(mail.reason)}</tr></table></td></tr>
+<tr><td style="padding-top:16px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${footer(mail.reason, mail.unsubscribe)}</tr></table></td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
 </td></tr>
@@ -64,6 +66,6 @@ export function renderText(mail: Mail) {
   return [
     mail.heading,
     ...mail.body.map((part) => part.text),
-    `--\n${mail.reason}\nBabblebird is made by Lantharos. Privacy: ${env.PUBLIC_URL}/privacy`,
+    `--\n${mail.reason}${mail.unsubscribe ? `\nStop these emails: ${mail.unsubscribe}` : ""}\nBabblebird is made by Lantharos. Privacy: ${env.PUBLIC_URL}/privacy`,
   ].join("\n\n")
 }
