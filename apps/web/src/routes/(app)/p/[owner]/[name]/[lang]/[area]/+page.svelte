@@ -14,6 +14,7 @@
   import ContextPanel from "#lib/editor/panels/ContextPanel.svelte"
   import Shortcuts from "#lib/editor/panels/Shortcuts.svelte"
   import StringList from "#lib/editor/panels/StringList.svelte"
+  import SourceDiff from "#lib/editor/text/SourceDiff.svelte"
   import SourceView from "#lib/editor/text/SourceView.svelte"
   import { nativeName } from "#lib/format/languages.ts"
   import { when } from "#lib/format/time.ts"
@@ -153,25 +154,27 @@
     <main class="{listing ? 'hidden' : ''} min-h-0 overflow-y-auto px-4 pb-16 sm:px-8 md:block">
       {#if editor.detail && source}
         {@const row = editor.detail.row}
-        <div class="mx-auto max-w-2xl pt-4">
-          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-small text-ink-muted">
-            <span class="font-mono break-all text-ink-soft">{row.key}</span>
-            <span class="font-mono break-all">{row.file.replace("{lang}", project.data?.sourceLang ?? "en")}</span>
-            {#if row.section}<span>{row.section}</span>{/if}
-          </div>
-          {#if row.comment}<p class="mt-3 rounded-2xl bg-well px-4 py-3 text-body text-ink-soft">{row.comment}</p>{/if}
-          <div class="mt-5"><SourceView shape={source} sourceLang={project.data?.sourceLang ?? "en"} glossary={editor.detail.glossary} /></div>
+        <div class="mx-auto max-w-2xl pt-6">
+          <SourceView shape={source} sourceLang={project.data?.sourceLang ?? "en"} glossary={editor.detail.glossary} />
           {#if editor.detail.sourceChanged}
-            <p class="mt-4 text-body text-caution">The source changed since this was translated. It used to say: <span class="text-ink-soft">{editor.detail.sourceChanged.replace(/^=\s*/, "")}</span></p>
+            <div class="mt-3"><SourceDiff before={editor.detail.sourceChanged} after={row.body} /></div>
+          {/if}
+          {#if row.comment || row.section}
+            <div class="mt-3 space-y-1 text-body">
+              {#if row.comment}<p class="text-ink-soft">{row.comment}</p>{/if}
+              {#if row.section}<p class="text-ink-muted">{row.section}</p>{/if}
+            </div>
           {/if}
           <div class="mt-8">
             {#key row.id}
               <TranslationForm bind:this={form} {editor} detail={editor.detail} {source} {can} />
             {/key}
           </div>
-          {#if row.translation?.by}
-            <p class="mt-6 text-small text-ink-muted">Last changed by {row.translation.by.name} · {when(row.translation.at)}</p>
-          {/if}
+          <p class="mt-6 flex flex-wrap gap-x-3 gap-y-1 text-small text-ink-muted">
+            <span class="font-mono break-all">{row.key}</span>
+            <span class="font-mono break-all">{row.file.replace("{lang}", project.data?.sourceLang ?? "en")}</span>
+            {#if row.translation?.by}<span>Last changed by {row.translation.by.name} · {when(row.translation.at)}</span>{/if}
+          </p>
           {#if !wide.current}<div class="mt-12">{@render context()}</div>{/if}
         </div>
       {:else if editor.selected !== null}

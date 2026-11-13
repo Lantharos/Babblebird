@@ -47,6 +47,13 @@
   const hints = $derived(empty ? [] : glossaryHints(detail.row.body, body, detail.glossary))
   const blocked = $derived(empty || problems.some((problem) => problem.severity === "error"))
   const shown = $derived(empty ? [] : previews(body, lang))
+  const echoes = $derived(
+    shown.length === 1 &&
+      !shown[0]!.label &&
+      !shown[0]!.attribute &&
+      shape.fields[0]?.part.kind === "text" &&
+      shown[0]!.text === shape.fields[0].part.text.trim(),
+  )
   const unchanged = $derived(detail.row.translation?.body === body)
   const dirty = $derived(!unchanged && !(empty && !detail.row.translation))
   const others = $derived(editor.others(detail.row.id))
@@ -170,7 +177,7 @@
   <Problems {problems} {hints} />
   {#if refused}<p class="text-body text-danger" role="alert">{refused}</p>{/if}
 
-  {#if shown.length}
+  {#if shown.length && !echoes}
     <div class="space-y-1.5 rounded-2xl bg-well/60 px-4 py-3">
       {#each shown as preview}
         <p class="flex gap-3 text-body">

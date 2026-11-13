@@ -13,14 +13,14 @@
     <div>
       {#if field.name !== null}<p class="font-mono text-small text-ink-muted">.{field.name}</p>{/if}
       {#if field.part.kind === "text"}
-        <p class="text-[19px] leading-relaxed"><Highlighted text={field.part.text} {glossary} /></p>
+        <p class="text-[24px] leading-snug font-medium tracking-[-0.01em]"><Highlighted text={field.part.text} {glossary} /></p>
       {:else}
         <dl class="space-y-2">
           {#each field.part.variants as variant}
             {@const label = variantLabel(sourceLang, variant.key)}
             <div class="grid grid-cols-[7rem_minmax(0,1fr)] gap-3">
               <dt class="pt-1 text-small text-ink-muted">{label.name}{#if label.hint}<span class="block tabular">{label.hint}</span>{/if}</dt>
-              <dd class="text-[19px] leading-relaxed"><Highlighted text={variant.text} {glossary} /></dd>
+              <dd class="text-[21px] leading-snug font-medium"><Highlighted text={variant.text} {glossary} /></dd>
             </div>
           {/each}
         </dl>
