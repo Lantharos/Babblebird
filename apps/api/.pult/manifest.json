@@ -52,7 +52,7 @@
       }
     },
     "project": {
-      "source": "src/ops/define/project.ts:21",
+      "source": "src/ops/define/project.ts:22",
       "label": "Project",
       "plural": "Projects",
       "icon": "git-branch",
@@ -92,7 +92,7 @@
       "related": {},
       "actions": {
         "resync": {
-          "source": "src/ops/define/project.ts:51",
+          "source": "src/ops/define/project.ts:52",
           "label": "Read again",
           "description": "Reads the default branch again, like a push would.",
           "danger": "none",
@@ -108,7 +108,7 @@
           "schedule": null
         },
         "sendNow": {
-          "source": "src/ops/define/project.ts:61",
+          "source": "src/ops/define/project.ts:62",
           "label": "Send now",
           "description": "Sends the translations that are waiting now instead of on the next ten-minute run. A pull request the maintainers closed stays closed until there are new translations.",
           "danger": "none",
@@ -124,7 +124,7 @@
           "schedule": null
         },
         "setDelivery": {
-          "source": "src/ops/define/project.ts:72",
+          "source": "src/ops/define/project.ts:73",
           "label": "Change delivery",
           "description": "How translations reach the repository. Maintainers can change it back in their settings.",
           "danger": "confirm",
@@ -156,7 +156,7 @@
           "schedule": null
         },
         "setWhoTranslates": {
-          "source": "src/ops/define/project.ts:87",
+          "source": "src/ops/define/project.ts:89",
           "label": "Change who translates",
           "description": "Whether anyone signed in can translate or only the project's members.",
           "danger": "confirm",
@@ -186,7 +186,7 @@
           "schedule": null
         },
         "removeTranslatorWork": {
-          "source": "src/ops/define/project.ts:102",
+          "source": "src/ops/define/project.ts:104",
           "label": "Remove someone's work",
           "description": "Puts back what the repository has for every translation this person last changed in the project that isn't in the repository yet, and deletes their suggestions here. What's already merged stays.",
           "danger": "reauth",
@@ -214,7 +214,7 @@
           "schedule": null
         },
         "pause": {
-          "source": "src/ops/define/project.ts:121",
+          "source": "src/ops/define/project.ts:123",
           "label": "Pause",
           "description": "Stops reading pushes, sending translations and taking new translations or suggestions. The project stays listed with a note that it's paused.",
           "danger": "confirm",
@@ -243,7 +243,7 @@
           "schedule": null
         },
         "resume": {
-          "source": "src/ops/define/project.ts:134",
+          "source": "src/ops/define/project.ts:136",
           "label": "Resume",
           "description": "Lets the project take translations again and reads the repository to catch up.",
           "danger": "confirm",
@@ -259,7 +259,7 @@
           "schedule": null
         },
         "remove": {
-          "source": "src/ops/define/project.ts:145",
+          "source": "src/ops/define/project.ts:147",
           "label": "Remove",
           "description": "Takes the project off Babblebird, as if its maintainers removed it. Its translations are kept, and adding the repository on GitHub again brings it back.",
           "danger": "reauth",
@@ -275,7 +275,7 @@
           "schedule": null
         },
         "restore": {
-          "source": "src/ops/define/project.ts:156",
+          "source": "src/ops/define/project.ts:158",
           "label": "Bring back",
           "description": "Puts a removed project back and reads its repository again.",
           "danger": "confirm",
