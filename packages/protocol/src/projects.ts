@@ -111,3 +111,9 @@ export interface DeliveryStatus {
   checks: "passed" | "failed" | null
   problem: string | null
 }
+
+export interface SitemapProject {
+  slug: string
+  languages: string[]
+  updatedAt: string
+}

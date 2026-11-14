@@ -20,6 +20,7 @@ import { manageRoutes } from "./projects/manage.ts"
 import { memberRoutes } from "./projects/members.ts"
 import { mineRoutes } from "./projects/mine.ts"
 import { projectRoutes } from "./projects/routes.ts"
+import { sitemapRoutes } from "./projects/sitemap.ts"
 import { screenshotRoutes } from "./screenshots/routes.ts"
 import { consumeSync } from "./sync/consumer.ts"
 import type { SyncJob } from "./sync/jobs.ts"
@@ -53,6 +54,7 @@ app.route("/badge", badgeRoutes)
 app.route("/github", githubRoutes)
 app.route("/me", meRoutes)
 app.route("/", mineRoutes)
+app.route("/projects", sitemapRoutes)
 app.route("/projects", listRoutes)
 app.route("/projects", projectRoutes)
 app.route("/projects", editorRoutes)
