@@ -15,7 +15,7 @@
     "@babblebird/fluent": "workspace:*",
     "@babblebird/protocol": "workspace:*",
     "@better-auth/passkey": "1.7.18",
-    "@lantharos/pult": "0.13.0",
+    "@lantharos/pult": "0.15.0",
     "better-auth": "1.7.18",
     "drizzle-orm": "0.45.4",
     "hono": "4.13.17",

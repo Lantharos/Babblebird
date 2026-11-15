@@ -1,4 +1,5 @@
 {
+  "format": 1,
   "project": "babblebird",
   "environments": [
     "dev",
@@ -503,6 +504,7 @@
         "lastSeen"
       ],
       "intake": null,
+      "clients": null,
       "triage": null,
       "reply": false,
       "hooks": {
@@ -579,6 +581,7 @@
         "lastSeen"
       ],
       "intake": null,
+      "clients": null,
       "triage": {
         "instructions": "Each item is an email sent to one of babblebird.dev's addresses: hello, privacy or security. Babblebird is a translation platform for open source projects. Privacy requests and security reports matter even when they're badly written; only close what is plainly unsolicited advertising, phishing or spam.",
         "questions": {
@@ -655,6 +658,7 @@
         "lastSeen"
       ],
       "intake": null,
+      "clients": null,
       "triage": {
         "instructions": "Each item is a GitHub repository whose owner just added Babblebird, a translation platform for open source projects. It shows what Babblebird found in the repository: its description, languages and how many strings it has. Most are real projects. Flag only ones that plainly look like spam, advertising or content that isn't software.",
         "questions": {
@@ -887,5 +891,5 @@
     ],
     "after": 120000
   },
-  "version": "2cd5cf134944"
+  "version": "cb80af9af0e1"
 }

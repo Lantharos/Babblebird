@@ -1,4 +1,4 @@
-import { b, inbox, noul, tag, triage } from "@lantharos/pult"
+import { b, inbox, probability, tag, triage } from "@lantharos/pult"
 import { z } from "zod"
 import { projects } from "../data/projects.ts"
 import { projectBlocks } from "../render/project.ts"
@@ -56,7 +56,7 @@ export const newProjects = inbox("new-projects", {
   triage: triage({
     instructions: INSTRUCTIONS,
     questions: {
-      spam: noul("Does this repository look like spam, advertising or something other than software?"),
+      spam: probability("Does this repository look like spam, advertising or something other than software?"),
     },
     rules: [{ name: "Flag spam", when: (answers) => answers.spam > 0.8, then: tag("suspicious") }],
   }),
