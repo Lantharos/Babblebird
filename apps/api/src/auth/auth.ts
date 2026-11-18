@@ -15,6 +15,7 @@ import { installFlow } from "./install.ts"
 
 const publicUrl = new URL(env.PUBLIC_URL)
 const SESSION_CACHE_SECONDS = 5 * 60
+const UNVERIFIED = "Verify your email address with your provider before signing in"
 
 async function rememberGitHub(account: { providerId: string; userId: string; accessToken?: string | null }) {
   if (account.providerId !== "github" || !account.accessToken) return
@@ -37,12 +38,13 @@ export const auth = betterAuth({
   trustedOrigins: [publicUrl.origin],
   database: drizzleAdapter(db, { provider: "sqlite", schema }),
   session: { cookieCache: { enabled: true, maxAge: SESSION_CACHE_SECONDS } },
-  account: { accountLinking: { enabled: true, trustedProviders: ["github"], allowDifferentEmails: true } },
+  account: { accountLinking: { enabled: true, allowDifferentEmails: true } },
   user: { deleteUser: { enabled: true } },
   databaseHooks: {
     user: {
       create: {
-        before: async () => {
+        before: async (user) => {
+          if (!user.emailVerified) throw new APIError("FORBIDDEN", { message: UNVERIFIED })
           if (!(await takingNewAccounts()))
             throw new APIError("FORBIDDEN", { message: "Babblebird isn't taking new accounts right now" })
         },

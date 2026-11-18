@@ -52,7 +52,7 @@ export const installFlow = () =>
             redirectURI: `${c.context.baseURL}/github/installed`,
           })
           const info = tokens && (await github.getUserInfo(tokens))
-          if (!tokens || !info?.user.email) throw c.redirect(landing)
+          if (!tokens || !info?.user.email || !info.user.emailVerified) throw c.redirect(landing)
 
           const profile = info.data as { id: number }
           const accountId = String(profile.id)
